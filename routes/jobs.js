@@ -1,5 +1,6 @@
 // Jobs API routes: list, get one, create, update, delete, and set outcome.
 import { db } from '../db.js';
+import { computeDueDate } from './followups.js';
 
 // Checks date strings: must be YYYY-MM-DD and valid calendar date.
 function isValidDateYMD(dateStr) {
@@ -176,16 +177,16 @@ function getFullJob(id) {
 
   // Calculate follow-up due date based on settings.
   let dueDate = null;
-  if (application && ['applied', 'screening', 'interview'].includes(application.status)) {
+  if (application && ['applied', 'screening'].includes(application.status)) {
     const replyDays = getSettingNumber('reply_days', 7);
     const followUpDays = getSettingNumber('follow_up_days', 14);
-
-    if (replies.length > 0) {
-      const latest = replies[replies.length - 1];
-      dueDate = addDaysToYMD(latest.happened_on, followUpDays);
-    } else if (application.applied_date) {
-      dueDate = addDaysToYMD(application.applied_date, replyDays);
-    }
+    const noReplyDays = getSettingNumber('no_reply_days', 21);
+    const today = getTodayColombo();
+    dueDate = computeDueDate(application.applied_date, application.status, {
+      reply_days: replyDays,
+      follow_up_days: followUpDays,
+      no_reply_days: noReplyDays,
+    }, today);
   }
 
   const rejectionReasons = getSettingList('rejection_reasons', [

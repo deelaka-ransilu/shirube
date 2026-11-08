@@ -2682,6 +2682,167 @@ async function renderJobPage(container, jobId) {
   }
 }
 
+// Renders the Follow-ups screen at #followups (Phase 5).
+async function renderFollowups(container) {
+  container.innerHTML = '<p class="muted">Loading follow-ups...</p>';
+
+  try {
+    const res = await fetch('/api/followups');
+    if (!res.ok) {
+      throw new Error('Could not load follow-ups.');
+    }
+    const data = await res.json();
+    drawFollowupsView(container, data);
+  } catch (err) {
+    container.innerHTML = `<p class="field-error">Error loading follow-ups: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function drawFollowupsView(container, data) {
+  const { coming_up = [], overdue = [] } = data;
+  container.innerHTML = '';
+
+  const shell = document.createElement('div');
+  shell.className = 'followups-shell';
+
+  // Heading and purpose.
+  const header = document.createElement('header');
+  const h1 = document.createElement('h1');
+  h1.className = 'screen-title';
+  h1.textContent = 'Follow-ups';
+
+  const intro = document.createElement('p');
+  intro.className = 'profile-intro';
+  intro.textContent = 'Track upcoming and overdue follow-ups for your active job applications.';
+
+  header.append(h1, intro);
+  shell.append(header);
+
+  // Helper to create a job row in a follow-up list.
+  function createFollowupRow(job, isOverdue) {
+    const row = document.createElement('article');
+    row.className = 'job-row follow-up-row';
+
+    const left = document.createElement('div');
+    left.className = 'job-row-left';
+
+    const main = document.createElement('div');
+    main.className = 'job-main';
+
+    const company = document.createElement('span');
+    company.className = 'job-company';
+    company.textContent = job.company;
+
+    const titleLink = document.createElement('a');
+    titleLink.href = `#job/${job.job_id}`;
+    titleLink.className = 'job-title-link';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'job-title';
+    titleSpan.textContent = job.title;
+    titleLink.append(titleSpan);
+
+    main.append(company, titleLink);
+    left.append(main);
+
+    const right = document.createElement('div');
+    right.className = 'job-row-right';
+
+    const dueSpan = document.createElement('span');
+    dueSpan.className = `follow-up-due ${isOverdue ? 'is-overdue' : ''}`;
+    dueSpan.innerHTML = `<span class="due-label">${isOverdue ? 'Overdue:' : 'Due:'}</span> <span class="due-date">${escapeHtml(job.due_date)}</span>`;
+
+    const stageSpan = document.createElement('span');
+    stageSpan.innerHTML = renderStageBadge(job.application_status);
+
+    const actionLink = document.createElement('a');
+    actionLink.href = `#job/${job.job_id}`;
+    actionLink.className = 'btn btn-secondary link-to-job';
+    actionLink.textContent = 'View job →';
+
+    right.append(dueSpan, stageSpan, actionLink);
+    row.append(left, right);
+    return row;
+  }
+
+  // Check if both sections are empty.
+  if (coming_up.length === 0 && overdue.length === 0) {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+
+    const emptyText = document.createElement('p');
+    emptyText.className = 'empty-text';
+    emptyText.textContent = 'No follow-ups due. Add a job or apply to one.';
+
+    const addBtn = document.createElement('a');
+    addBtn.href = '#jobs';
+    addBtn.className = 'btn btn-primary';
+    addBtn.textContent = '+ Add job';
+
+    emptyState.append(emptyText, addBtn);
+    shell.append(emptyState);
+    container.append(shell);
+    return;
+  }
+
+  const sectionsDiv = document.createElement('div');
+  sectionsDiv.className = 'followups-sections';
+
+  // Overdue section.
+  const overdueSection = document.createElement('section');
+  overdueSection.className = 'followups-section';
+  overdueSection.setAttribute('aria-labelledby', 'heading-overdue');
+
+  const overdueHeading = document.createElement('h2');
+  overdueHeading.id = 'heading-overdue';
+  overdueHeading.className = 'card-heading';
+  overdueHeading.textContent = `Overdue (${overdue.length})`;
+  overdueSection.append(overdueHeading);
+
+  if (overdue.length === 0) {
+    const emptyNote = document.createElement('p');
+    emptyNote.className = 'muted';
+    emptyNote.textContent = 'No overdue follow-ups.';
+    overdueSection.append(emptyNote);
+  } else {
+    const list = document.createElement('div');
+    list.className = 'jobs-list';
+    overdue.forEach((job) => {
+      list.append(createFollowupRow(job, true));
+    });
+    overdueSection.append(list);
+  }
+
+  // Coming up section.
+  const comingSection = document.createElement('section');
+  comingSection.className = 'followups-section';
+  comingSection.setAttribute('aria-labelledby', 'heading-coming-up');
+
+  const comingHeading = document.createElement('h2');
+  comingHeading.id = 'heading-coming-up';
+  comingHeading.className = 'card-heading';
+  comingHeading.textContent = `Coming up (${coming_up.length})`;
+  comingSection.append(comingHeading);
+
+  if (coming_up.length === 0) {
+    const emptyNote = document.createElement('p');
+    emptyNote.className = 'muted';
+    emptyNote.textContent = 'No follow-ups due in the next 7 days.';
+    comingSection.append(emptyNote);
+  } else {
+    const list = document.createElement('div');
+    list.className = 'jobs-list';
+    coming_up.forEach((job) => {
+      list.append(createFollowupRow(job, false));
+    });
+    comingSection.append(list);
+  }
+
+  sectionsDiv.append(overdueSection, comingSection);
+  shell.append(sectionsDiv);
+  container.append(shell);
+}
+
 // Screen switcher.
 function showScreen() {
   const hash = location.hash.slice(1);
@@ -2697,6 +2858,9 @@ function showScreen() {
   } else if (name === 'profile') {
     document.title = 'My profile | Shirube';
     renderProfile(app);
+  } else if (name === 'followups') {
+    document.title = 'Follow-ups | Shirube';
+    renderFollowups(app);
   } else if (SCREENS[name]) {
     const title = SCREENS[name];
     document.title = `${title} | Shirube`;
