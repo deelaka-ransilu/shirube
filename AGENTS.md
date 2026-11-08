@@ -33,6 +33,15 @@ Sri Lankan job seekers come first. Keep field and source lists easy to extend.
 11. Table changes are a new file, never an edit to `schema.sql` once a database exists. Add numbered migration files when that step comes.
 12. All files use LF line endings.
 
+## Usability (every screen)
+- A first-time user should know where they are, what the page is for, and what to do next without help.
+- One primary action per screen. Its label names the action.
+- Empty states say what to do next and show the button for it.
+- Errors sit next to the field and say how to fix them.
+- Saving gives visible feedback. Destructive actions ask once more.
+- Screens work at 375px wide, with keyboard use and visible focus.
+- The agent chooses the layout, using these principles, and reports the choice in one short paragraph.
+
 ## End of every session
 1. Run `npm start` and check the page loads. Report the result.
 2. List the files changed, one line each.
