@@ -1,5 +1,4 @@
 // Switches screens by the #hash in the address bar.
-// Screens that are not built yet show a plain message.
 const SCREENS = {
   jobs: 'Jobs',
   followups: 'Follow-ups',
@@ -9,12 +8,982 @@ const SCREENS = {
   backup: 'Export backup',
 };
 
+// Level definitions for the skills slider.
+const LEVEL_LABELS = ['Aware', 'Beginner', 'Intermediate', 'Advanced', 'Expert'];
+const LEVEL_MEANINGS = [
+  'Aware: you know what this is and can follow along in discussions.',
+  'Beginner: you can complete basic tasks using tutorials or guidance.',
+  'Intermediate: you work independently and solve common problems.',
+  'Advanced: you understand best practices, solve complex problems, and guide others.',
+  'Expert: you have deep mastery, architect solutions, and handle edge cases.',
+];
+
+// Profile screen state.
+const profileState = {
+  skills: [],
+  experiences: [],
+  education: [],
+  activeTab: 'skills',
+  isAdding: false,
+  editingItem: null,
+  confirmDeleteId: null,
+};
+
+// Safely escapes text for HTML rendering.
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Determines the plain-English next step advice.
+function getNextStep(skills, experiences, education) {
+  if (skills.length === 0 && experiences.length === 0 && education.length === 0) {
+    return 'Still to do: add at least one skill to use Shirube.';
+  }
+  if (skills.length === 0) {
+    return 'Still to do: add at least one skill to use Shirube.';
+  }
+  if (experiences.length === 0) {
+    return 'Next: add an experience or volunteering entry to build your history.';
+  }
+  if (education.length === 0) {
+    return 'Next: add your education or qualifications.';
+  }
+  const unverified = skills.find((s) => !s.proof_url && !s.used_at_experience);
+  if (unverified) {
+    return 'Next: add a proof link to verify a skill.';
+  }
+  return 'Profile complete: all your skills, experience, and education are up to date.';
+}
+
+// Loads profile data from the backend.
+async function loadProfileData() {
+  const res = await fetch('/api/profile');
+  if (!res.ok) {
+    throw new Error('Could not load profile data');
+  }
+  const data = await res.json();
+  profileState.skills = data.skills || [];
+  profileState.experiences = data.experiences || [];
+  profileState.education = data.education || [];
+}
+
+// Renders the entire profile screen.
+async function renderProfile(container) {
+  container.innerHTML = '<p class="muted">Loading profile...</p>';
+
+  try {
+    await loadProfileData();
+  } catch (err) {
+    container.innerHTML = `<p class="field-error">Error loading profile: ${escapeHtml(err.message)}</p>`;
+    return;
+  }
+
+  drawProfileView(container);
+}
+
+// Redraws the profile interface based on state.
+function drawProfileView(container) {
+  const { skills, experiences, education, activeTab, isAdding, editingItem, confirmDeleteId } = profileState;
+
+  const shell = document.createElement('div');
+  shell.className = 'profile-shell';
+
+  // Heading and purpose.
+  const header = document.createElement('header');
+  const h1 = document.createElement('h1');
+  h1.className = 'screen-title';
+  h1.textContent = 'My profile';
+
+  const intro = document.createElement('p');
+  intro.className = 'profile-intro';
+  intro.textContent = 'Keep your skills, experience, and education up to date so Shirube can match them against jobs.';
+  header.append(h1, intro);
+
+  // Progress summary.
+  const progressBox = document.createElement('section');
+  progressBox.className = 'profile-progress';
+  progressBox.setAttribute('aria-label', 'Profile completion progress');
+
+  const countsLine = document.createElement('div');
+  countsLine.className = 'progress-counts';
+  const skCount = `${skills.length} ${skills.length === 1 ? 'skill' : 'skills'}`;
+  const expCount = `${experiences.length} ${experiences.length === 1 ? 'experience' : 'experiences'}`;
+  const eduCount = `${education.length} education`;
+  countsLine.textContent = `${skCount}   ${expCount}   ${eduCount}`;
+
+  const nextStepLine = document.createElement('div');
+  nextStepLine.className = 'progress-next';
+  nextStepLine.textContent = getNextStep(skills, experiences, education);
+
+  progressBox.append(countsLine, nextStepLine);
+
+  // Three tabs.
+  const tabList = document.createElement('div');
+  tabList.className = 'tab-list';
+  tabList.setAttribute('role', 'tablist');
+  tabList.setAttribute('aria-label', 'Profile sections');
+
+  const tabsConfig = [
+    { key: 'skills', label: `Skills (${skills.length})` },
+    { key: 'experiences', label: `Experience and volunteering (${experiences.length})` },
+    { key: 'education', label: `Education (${education.length})` },
+  ];
+
+  tabsConfig.forEach((tab, index) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tab-btn';
+    btn.setAttribute('role', 'tab');
+    btn.id = `tab-${tab.key}`;
+    btn.setAttribute('aria-controls', `panel-${tab.key}`);
+    const isSelected = activeTab === tab.key;
+    btn.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+    btn.setAttribute('tabindex', isSelected ? '0' : '-1');
+    btn.textContent = tab.label;
+
+    btn.addEventListener('click', () => {
+      if (profileState.activeTab !== tab.key) {
+        profileState.activeTab = tab.key;
+        profileState.isAdding = false;
+        profileState.editingItem = null;
+        profileState.confirmDeleteId = null;
+        drawProfileView(container);
+      }
+    });
+
+    btn.addEventListener('keydown', (e) => {
+      const allTabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
+      let nextIndex = index;
+      if (e.key === 'ArrowRight') {
+        nextIndex = (index + 1) % allTabs.length;
+      } else if (e.key === 'ArrowLeft') {
+        nextIndex = (index - 1 + allTabs.length) % allTabs.length;
+      } else if (e.key === 'Home') {
+        nextIndex = 0;
+      } else if (e.key === 'End') {
+        nextIndex = allTabs.length - 1;
+      } else {
+        return;
+      }
+      e.preventDefault();
+      allTabs[nextIndex].focus();
+      allTabs[nextIndex].click();
+    });
+
+    tabList.append(btn);
+  });
+
+  // Tab panel.
+  const panel = document.createElement('section');
+  panel.className = 'tab-panel';
+  panel.id = `panel-${activeTab}`;
+  panel.setAttribute('role', 'tabpanel');
+  panel.setAttribute('aria-labelledby', `tab-${activeTab}`);
+
+  // Tab header with action button.
+  const tabHeader = document.createElement('div');
+  tabHeader.className = 'tab-header';
+
+  const tabHeaderText = document.createElement('div');
+  tabHeaderText.className = 'tab-header-text';
+
+  const tabTitle = document.createElement('h2');
+  tabTitle.className = 'tab-title';
+
+  const tabDesc = document.createElement('p');
+  tabDesc.className = 'tab-desc';
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'btn btn-primary tab-header-btn';
+
+  if (activeTab === 'skills') {
+    tabTitle.textContent = 'Skills';
+    tabDesc.textContent = 'List what you know and how well you know it, so Shirube can match them against jobs.';
+    addBtn.textContent = '+ Add skill';
+  } else if (activeTab === 'experiences') {
+    tabTitle.textContent = 'Experience and volunteering';
+    tabDesc.textContent = 'Record your past and current roles to track where your skills were built.';
+    addBtn.textContent = '+ Add experience';
+  } else {
+    tabTitle.textContent = 'Education';
+    tabDesc.textContent = 'Add your degrees, diplomas, courses, or certificates.';
+    addBtn.textContent = '+ Add education';
+  }
+
+  addBtn.addEventListener('click', () => {
+    profileState.isAdding = true;
+    profileState.editingItem = null;
+    profileState.confirmDeleteId = null;
+    drawProfileView(container);
+  });
+
+  tabHeaderText.append(tabTitle, tabDesc);
+  tabHeader.append(tabHeaderText, addBtn);
+  panel.append(tabHeader);
+
+  // Form opens above the list if adding or editing.
+  if (isAdding || editingItem) {
+    const formPanel = createItemForm(activeTab, editingItem, container);
+    panel.append(formPanel);
+  }
+
+  // Cards list or empty state.
+  const items = profileState[activeTab];
+  if (items.length === 0) {
+    const emptyBox = document.createElement('div');
+    emptyBox.className = 'empty-state';
+
+    const emptyMsg = document.createElement('p');
+    emptyMsg.className = 'empty-text';
+    if (activeTab === 'skills') {
+      emptyMsg.textContent = 'No skills added yet. Add at least one skill to start building your profile.';
+    } else if (activeTab === 'experiences') {
+      emptyMsg.textContent = 'No experience added yet. Add your past jobs or volunteering to link your skills to real projects.';
+    } else {
+      emptyMsg.textContent = 'No education added yet. Add your courses or degrees to complete your profile.';
+    }
+
+    const emptyBtn = document.createElement('button');
+    emptyBtn.type = 'button';
+    emptyBtn.className = 'btn btn-primary';
+    emptyBtn.textContent = addBtn.textContent;
+    emptyBtn.addEventListener('click', () => {
+      profileState.isAdding = true;
+      profileState.editingItem = null;
+      profileState.confirmDeleteId = null;
+      drawProfileView(container);
+    });
+
+    emptyBox.append(emptyMsg, emptyBtn);
+    panel.append(emptyBox);
+  } else {
+    const cardsList = document.createElement('div');
+    cardsList.className = 'cards-list';
+
+    items.forEach((item) => {
+      const card = createItemCard(activeTab, item, container);
+      cardsList.append(card);
+    });
+
+    panel.append(cardsList);
+  }
+
+  shell.append(header, progressBox, tabList, panel);
+  container.innerHTML = '';
+  container.append(shell);
+}
+
+// Creates the add/edit form for skills, experiences, or education.
+function createItemForm(tabKey, item, container) {
+  const formPanel = document.createElement('div');
+  formPanel.className = 'form-panel';
+
+  const formTitle = document.createElement('h3');
+  formTitle.className = 'form-title';
+  const actionLabel = item ? 'Edit' : 'Add';
+  if (tabKey === 'skills') formTitle.textContent = `${actionLabel} skill`;
+  else if (tabKey === 'experiences') formTitle.textContent = `${actionLabel} experience or volunteering`;
+  else formTitle.textContent = `${actionLabel} education`;
+
+  formPanel.append(formTitle);
+
+  const form = document.createElement('form');
+  form.noValidate = true;
+
+  // Helper to append a field with an error slot.
+  function addField(labelStr, inputEl, errorId) {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.htmlFor = inputEl.id;
+    label.textContent = labelStr;
+
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error';
+    errorDiv.id = errorId;
+    errorDiv.style.display = 'none';
+
+    group.append(label, inputEl, errorDiv);
+    form.append(group);
+  }
+
+  if (tabKey === 'skills') {
+    // 1. Skill Name.
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.id = 'skill-name';
+    nameInput.className = 'form-input';
+    nameInput.value = item ? item.name : '';
+    nameInput.placeholder = 'e.g. JavaScript, Docker, Figma';
+    nameInput.required = true;
+    addField('Skill name', nameInput, 'skill-name-error');
+
+    // 2. Skill Level Slider.
+    const sliderGroup = document.createElement('div');
+    sliderGroup.className = 'form-group slider-container';
+
+    const sliderLabel = document.createElement('label');
+    sliderLabel.className = 'form-label';
+    sliderLabel.htmlFor = 'skill-level';
+    sliderLabel.textContent = 'Skill level';
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.id = 'skill-level';
+    slider.className = 'slider-input';
+    slider.min = '1';
+    slider.max = '5';
+    slider.step = '1';
+    slider.value = item ? String(item.level) : '3';
+
+    const stepsContainer = document.createElement('div');
+    stepsContainer.className = 'slider-steps';
+
+    LEVEL_LABELS.forEach((txt, idx) => {
+      const stepSpan = document.createElement('span');
+      stepSpan.className = `slider-step ${idx + 1 === Number(slider.value) ? 'is-selected' : ''}`;
+      stepSpan.id = `step-label-${idx + 1}`;
+      stepSpan.textContent = txt;
+      stepsContainer.append(stepSpan);
+    });
+
+    const meaning = document.createElement('p');
+    meaning.className = 'level-meaning';
+    meaning.id = 'level-meaning-text';
+    meaning.textContent = LEVEL_MEANINGS[Number(slider.value) - 1];
+
+    slider.addEventListener('input', () => {
+      const val = Number(slider.value);
+      stepsContainer.querySelectorAll('.slider-step').forEach((span, idx) => {
+        if (idx + 1 === val) {
+          span.classList.add('is-selected');
+        } else {
+          span.classList.remove('is-selected');
+        }
+      });
+      meaning.textContent = LEVEL_MEANINGS[val - 1];
+    });
+
+    sliderGroup.append(sliderLabel, slider, stepsContainer, meaning);
+    form.append(sliderGroup);
+
+    // 3. Proof link.
+    const proofInput = document.createElement('input');
+    proofInput.type = 'url';
+    proofInput.id = 'skill-proof';
+    proofInput.className = 'form-input';
+    proofInput.placeholder = 'https://github.com/... or https://...';
+    proofInput.value = item && item.proof_url ? item.proof_url : '';
+    addField('Proof link (optional)', proofInput, 'skill-proof-error');
+
+    // 4. Used at experience.
+    const expSelect = document.createElement('select');
+    expSelect.id = 'skill-used-at';
+    expSelect.className = 'form-select';
+
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'None / Not linked to an experience';
+    expSelect.append(defaultOpt);
+
+    profileState.experiences.forEach((exp) => {
+      const opt = document.createElement('option');
+      opt.value = String(exp.id);
+      const company = exp.organisation ? ` (${exp.organisation})` : '';
+      opt.textContent = `${exp.title}${company}`;
+      if (item && item.used_at_experience === exp.id) {
+        opt.selected = true;
+      }
+      expSelect.append(opt);
+    });
+    addField('Used at (optional)', expSelect, 'skill-used-at-error');
+  } else if (tabKey === 'experiences') {
+    // 1. Type (Experience or Volunteering).
+    const kindSelect = document.createElement('select');
+    kindSelect.id = 'exp-kind';
+    kindSelect.className = 'form-select';
+
+    const optWork = document.createElement('option');
+    optWork.value = 'experience';
+    optWork.textContent = 'Experience';
+    if (!item || item.kind === 'experience') optWork.selected = true;
+
+    const optVol = document.createElement('option');
+    optVol.value = 'volunteering';
+    optVol.textContent = 'Volunteering';
+    if (item && item.kind === 'volunteering') optVol.selected = true;
+
+    kindSelect.append(optWork, optVol);
+    addField('Type', kindSelect, 'exp-kind-error');
+
+    // 2. Title.
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.id = 'exp-title';
+    titleInput.className = 'form-input';
+    titleInput.placeholder = 'e.g. Software Engineer or Community Lead';
+    titleInput.value = item ? item.title : '';
+    titleInput.required = true;
+    addField('Title', titleInput, 'exp-title-error');
+
+    // 3. Organisation.
+    const orgInput = document.createElement('input');
+    orgInput.type = 'text';
+    orgInput.id = 'exp-org';
+    orgInput.className = 'form-input';
+    orgInput.placeholder = 'e.g. Acme Corp or Open Source Initiative';
+    orgInput.value = item && item.organisation ? item.organisation : '';
+    addField('Organisation (optional)', orgInput, 'exp-org-error');
+
+    // 4. Start date.
+    const startInput = document.createElement('input');
+    startInput.type = 'text';
+    startInput.id = 'exp-start';
+    startInput.className = 'form-input';
+    startInput.placeholder = 'YYYY-MM or YYYY-MM-DD (e.g. 2023-01)';
+    startInput.value = item ? item.start_date : '';
+    startInput.required = true;
+    addField('Start date', startInput, 'exp-start-error');
+
+    // 5. Present checkbox.
+    const currentGroup = document.createElement('div');
+    currentGroup.className = 'form-group';
+    const currentLabel = document.createElement('label');
+    currentLabel.className = 'checkbox-label';
+
+    const currentCheck = document.createElement('input');
+    currentCheck.type = 'checkbox';
+    currentCheck.id = 'exp-current';
+    currentCheck.checked = item ? Boolean(item.is_current) : false;
+
+    currentLabel.append(currentCheck, document.createTextNode(' Present (currently working or volunteering here)'));
+    currentGroup.append(currentLabel);
+    form.append(currentGroup);
+
+    // 6. End date.
+    const endInput = document.createElement('input');
+    endInput.type = 'text';
+    endInput.id = 'exp-end';
+    endInput.className = 'form-input';
+    endInput.placeholder = 'YYYY-MM or YYYY-MM-DD';
+    endInput.value = item && item.end_date ? item.end_date : '';
+    if (currentCheck.checked) {
+      endInput.disabled = true;
+      endInput.value = '';
+    }
+
+    currentCheck.addEventListener('change', () => {
+      if (currentCheck.checked) {
+        endInput.disabled = true;
+        endInput.value = '';
+      } else {
+        endInput.disabled = false;
+      }
+    });
+
+    addField('End date (optional)', endInput, 'exp-end-error');
+
+    // 7. Description.
+    const descInput = document.createElement('textarea');
+    descInput.id = 'exp-desc';
+    descInput.className = 'form-textarea';
+    descInput.placeholder = 'Brief summary of key tasks, achievements, or projects.';
+    descInput.value = item && item.description ? item.description : '';
+    addField('Description (optional)', descInput, 'exp-desc-error');
+  } else {
+    // Education form.
+    // 1. Course.
+    const courseInput = document.createElement('input');
+    courseInput.type = 'text';
+    courseInput.id = 'edu-course';
+    courseInput.className = 'form-input';
+    courseInput.placeholder = 'e.g. BSc in Computer Science, or Web Development Bootcamp';
+    courseInput.value = item ? item.course : '';
+    courseInput.required = true;
+    addField('Course', courseInput, 'edu-course-error');
+
+    // 2. Institution.
+    const instInput = document.createElement('input');
+    instInput.type = 'text';
+    instInput.id = 'edu-inst';
+    instInput.className = 'form-input';
+    instInput.placeholder = 'e.g. University of Colombo or Coursera';
+    instInput.value = item && item.institution ? item.institution : '';
+    addField('Institution (optional)', instInput, 'edu-inst-error');
+
+    // 3. Start date.
+    const startInput = document.createElement('input');
+    startInput.type = 'text';
+    startInput.id = 'edu-start';
+    startInput.className = 'form-input';
+    startInput.placeholder = 'YYYY-MM or YYYY-MM-DD';
+    startInput.value = item && item.start_date ? item.start_date : '';
+    addField('Start date (optional)', startInput, 'edu-start-error');
+
+    // 4. End date.
+    const endInput = document.createElement('input');
+    endInput.type = 'text';
+    endInput.id = 'edu-end';
+    endInput.className = 'form-input';
+    endInput.placeholder = 'YYYY-MM or YYYY-MM-DD';
+    endInput.value = item && item.end_date ? item.end_date : '';
+    addField('End date (optional)', endInput, 'edu-end-error');
+  }
+
+  // Form actions.
+  const actions = document.createElement('div');
+  actions.className = 'form-actions';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'submit';
+  saveBtn.className = 'btn btn-primary';
+  saveBtn.textContent = item ? 'Save changes' : `Save ${tabKey === 'skills' ? 'skill' : tabKey === 'experiences' ? 'experience' : 'education'}`;
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn btn-secondary';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => {
+    profileState.isAdding = false;
+    profileState.editingItem = null;
+    drawProfileView(container);
+  });
+
+  const saveFeedback = document.createElement('span');
+  saveFeedback.className = 'save-status';
+  saveFeedback.setAttribute('aria-live', 'polite');
+
+  actions.append(saveBtn, cancelBtn, saveFeedback);
+  form.append(actions);
+
+  // Form submit handler.
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Clear previous errors.
+    form.querySelectorAll('.field-error').forEach((el) => {
+      el.textContent = '';
+      el.style.display = 'none';
+    });
+
+    let isValid = true;
+    let payload = {};
+
+    function showError(fieldId, errorId, message) {
+      isValid = false;
+      const errorDiv = document.getElementById(errorId);
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+      }
+      const field = document.getElementById(fieldId);
+      if (field) field.focus();
+    }
+
+    // Date validator helper.
+    function checkDateFormat(val) {
+      if (!val) return true;
+      return /^\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/.test(val);
+    }
+
+    if (tabKey === 'skills') {
+      const name = document.getElementById('skill-name').value.trim();
+      const level = Number(document.getElementById('skill-level').value);
+      const proofUrl = document.getElementById('skill-proof').value.trim();
+      const usedAt = document.getElementById('skill-used-at').value;
+
+      if (!name) {
+        showError('skill-name', 'skill-name-error', 'Please enter a skill name.');
+        return;
+      }
+
+      // Check duplicate name locally.
+      const nameLower = name.toLowerCase();
+      const duplicate = profileState.skills.find(
+        (s) => s.name.toLowerCase() === nameLower && (!item || s.id !== item.id)
+      );
+      if (duplicate) {
+        showError('skill-name', 'skill-name-error', 'A skill with this name already exists. Enter a unique name.');
+        return;
+      }
+
+      if (proofUrl && !proofUrl.startsWith('http://') && !proofUrl.startsWith('https://')) {
+        showError('skill-proof', 'skill-proof-error', 'Proof link must start with http:// or https://.');
+        return;
+      }
+
+      payload = {
+        name,
+        level,
+        proof_url: proofUrl || null,
+        used_at_experience: usedAt ? Number(usedAt) : null,
+      };
+    } else if (tabKey === 'experiences') {
+      const kind = document.getElementById('exp-kind').value;
+      const title = document.getElementById('exp-title').value.trim();
+      const organisation = document.getElementById('exp-org').value.trim();
+      const startDate = document.getElementById('exp-start').value.trim();
+      const isCurrent = document.getElementById('exp-current').checked ? 1 : 0;
+      const endDate = document.getElementById('exp-end').value.trim();
+      const description = document.getElementById('exp-desc').value.trim();
+
+      if (!title) {
+        showError('exp-title', 'exp-title-error', 'Please enter a title.');
+        return;
+      }
+
+      if (!startDate) {
+        showError('exp-start', 'exp-start-error', 'Please enter a start date.');
+        return;
+      }
+
+      if (!checkDateFormat(startDate)) {
+        showError('exp-start', 'exp-start-error', 'Start date must be in YYYY-MM or YYYY-MM-DD format (for example, 2024-05).');
+        return;
+      }
+
+      if (!isCurrent && endDate) {
+        if (!checkDateFormat(endDate)) {
+          showError('exp-end', 'exp-end-error', 'End date must be in YYYY-MM or YYYY-MM-DD format (for example, 2024-05).');
+          return;
+        }
+        if (endDate < startDate) {
+          showError('exp-end', 'exp-end-error', 'End date cannot be earlier than start date.');
+          return;
+        }
+      }
+
+      payload = {
+        kind,
+        title,
+        organisation: organisation || null,
+        start_date: startDate,
+        end_date: isCurrent ? null : (endDate || null),
+        is_current: isCurrent,
+        description: description || null,
+      };
+    } else {
+      const course = document.getElementById('edu-course').value.trim();
+      const institution = document.getElementById('edu-inst').value.trim();
+      const startDate = document.getElementById('edu-start').value.trim();
+      const endDate = document.getElementById('edu-end').value.trim();
+
+      if (!course) {
+        showError('edu-course', 'edu-course-error', 'Please enter a course or degree.');
+        return;
+      }
+
+      if (startDate && !checkDateFormat(startDate)) {
+        showError('edu-start', 'edu-start-error', 'Start date must be in YYYY-MM or YYYY-MM-DD format (for example, 2024-05).');
+        return;
+      }
+
+      if (endDate && !checkDateFormat(endDate)) {
+        showError('edu-end', 'edu-end-error', 'End date must be in YYYY-MM or YYYY-MM-DD format (for example, 2024-05).');
+        return;
+      }
+
+      if (startDate && endDate && endDate < startDate) {
+        showError('edu-end', 'edu-end-error', 'End date cannot be earlier than start date.');
+        return;
+      }
+
+      payload = {
+        course,
+        institution: institution || null,
+        start_date: startDate || null,
+        end_date: endDate || null,
+      };
+    }
+
+    if (!isValid) return;
+
+    // Send to backend.
+    const endpoint = `/api/${tabKey}${item ? `/${item.id}` : ''}`;
+    const method = item ? 'PUT' : 'POST';
+
+    saveBtn.disabled = true;
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        saveBtn.disabled = false;
+        // Show server validation error under first field.
+        const firstErrorDiv = form.querySelector('.field-error');
+        if (firstErrorDiv) {
+          firstErrorDiv.textContent = data.error || 'Failed to save item.';
+          firstErrorDiv.style.display = 'block';
+        }
+        return;
+      }
+
+      // Show "Saved" feedback next to the button.
+      saveFeedback.textContent = 'Saved';
+
+      setTimeout(async () => {
+        profileState.isAdding = false;
+        profileState.editingItem = null;
+        await loadProfileData();
+        drawProfileView(container);
+      }, 1200);
+    } catch (err) {
+      saveBtn.disabled = false;
+      saveFeedback.textContent = '';
+      const firstErrorDiv = form.querySelector('.field-error');
+      if (firstErrorDiv) {
+        firstErrorDiv.textContent = err.message || 'An error occurred while saving.';
+        firstErrorDiv.style.display = 'block';
+      }
+    }
+  });
+
+  formPanel.append(form);
+  return formPanel;
+}
+
+// Creates an individual card for a skill, experience, or education item.
+function createItemCard(tabKey, item, container) {
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.id = `card-${tabKey}-${item.id}`;
+
+  const main = document.createElement('div');
+  main.className = 'card-main';
+
+  // Title: most prominent text.
+  const title = document.createElement('h3');
+  title.className = 'card-title';
+
+  if (tabKey === 'skills') {
+    title.textContent = item.name;
+    main.append(title);
+
+    // Level chip and details.
+    const meta = document.createElement('div');
+    meta.className = 'card-meta';
+
+    const levelChip = document.createElement('span');
+    levelChip.className = 'meta-chip';
+    levelChip.textContent = `Level ${item.level} · ${LEVEL_LABELS[item.level - 1]}`;
+    meta.append(levelChip);
+
+    // Verified marker when proof or used_at is present.
+    if (item.proof_url || item.used_at_experience) {
+      const verifiedRow = document.createElement('div');
+      verifiedRow.className = 'verified-row';
+
+      const badge = document.createElement('span');
+      badge.className = 'verified-badge';
+
+      const dot = document.createElement('span');
+      dot.className = 'verified-marker';
+      dot.setAttribute('aria-hidden', 'true');
+      dot.textContent = '●';
+
+      const word = document.createElement('span');
+      word.textContent = 'Verified';
+
+      badge.append(dot, word);
+
+      const note = document.createElement('span');
+      note.className = 'verified-note';
+      note.textContent = 'Verified means you can show proof or a real project.';
+
+      verifiedRow.append(badge, note);
+      main.append(meta, verifiedRow);
+    } else {
+      main.append(meta);
+    }
+
+    if (item.proof_url) {
+      const proofP = document.createElement('p');
+      proofP.className = 'card-detail';
+      const proofLink = document.createElement('a');
+      proofLink.href = item.proof_url;
+      proofLink.className = 'link';
+      proofLink.target = '_blank';
+      proofLink.rel = 'noopener noreferrer';
+      proofLink.textContent = `Proof link: ${item.proof_url} ↗`;
+      proofP.append(proofLink);
+      main.append(proofP);
+    }
+
+    if (item.used_at_experience) {
+      const usedP = document.createElement('p');
+      usedP.className = 'card-detail muted';
+      const orgStr = item.experience_organisation ? ` at ${item.experience_organisation}` : '';
+      usedP.textContent = `Used at: ${item.experience_title || 'Experience'}${orgStr}`;
+      main.append(usedP);
+    }
+  } else if (tabKey === 'experiences') {
+    title.textContent = item.title;
+    main.append(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'card-meta';
+
+    const typeChip = document.createElement('span');
+    typeChip.className = 'meta-chip';
+    typeChip.textContent = item.kind === 'volunteering' ? 'Volunteering' : 'Experience';
+    meta.append(typeChip);
+
+    if (item.organisation) {
+      const org = document.createElement('span');
+      org.textContent = item.organisation;
+      meta.append(org);
+    }
+
+    const dates = document.createElement('span');
+    dates.className = 'card-dates';
+    const endStr = item.is_current ? 'Present' : (item.end_date || '');
+    dates.textContent = `${item.start_date}${endStr ? ` – ${endStr}` : ''}`;
+    meta.append(dates);
+
+    main.append(meta);
+
+    if (item.description) {
+      const desc = document.createElement('p');
+      desc.className = 'card-desc';
+      desc.textContent = item.description;
+      main.append(desc);
+    }
+  } else {
+    // Education.
+    title.textContent = item.course;
+    main.append(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'card-meta';
+
+    if (item.institution) {
+      const inst = document.createElement('span');
+      inst.textContent = item.institution;
+      meta.append(inst);
+    }
+
+    if (item.start_date || item.end_date) {
+      const dates = document.createElement('span');
+      dates.className = 'card-dates';
+      const s = item.start_date || '';
+      const e = item.end_date || '';
+      dates.textContent = `${s}${s && e ? ' – ' : ''}${e}`;
+      meta.append(dates);
+    }
+
+    main.append(meta);
+  }
+
+  card.append(main);
+
+  // In-place delete confirmation or standard action buttons.
+  const isConfirming = profileState.confirmDeleteId === item.id;
+
+  if (isConfirming) {
+    const confirmBox = document.createElement('div');
+    confirmBox.className = 'delete-confirm';
+    confirmBox.setAttribute('role', 'region');
+    confirmBox.setAttribute('aria-label', 'Confirm delete');
+
+    const displayName = item.name || item.title || item.course;
+    const promptP = document.createElement('p');
+    promptP.className = 'delete-prompt';
+    promptP.textContent = `Delete ${displayName}? This cannot be undone.`;
+
+    const actions = document.createElement('div');
+    actions.className = 'delete-actions';
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn btn-danger confirm-delete-btn';
+    delBtn.textContent = 'Delete';
+    delBtn.addEventListener('click', async () => {
+      delBtn.disabled = true;
+      try {
+        const res = await fetch(`/api/${tabKey}/${item.id}`, { method: 'DELETE' });
+        if (res.ok) {
+          profileState.confirmDeleteId = null;
+          await loadProfileData();
+          drawProfileView(container);
+        } else {
+          promptP.textContent = 'Could not delete item. Please try again.';
+          delBtn.disabled = false;
+        }
+      } catch (err) {
+        promptP.textContent = 'Error deleting item.';
+        delBtn.disabled = false;
+      }
+    });
+
+    const keepBtn = document.createElement('button');
+    keepBtn.type = 'button';
+    keepBtn.className = 'btn btn-secondary';
+    keepBtn.textContent = 'Keep it';
+    keepBtn.addEventListener('click', () => {
+      profileState.confirmDeleteId = null;
+      drawProfileView(container);
+    });
+
+    actions.append(delBtn, keepBtn);
+    confirmBox.append(promptP, actions);
+    card.append(confirmBox);
+  } else {
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    // Edit button (grey).
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'btn btn-secondary btn-edit';
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => {
+      profileState.editingItem = item;
+      profileState.isAdding = false;
+      profileState.confirmDeleteId = null;
+      drawProfileView(container);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Delete button (red: the only red element on the page).
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'btn btn-danger-outline btn-delete';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.addEventListener('click', () => {
+      profileState.confirmDeleteId = item.id;
+      drawProfileView(container);
+    });
+
+    actions.append(editBtn, deleteBtn);
+    card.append(actions);
+  }
+
+  return card;
+}
+
+// Screen switcher.
 function showScreen() {
   const name = location.hash.slice(1) || 'jobs';
   const title = SCREENS[name];
   const app = document.getElementById('app');
 
-  if (title) {
+  if (name === 'profile') {
+    document.title = 'My profile | Shirube';
+    renderProfile(app);
+  } else if (title) {
     document.title = `${title} | Shirube`;
     app.innerHTML = '';
 

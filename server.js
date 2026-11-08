@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, extname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import './db.js'; // opens the database and creates the tables
+import { handleProfileRequest } from './routes/profile.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(root, 'public');
@@ -18,10 +19,13 @@ const TYPES = {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
 
-  // API routes are added in the Profile step.
+  // API routes: profile and future routes.
   if (url.pathname.startsWith('/api/')) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    const handled = await handleProfileRequest(req, res, url);
+    if (!handled) {
+      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Not found' }));
+    }
     return;
   }
 

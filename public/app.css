@@ -161,6 +161,429 @@ body {
   margin-left: auto;
 }
 
-.top > nav {
-  justify-content: flex-start;
+/* Base interactive elements */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: var(--line) solid transparent;
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: var(--on-blue);
+  border-color: var(--blue);
+  font-weight: 600;
+}
+
+.btn-secondary,
+.btn-edit {
+  background: var(--surface);
+  color: var(--grey);
+  border-color: var(--border);
+}
+
+.btn-delete,
+.btn-danger-outline {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: var(--border);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: var(--text);
+  border-color: var(--danger);
+}
+
+/* Links */
+.link {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+/* Profile page layout */
+.profile-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.profile-intro {
+  color: var(--muted);
+  font-size: var(--text-body);
+}
+
+.profile-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+}
+
+.progress-counts {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text);
+  letter-spacing: var(--line);
+}
+
+.progress-next {
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+/* Tabs */
+.tab-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-bottom: var(--line) solid var(--border);
+  padding-bottom: var(--space-1);
+}
+
+.tab-btn {
+  background: transparent;
+  border: 0;
+  border-bottom: calc(var(--line) * 2) solid transparent;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: normal;
+  text-decoration: none;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+}
+
+.tab-btn[aria-selected="true"] {
+  color: var(--text);
+  font-weight: bold;
+  border-bottom-color: var(--text);
+}
+
+/* Tab content section */
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tab-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.tab-header-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tab-title {
+  font-size: var(--text-title);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.tab-desc {
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+.tab-header-btn {
+  flex-shrink: 0;
+}
+
+/* Form container */
+.form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+}
+
+.form-title {
+  font-size: var(--text-title);
+  font-weight: 500;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.form-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  background: var(--surface);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-text);
+  font-size: var(--text-body);
+}
+
+.form-textarea {
+  min-height: calc(var(--space-7) * 2);
+  resize: vertical;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--text);
+  cursor: pointer;
+  margin-top: var(--space-1);
+}
+
+.checkbox-label input[type="checkbox"] {
+  accent-color: var(--blue);
+  width: var(--space-4);
+  height: var(--space-4);
+}
+
+.field-error {
+  font-size: var(--text-small);
+  color: var(--text);
+  background: var(--surface);
+  border-left: calc(var(--line) * 2) solid var(--grey);
+  padding: var(--space-1) var(--space-2);
+  margin-top: var(--space-1);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* Slider */
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.slider-input {
+  width: 100%;
+  accent-color: var(--blue);
+}
+
+.slider-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.slider-step {
+  font-family: var(--font-text);
+  font-size: var(--text-label);
+  color: var(--muted);
+  text-align: center;
+  flex: 1;
+}
+
+.slider-step.is-selected {
+  color: var(--text);
+  font-weight: bold;
+}
+
+.level-meaning {
+  font-size: var(--text-small);
+  color: var(--muted);
+  font-style: italic;
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.save-status {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--text);
+}
+
+/* Item cards */
+.cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--bg);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+}
+
+.card-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.card-title {
+  font-size: var(--text-title);
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+.meta-chip {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  padding: var(--space-1) var(--space-2);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+}
+
+.card-dates {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+.card-desc {
+  font-size: var(--text-small);
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.card-detail {
+  font-size: var(--text-small);
+  color: var(--text);
+}
+
+/* Verified marker: shape + word */
+.verified-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  padding: var(--space-1) var(--space-2);
+  border: var(--line) solid var(--blue);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+}
+
+.verified-marker {
+  color: var(--blue);
+  font-size: var(--text-label);
+}
+
+.verified-note {
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+/* Card buttons */
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+/* In-place delete confirmation */
+.delete-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.delete-prompt {
+  font-size: var(--text-body);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.delete-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Empty tab state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  background: var(--bg);
+  border: var(--line) dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.empty-text {
+  font-size: var(--text-body);
+  color: var(--muted);
 }
