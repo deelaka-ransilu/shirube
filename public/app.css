@@ -24,6 +24,7 @@ body {
   gap: var(--space-4);
 }
 
+/* Top bar: brand, page links, account menu */
 .top {
   display: flex;
   align-items: center;
@@ -49,7 +50,8 @@ body {
   justify-content: center;
 }
 
-.nav-item {
+.nav-item,
+.menu-item {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   text-transform: uppercase;
@@ -64,9 +66,101 @@ body {
   text-underline-offset: var(--space-2);
 }
 
+/* Account menu: a details element, so no script is needed to open it */
+.avatar-menu {
+  position: relative;
+}
+
+.avatar-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.avatar-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text);
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-2));
+  min-width: calc(var(--space-7) * 3);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  z-index: 10;
+}
+
+.menu-item {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+}
+
+.menu-item[aria-current="page"] {
+  color: var(--text);
+  background: var(--border);
+}
+
+/* Page area */
 .main {
   background: var(--surface);
   border: var(--line) solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-5);
+}
+
+.screen-title {
+  font-size: var(--text-heading);
+  font-weight: 500;
+  margin-bottom: var(--space-2);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+/* Narrow screens: the navbar wraps */
+@media (max-width: 700px) {
+  .top {
+    flex-wrap: wrap;
+  }
+
+  .nav {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+
+/* The nav wrapper takes the free space and centres the links */
+.top > nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+/* Pushes the account menu to the right edge */
+.avatar-menu {
+  margin-left: auto;
+}
+
+.top > nav {
+  justify-content: flex-start;
 }
