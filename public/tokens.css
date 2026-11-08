@@ -1,0 +1,47 @@
+/* Every colour and spacing value lives here. Other CSS files use these names only. */
+
+:root {
+  /* Dark theme, from wireframe-v2.html */
+  --bg: #111111;
+  --surface: #1a1a1a;
+  --text: #f2f2f2;
+  --muted: #8c8c8c;
+  --border: #333333;
+  --grey: #8a8788;
+
+  /* Hit colour: active items, focus, offers. Never used for decoration. */
+  --blue: #1f4fff;
+  --on-blue: #ffffff;
+
+  /* Delete buttons only */
+  --danger: #d92d20;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Shape and layout */
+  --radius: 10px;
+  --radius-pill: 999px;
+  --line: 1px;
+  --page-max: 1100px;
+
+  /* Type */
+  --font-text: system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --text-label: 12px;
+  --text-small: 14px;
+  --text-body: 16px;
+  --text-title: 20px;
+  --text-heading: 28px;
+}
+
+:focus-visible {
+  outline: var(--line) solid var(--blue);
+  outline-offset: var(--space-1);
+}

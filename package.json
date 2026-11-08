@@ -1,0 +1,14 @@
+{
+  "name": "shirube",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local job-application tracker. Runs on your own machine.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
