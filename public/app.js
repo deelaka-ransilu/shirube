@@ -1781,8 +1781,360 @@ function createAddJobForm(container) {
   return panel;
 }
 
-// Renders the placeholder Job page at /#job/<id>.
-async function renderJobDetailPlaceholder(container, jobId) {
+// Creates the Edit Job form panel.
+function createEditJobPanel(job, onSaveSuccess, onCancel) {
+  const panel = document.createElement('section');
+  panel.className = 'job-page-card';
+  panel.id = 'edit-job-panel';
+  panel.setAttribute('aria-labelledby', 'edit-job-title');
+
+  const formTitle = document.createElement('h2');
+  formTitle.id = 'edit-job-title';
+  formTitle.className = 'card-heading';
+  formTitle.textContent = 'Edit job';
+
+  const form = document.createElement('form');
+  form.className = 'job-form';
+  form.noValidate = true;
+
+  function addField(labelStr, inputEl, errorId, parent = form) {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.htmlFor = inputEl.id;
+    label.textContent = labelStr;
+
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error';
+    errorDiv.id = errorId;
+    errorDiv.style.display = 'none';
+
+    group.append(label, inputEl, errorDiv);
+    parent.append(group);
+  }
+
+  // Row 1: Title and Company.
+  const row1 = document.createElement('div');
+  row1.className = 'form-row';
+
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.id = 'edit-job-title-input';
+  titleInput.className = 'form-input';
+  titleInput.value = job.title || '';
+  titleInput.required = true;
+  addField('Job title *', titleInput, 'edit-job-title-error', row1);
+
+  const compInput = document.createElement('input');
+  compInput.type = 'text';
+  compInput.id = 'edit-job-company-input';
+  compInput.className = 'form-input';
+  compInput.value = job.company || '';
+  compInput.required = true;
+  addField('Company *', compInput, 'edit-job-company-error', row1);
+
+  form.append(row1);
+
+  // Row 2: Source and Role Type.
+  const row2 = document.createElement('div');
+  row2.className = 'form-row';
+
+  const sourceSelect = document.createElement('select');
+  sourceSelect.id = 'edit-job-source';
+  sourceSelect.className = 'form-select';
+
+  const cleanSources = (jobsState.sources && jobsState.sources.length > 0 ? jobsState.sources : ['LinkedIn', 'TopJobs', 'Roar', 'Company site', 'Direct email', 'Referral', 'Other'])
+    .filter((s) => s.toLowerCase() !== 'other');
+  cleanSources.push('Other');
+
+  cleanSources.forEach((src) => {
+    const opt = document.createElement('option');
+    opt.value = src;
+    opt.textContent = src;
+    if (src === (job.source || 'Other')) opt.selected = true;
+    sourceSelect.append(opt);
+  });
+  addField('Source', sourceSelect, 'edit-job-source-error', row2);
+
+  const roleSelect = document.createElement('select');
+  roleSelect.id = 'edit-job-role-type';
+  roleSelect.className = 'form-select';
+
+  const roleDefaultOpt = document.createElement('option');
+  roleDefaultOpt.value = '';
+  roleDefaultOpt.textContent = 'Select role type (optional)';
+  roleSelect.append(roleDefaultOpt);
+
+  const roleTypes = jobsState.roleTypes && jobsState.roleTypes.length > 0
+    ? jobsState.roleTypes
+    : ['Software Engineer', 'Frontend Developer', 'Backend Developer', 'Full Stack Developer', 'DevOps / Cloud', 'QA / Test Engineer', 'Product / Design', 'Other'];
+
+  roleTypes.forEach((rt) => {
+    const opt = document.createElement('option');
+    opt.value = rt;
+    opt.textContent = rt;
+    if (rt === job.role_type) opt.selected = true;
+    roleSelect.append(opt);
+  });
+  addField('Role type (optional)', roleSelect, 'edit-job-role-error', row2);
+
+  form.append(row2);
+
+  // Row 3: Work mode, Level, and Link.
+  const row3 = document.createElement('div');
+  row3.className = 'form-row';
+
+  const wmSelect = document.createElement('select');
+  wmSelect.id = 'edit-job-work-mode';
+  wmSelect.className = 'form-select';
+  [
+    { val: '', lbl: 'Select work mode (optional)' },
+    { val: 'Remote', lbl: 'Remote' },
+    { val: 'Hybrid', lbl: 'Hybrid' },
+    { val: 'On-site', lbl: 'On-site' },
+  ].forEach((wm) => {
+    const opt = document.createElement('option');
+    opt.value = wm.val;
+    opt.textContent = wm.lbl;
+    if (wm.val === (job.work_mode || '')) opt.selected = true;
+    wmSelect.append(opt);
+  });
+  addField('Work mode (optional)', wmSelect, 'edit-job-wm-error', row3);
+
+  const lvlInput = document.createElement('input');
+  lvlInput.type = 'text';
+  lvlInput.id = 'edit-job-level';
+  lvlInput.className = 'form-input';
+  lvlInput.placeholder = 'e.g. Junior, Mid, Senior, Lead';
+  lvlInput.value = job.level || '';
+  addField('Level (optional)', lvlInput, 'edit-job-lvl-error', row3);
+
+  const urlInput = document.createElement('input');
+  urlInput.type = 'url';
+  urlInput.id = 'edit-job-url';
+  urlInput.className = 'form-input';
+  urlInput.placeholder = 'https://...';
+  urlInput.value = job.url || '';
+  addField('Job link (optional)', urlInput, 'edit-job-url-error', row3);
+
+  form.append(row3);
+
+  // Row 4: Date found, Posted date, Closing date.
+  const row4 = document.createElement('div');
+  row4.className = 'form-row';
+
+  const foundInput = document.createElement('input');
+  foundInput.type = 'text';
+  foundInput.id = 'edit-job-found-date';
+  foundInput.className = 'form-input';
+  foundInput.placeholder = 'YYYY-MM-DD';
+  foundInput.value = job.found_date || getTodayColombo();
+  addField('Date found', foundInput, 'edit-job-found-date-error', row4);
+
+  const postedInput = document.createElement('input');
+  postedInput.type = 'text';
+  postedInput.id = 'edit-job-posted-date';
+  postedInput.className = 'form-input';
+  postedInput.placeholder = 'YYYY-MM-DD';
+  postedInput.value = job.posted_date || '';
+  addField('Posted date (optional)', postedInput, 'edit-job-posted-date-error', row4);
+
+  const closingInput = document.createElement('input');
+  closingInput.type = 'text';
+  closingInput.id = 'edit-job-closing-date';
+  closingInput.className = 'form-input';
+  closingInput.placeholder = 'YYYY-MM-DD';
+  closingInput.value = job.closing_date || '';
+  addField('Closing date (optional)', closingInput, 'edit-job-closing-date-error', row4);
+
+  form.append(row4);
+
+  // Row 5: Description.
+  const descArea = document.createElement('textarea');
+  descArea.id = 'edit-job-desc';
+  descArea.className = 'form-textarea';
+  descArea.placeholder = 'Full job description or notes from the advert...';
+  descArea.value = job.description || '';
+  addField('Description (optional)', descArea, 'edit-job-desc-error');
+
+  // Row 6: Notes.
+  const notesArea = document.createElement('textarea');
+  notesArea.id = 'edit-job-notes';
+  notesArea.className = 'form-textarea';
+  notesArea.placeholder = 'Personal notes, referrals, follow-up ideas...';
+  notesArea.value = job.notes || '';
+  addField('Notes (optional)', notesArea, 'edit-job-notes-error');
+
+  // Warning banner if title & company match another job.
+  const duplicateWarning = document.createElement('div');
+  duplicateWarning.className = 'warning-banner';
+  duplicateWarning.id = 'edit-job-duplicate-warning';
+  duplicateWarning.style.display = 'none';
+  duplicateWarning.textContent = 'A job with this company and title already exists in your list.';
+  form.append(duplicateWarning);
+
+  function checkDuplicate() {
+    const t = titleInput.value.trim().toLowerCase();
+    const c = compInput.value.trim().toLowerCase();
+    if (t && c && Array.isArray(jobsState.jobs)) {
+      const match = jobsState.jobs.find(
+        (j) => j.id !== job.id && j.title.toLowerCase() === t && j.company.toLowerCase() === c
+      );
+      if (match) {
+        duplicateWarning.style.display = 'block';
+        return;
+      }
+    }
+    duplicateWarning.style.display = 'none';
+  }
+
+  titleInput.addEventListener('input', checkDuplicate);
+  compInput.addEventListener('input', checkDuplicate);
+
+  // Form actions.
+  const actions = document.createElement('div');
+  actions.className = 'form-actions';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'submit';
+  saveBtn.className = 'btn btn-primary';
+  saveBtn.textContent = 'Save job';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn btn-secondary';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', onCancel);
+
+  const saveStatus = document.createElement('span');
+  saveStatus.className = 'save-status';
+  saveStatus.id = 'edit-job-save-status';
+  saveStatus.setAttribute('aria-live', 'polite');
+
+  actions.append(saveBtn, cancelBtn, saveStatus);
+  form.append(actions);
+
+  // Form submit handler.
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    form.querySelectorAll('.field-error').forEach((el) => {
+      el.textContent = '';
+      el.style.display = 'none';
+    });
+
+    let isValid = true;
+    function showError(fieldId, errorId, message) {
+      isValid = false;
+      const errEl = document.getElementById(errorId);
+      if (errEl) {
+        errEl.textContent = message;
+        errEl.style.display = 'block';
+      }
+      const inputEl = document.getElementById(fieldId);
+      if (inputEl) inputEl.focus();
+    }
+
+    const title = titleInput.value.trim();
+    if (!title) {
+      showError('edit-job-title-input', 'edit-job-title-error', 'Job title is required.');
+      return;
+    }
+
+    const company = compInput.value.trim();
+    if (!company) {
+      showError('edit-job-company-input', 'edit-job-company-error', 'Company name is required.');
+      return;
+    }
+
+    function checkDate(val) {
+      if (!val) return true;
+      return /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(val);
+    }
+
+    const foundDate = foundInput.value.trim();
+    if (foundDate && !checkDate(foundDate)) {
+      showError('edit-job-found-date', 'edit-job-found-date-error', 'Date must be in YYYY-MM-DD format (for example, 2026-11-30).');
+      return;
+    }
+
+    const postedDate = postedInput.value.trim();
+    if (postedDate && !checkDate(postedDate)) {
+      showError('edit-job-posted-date', 'edit-job-posted-date-error', 'Date must be in YYYY-MM-DD format (for example, 2026-11-30).');
+      return;
+    }
+
+    const closingDate = closingInput.value.trim();
+    if (closingDate && !checkDate(closingDate)) {
+      showError('edit-job-closing-date', 'edit-job-closing-date-error', 'Date must be in YYYY-MM-DD format (for example, 2026-11-30).');
+      return;
+    }
+
+    const urlVal = urlInput.value.trim();
+    if (urlVal && !urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+      showError('edit-job-url', 'edit-job-url-error', 'Job link must start with http:// or https://.');
+      return;
+    }
+
+    if (!isValid) return;
+
+    const payload = {
+      title,
+      company,
+      source: sourceSelect.value,
+      role_type: roleSelect.value || null,
+      work_mode: wmSelect.value || null,
+      level: lvlInput.value.trim() || null,
+      url: urlVal || null,
+      found_date: foundDate || getTodayColombo(),
+      posted_date: postedDate || null,
+      closing_date: closingDate || null,
+      description: descArea.value.trim() || null,
+      notes: notesArea.value.trim() || null,
+    };
+
+    saveBtn.disabled = true;
+    try {
+      const res = await fetch(`/api/jobs/${job.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        saveBtn.disabled = false;
+        const firstErr = form.querySelector('.field-error');
+        if (firstErr) {
+          firstErr.textContent = data.error || 'Failed to update job.';
+          firstErr.style.display = 'block';
+        }
+        return;
+      }
+
+      saveStatus.textContent = 'Saved';
+      setTimeout(() => {
+        onSaveSuccess(data);
+      }, 700);
+    } catch (err) {
+      saveBtn.disabled = false;
+      saveStatus.textContent = '';
+      const firstErr = form.querySelector('.field-error');
+      if (firstErr) {
+        firstErr.textContent = err.message || 'An error occurred while saving.';
+        firstErr.style.display = 'block';
+      }
+    }
+  });
+
+  panel.append(formTitle, form);
+  return panel;
+}
+
+// Renders the complete Job page at /#job/<id> (Phase 4).
+async function renderJobPage(container, jobId) {
   container.innerHTML = '<p class="muted">Loading job details...</p>';
 
   try {
@@ -1792,40 +2144,539 @@ async function renderJobDetailPlaceholder(container, jobId) {
         <div class="job-detail-card">
           <h1 class="screen-title">Job not found</h1>
           <p class="muted">The requested job could not be found.</p>
-          <p><a href="#jobs" class="link">← Back to jobs</a></p>
+          <p><a href="#jobs" class="back-link">← Back to jobs</a></p>
         </div>
       `;
       return;
     }
 
-    const job = await res.json();
+    let job = await res.json();
     document.title = `${job.title} | Shirube`;
 
-    const card = document.createElement('article');
-    card.className = 'job-detail-card';
+    // Ensure settings are available for sources/roleTypes if user directly opened this URL.
+    if (!jobsState.sources || jobsState.sources.length === 0) {
+      try {
+        const jobsRes = await fetch('/api/jobs?stage=all');
+        if (jobsRes.ok) {
+          const jobsData = await jobsRes.json();
+          jobsState.sources = jobsData.sources || [];
+          jobsState.roleTypes = jobsData.roleTypes || [];
+          jobsState.jobs = jobsData.jobs || [];
+        }
+      } catch (_) {
+        // Fallbacks are handled inside form
+      }
+    }
 
-    const h1 = document.createElement('h1');
-    h1.className = 'screen-title';
-    h1.textContent = job.title;
+    let isEditing = false;
+    let isConfirmingDelete = false;
 
-    const subtitle = document.createElement('p');
-    subtitle.className = 'profile-intro';
-    subtitle.innerHTML = `${escapeHtml(job.company)} &nbsp;·&nbsp; ${renderStageBadge(job.stage, Boolean(job.is_stale))}`;
+    function drawJobView() {
+      container.innerHTML = '';
 
-    const note = document.createElement('p');
-    note.className = 'muted';
-    note.textContent = 'This screen is not built yet (Phase 4: Job page).';
+      const shell = document.createElement('div');
+      shell.className = 'job-page-shell';
 
-    const backLink = document.createElement('p');
-    const a = document.createElement('a');
-    a.href = '#jobs';
-    a.className = 'link';
-    a.textContent = '← Back to jobs';
-    backLink.append(a);
+      // 1. Back link at top.
+      const backLink = document.createElement('a');
+      backLink.href = '#jobs';
+      backLink.className = 'back-link';
+      backLink.textContent = '← Back to jobs';
+      shell.append(backLink);
 
-    card.append(h1, subtitle, note, backLink);
-    container.innerHTML = '';
-    container.append(card);
+      // 2. Heading, company & stage, purpose.
+      const header = document.createElement('header');
+      header.className = 'job-page-header';
+
+      const h1 = document.createElement('h1');
+      h1.className = 'screen-title';
+      h1.textContent = job.title;
+
+      const meta = document.createElement('div');
+      meta.className = 'job-page-meta';
+      meta.innerHTML = `<span class="job-page-company">${escapeHtml(job.company)}</span> &nbsp;·&nbsp; ${renderStageBadge(job.stage, Boolean(job.is_stale))}`;
+
+      const intro = document.createElement('p');
+      intro.className = 'profile-intro';
+      intro.textContent = 'Record what happened with this job. Shirube uses this to show follow-ups.';
+
+      header.append(h1, meta, intro);
+      shell.append(header);
+
+      // 3. "What happened" section.
+      const whatHappenedCard = document.createElement('section');
+      whatHappenedCard.className = 'job-page-card';
+      whatHappenedCard.setAttribute('aria-labelledby', 'heading-what-happened');
+
+      const whHeading = document.createElement('h2');
+      whHeading.id = 'heading-what-happened';
+      whHeading.className = 'card-heading';
+      whHeading.textContent = 'What happened';
+
+      const buttonsRow = document.createElement('div');
+      buttonsRow.className = 'outcome-buttons-row';
+
+      const outcomeFeedback = document.createElement('span');
+      outcomeFeedback.className = 'save-status';
+      outcomeFeedback.id = 'outcome-save-status';
+      outcomeFeedback.setAttribute('aria-live', 'polite');
+
+      const outcomeError = document.createElement('div');
+      outcomeError.className = 'field-error';
+      outcomeError.id = 'outcome-error';
+      outcomeError.style.display = 'none';
+
+      // 6 outcome buttons.
+      const outcomes = [
+        { key: 'applied', label: 'Applied', stage: 'applied' },
+        { key: 'reply', label: 'Reply', stage: 'screening' },
+        { key: 'interview', label: 'Interview', stage: 'interview' },
+        { key: 'offer', label: 'Offer', stage: 'offer' },
+        { key: 'rejected', label: 'Rejected', stage: 'rejected' },
+        { key: 'no_reply', label: 'No reply', stage: 'no_reply' },
+      ];
+
+      outcomes.forEach((o) => {
+        const isActive = job.stage === o.stage;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'outcome-btn';
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        btn.textContent = isActive ? `✓ ${o.label}` : o.label;
+
+        btn.addEventListener('click', async () => {
+          // Clicking the outcome the job already has does nothing.
+          if (isActive) return;
+
+          outcomeError.textContent = '';
+          outcomeError.style.display = 'none';
+          outcomeFeedback.textContent = '';
+
+          try {
+            const payload = { outcome: o.key };
+            if (o.key === 'rejected') {
+              const reasonSelect = document.getElementById('job-rejection-reason');
+              payload.rejection_reason = reasonSelect
+                ? reasonSelect.value
+                : (job.application?.rejection_reason || 'Other');
+            }
+
+            const res = await fetch(`/api/jobs/${job.id}/outcome`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+              outcomeError.textContent = data.error || 'Failed to update outcome.';
+              outcomeError.style.display = 'block';
+              return;
+            }
+
+            job = data;
+            document.title = `${job.title} | Shirube`;
+            drawJobView();
+
+            const newFeedback = document.getElementById('outcome-save-status');
+            if (newFeedback) {
+              newFeedback.textContent = 'Saved';
+              setTimeout(() => {
+                if (newFeedback.textContent === 'Saved') {
+                  newFeedback.textContent = '';
+                }
+              }, 3000);
+            }
+          } catch (err) {
+            outcomeError.textContent = err.message || 'An error occurred.';
+            outcomeError.style.display = 'block';
+          }
+        });
+
+        buttonsRow.append(btn);
+      });
+
+      buttonsRow.append(outcomeFeedback);
+
+      // Rejection reason dropdown - appears ONLY when Rejected is chosen.
+      const rejectionBox = document.createElement('div');
+      rejectionBox.className = 'rejection-reason-box';
+      rejectionBox.id = 'rejection-reason-box';
+
+      if (job.stage === 'rejected') {
+        rejectionBox.style.display = 'flex';
+      } else {
+        rejectionBox.style.display = 'none';
+      }
+
+      const rLabel = document.createElement('label');
+      rLabel.htmlFor = 'job-rejection-reason';
+      rLabel.className = 'form-label';
+      rLabel.textContent = 'Rejection reason';
+
+      const rSelect = document.createElement('select');
+      rSelect.id = 'job-rejection-reason';
+      rSelect.className = 'form-select';
+
+      const reasons = job.rejection_reasons || [
+        'No reply to CV',
+        'Skills gap',
+        'Salary',
+        'Role filled',
+        'Other',
+      ];
+      const activeReason = job.application?.rejection_reason || 'Other';
+
+      reasons.forEach((reason) => {
+        const opt = document.createElement('option');
+        opt.value = reason;
+        opt.textContent = reason;
+        if (reason === activeReason) opt.selected = true;
+        rSelect.append(opt);
+      });
+
+      rSelect.addEventListener('change', async () => {
+        outcomeError.textContent = '';
+        outcomeError.style.display = 'none';
+        try {
+          const res = await fetch(`/api/jobs/${job.id}/outcome`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ outcome: 'rejected', rejection_reason: rSelect.value }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            outcomeError.textContent = data.error || 'Failed to update rejection reason.';
+            outcomeError.style.display = 'block';
+            return;
+          }
+          job = data;
+          drawJobView();
+
+          const newFeedback = document.getElementById('outcome-save-status');
+          if (newFeedback) {
+            newFeedback.textContent = 'Saved';
+            setTimeout(() => {
+              if (newFeedback.textContent === 'Saved') {
+                newFeedback.textContent = '';
+              }
+            }, 3000);
+          }
+        } catch (err) {
+          outcomeError.textContent = err.message || 'An error occurred.';
+          outcomeError.style.display = 'block';
+        }
+      });
+
+      rejectionBox.append(rLabel, rSelect);
+      whatHappenedCard.append(whHeading, buttonsRow, rejectionBox, outcomeError);
+      shell.append(whatHappenedCard);
+
+      // 4. Edit job form (opens above details).
+      if (isEditing) {
+        const editPanel = createEditJobPanel(
+          job,
+          (updatedJob) => {
+            job = updatedJob;
+            isEditing = false;
+            document.title = `${job.title} | Shirube`;
+            drawJobView();
+          },
+          () => {
+            isEditing = false;
+            drawJobView();
+          }
+        );
+        shell.append(editPanel);
+      }
+
+      // 5. Details section (10 items). Empty values show "Not added yet".
+      const detailsCard = document.createElement('section');
+      detailsCard.className = 'job-page-card';
+      detailsCard.setAttribute('aria-labelledby', 'heading-details');
+
+      const dtHeading = document.createElement('h2');
+      dtHeading.id = 'heading-details';
+      dtHeading.className = 'card-heading';
+      dtHeading.textContent = 'Details';
+
+      const detailsGrid = document.createElement('div');
+      detailsGrid.className = 'details-grid';
+
+      function createDetailItem(label, value, isLink = false) {
+        const div = document.createElement('div');
+        div.className = 'detail-item';
+
+        const dt = document.createElement('span');
+        dt.className = 'detail-label';
+        dt.textContent = label;
+
+        const dd = document.createElement('span');
+        dd.className = 'detail-value';
+
+        if (!value) {
+          dd.classList.add('is-empty');
+          dd.textContent = 'Not added yet';
+        } else if (isLink) {
+          const a = document.createElement('a');
+          a.href = value;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.className = 'link';
+          a.textContent = value;
+          dd.append(a);
+        } else {
+          dd.textContent = value;
+        }
+
+        div.append(dt, dd);
+        return div;
+      }
+
+      detailsGrid.append(
+        createDetailItem('Source', job.source),
+        createDetailItem('Role type', job.role_type),
+        createDetailItem('Work mode', job.work_mode),
+        createDetailItem('Level', job.level),
+        createDetailItem('Date found', job.found_date),
+        createDetailItem('Applied date', job.application?.applied_date),
+        createDetailItem('Posted date', job.posted_date),
+        createDetailItem('Closing date', job.closing_date),
+        createDetailItem('Follow-up due date', job.due_date),
+        createDetailItem('Job link', job.url, true)
+      );
+
+      detailsCard.append(dtHeading, detailsGrid);
+      shell.append(detailsCard);
+
+      // 6. Timeline: each reply and status change, oldest first, with its date.
+      const timelineCard = document.createElement('section');
+      timelineCard.className = 'job-page-card';
+      timelineCard.setAttribute('aria-labelledby', 'heading-timeline');
+
+      const tlHeading = document.createElement('h2');
+      tlHeading.id = 'heading-timeline';
+      tlHeading.className = 'card-heading';
+      tlHeading.textContent = 'Timeline';
+
+      // Build events list.
+      const events = [];
+
+      if (job.found_date) {
+        events.push({
+          date: job.found_date,
+          text: `Job found (${job.source || 'Other'})`,
+        });
+      }
+
+      if (job.application?.applied_date) {
+        events.push({
+          date: job.application.applied_date,
+          text: 'Application submitted',
+        });
+      }
+
+      const kindLabels = {
+        replied: 'Reply received (screening)',
+        first_interview: 'First interview',
+        second_interview: 'Second interview',
+        test_task: 'Test task',
+        offer: 'Offer received',
+        rejected: 'Rejected',
+      };
+
+      if (Array.isArray(job.replies)) {
+        job.replies.forEach((r) => {
+          let desc = kindLabels[r.kind] || r.kind;
+          if (r.kind === 'rejected' && job.application?.rejection_reason) {
+            desc = `Rejected: ${job.application.rejection_reason}`;
+          }
+          if (r.note) {
+            desc += ` (${r.note})`;
+          }
+          events.push({
+            date: r.happened_on,
+            text: desc,
+          });
+        });
+      }
+
+      if (job.application?.status === 'no_reply' && (!job.replies || job.replies.length === 0)) {
+        events.push({
+          date: job.application.applied_date || job.found_date,
+          text: 'Marked as no reply',
+        });
+      }
+
+      // Sort chronological, oldest first.
+      events.sort((a, b) => a.date.localeCompare(b.date));
+
+      const timelineList = document.createElement('div');
+      timelineList.className = 'timeline-list';
+
+      if (events.length === 0) {
+        const noEvents = document.createElement('p');
+        noEvents.className = 'muted';
+        noEvents.textContent = 'No events recorded yet.';
+        timelineList.append(noEvents);
+      } else {
+        events.forEach((ev) => {
+          const item = document.createElement('div');
+          item.className = 'timeline-item';
+
+          const d = document.createElement('span');
+          d.className = 'timeline-date';
+          d.textContent = ev.date;
+
+          const t = document.createElement('span');
+          t.className = 'timeline-text';
+          t.textContent = ev.text;
+
+          item.append(d, t);
+          timelineList.append(item);
+        });
+      }
+
+      timelineCard.append(tlHeading, timelineList);
+      shell.append(timelineCard);
+
+      // 7. Notes and description: two text areas, each with a visible label.
+      const notesCard = document.createElement('section');
+      notesCard.className = 'job-page-card';
+      notesCard.setAttribute('aria-labelledby', 'heading-notes-desc');
+
+      const ndHeading = document.createElement('h2');
+      ndHeading.id = 'heading-notes-desc';
+      ndHeading.className = 'card-heading';
+      ndHeading.textContent = 'Notes and description';
+
+      const notesGroup = document.createElement('div');
+      notesGroup.className = 'form-group';
+
+      const notesLabel = document.createElement('label');
+      notesLabel.htmlFor = 'job-view-notes';
+      notesLabel.className = 'form-label';
+      notesLabel.textContent = 'Notes';
+
+      const notesArea = document.createElement('textarea');
+      notesArea.id = 'job-view-notes';
+      notesArea.className = 'form-textarea';
+      notesArea.rows = 3;
+      notesArea.readOnly = true;
+      notesArea.placeholder = 'Not added yet';
+      notesArea.value = job.notes || '';
+      notesGroup.append(notesLabel, notesArea);
+
+      const descGroup = document.createElement('div');
+      descGroup.className = 'form-group';
+
+      const descLabel = document.createElement('label');
+      descLabel.htmlFor = 'job-view-desc';
+      descLabel.className = 'form-label';
+      descLabel.textContent = 'Description';
+
+      const descArea = document.createElement('textarea');
+      descArea.id = 'job-view-desc';
+      descArea.className = 'form-textarea';
+      descArea.rows = 6;
+      descArea.readOnly = true;
+      descArea.placeholder = 'Not added yet';
+      descArea.value = job.description || '';
+      descGroup.append(descLabel, descArea);
+
+      notesCard.append(ndHeading, notesGroup, descGroup);
+      shell.append(notesCard);
+
+      // 8. Edit job and Delete job at bottom.
+      const footerActions = document.createElement('div');
+      footerActions.className = 'job-footer-actions';
+      footerActions.id = 'job-footer-actions';
+
+      if (!isConfirmingDelete) {
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn btn-secondary';
+        editBtn.id = 'btn-edit-job';
+        editBtn.textContent = isEditing ? 'Close edit form' : 'Edit job';
+        editBtn.addEventListener('click', () => {
+          isEditing = !isEditing;
+          drawJobView();
+          if (isEditing) {
+            const formEl = document.getElementById('edit-job-panel');
+            if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn btn-danger';
+        deleteBtn.id = 'btn-delete-job';
+        deleteBtn.textContent = 'Delete job';
+        deleteBtn.addEventListener('click', () => {
+          isConfirmingDelete = true;
+          drawJobView();
+        });
+
+        footerActions.append(editBtn, deleteBtn);
+      } else {
+        const confirmBox = document.createElement('div');
+        confirmBox.className = 'delete-confirm';
+        confirmBox.setAttribute('role', 'alert');
+
+        const promptText = document.createElement('p');
+        promptText.className = 'delete-prompt';
+        promptText.textContent = `Delete ${job.company} ${job.title}? This also deletes its application and replies. It cannot be undone.`;
+
+        const deleteActions = document.createElement('div');
+        deleteActions.className = 'delete-actions';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.className = 'btn btn-danger';
+        confirmBtn.id = 'btn-confirm-delete';
+        confirmBtn.textContent = 'Delete';
+
+        const cancelConfirmBtn = document.createElement('button');
+        cancelConfirmBtn.type = 'button';
+        cancelConfirmBtn.className = 'btn btn-secondary';
+        cancelConfirmBtn.id = 'btn-cancel-delete';
+        cancelConfirmBtn.textContent = 'Keep it';
+
+        cancelConfirmBtn.addEventListener('click', () => {
+          isConfirmingDelete = false;
+          drawJobView();
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+          confirmBtn.disabled = true;
+          cancelConfirmBtn.disabled = true;
+          try {
+            const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
+            if (!res.ok) {
+              const data = await res.json();
+              alert(data.error || 'Failed to delete job.');
+              confirmBtn.disabled = false;
+              cancelConfirmBtn.disabled = false;
+              return;
+            }
+            location.hash = '#jobs';
+          } catch (err) {
+            alert(err.message || 'Error deleting job.');
+            confirmBtn.disabled = false;
+            cancelConfirmBtn.disabled = false;
+          }
+        });
+
+        deleteActions.append(confirmBtn, cancelConfirmBtn);
+        confirmBox.append(promptText, deleteActions);
+        footerActions.append(confirmBox);
+      }
+
+      shell.append(footerActions);
+      container.append(shell);
+    }
+
+    drawJobView();
   } catch (err) {
     container.innerHTML = `<p class="field-error">Error loading job: ${escapeHtml(err.message)}</p>`;
   }
@@ -1842,7 +2693,7 @@ function showScreen() {
     renderJobs(app);
   } else if (name.startsWith('job/')) {
     const jobId = name.slice(4);
-    renderJobDetailPlaceholder(app, jobId);
+    renderJobPage(app, jobId);
   } else if (name === 'profile') {
     document.title = 'My profile | Shirube';
     renderProfile(app);

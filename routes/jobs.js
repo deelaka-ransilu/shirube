@@ -1,4 +1,4 @@
-// Jobs API routes: list with stage filter and sort, get one, and create.
+// Jobs API routes: list, get one, create, update, delete, and set outcome.
 import { db } from '../db.js';
 
 // Checks date strings: must be YYYY-MM-DD and valid calendar date.
@@ -39,6 +39,20 @@ function getTodayColombo() {
   }).format(new Date());
 }
 
+// Adds days to a YYYY-MM-DD string using UTC calendar arithmetic.
+function addDaysToYMD(ymdStr, days) {
+  if (!ymdStr || typeof ymdStr !== 'string') return null;
+  const parts = ymdStr.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const [y, m, d] = parts;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + Number(days));
+  const year = dt.getUTCFullYear();
+  const month = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(dt.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Sends a JSON response with status and headers.
 function sendJson(res, status, data, headers = {}) {
   res.writeHead(status, {
@@ -74,7 +88,7 @@ async function readJsonBody(req) {
   });
 }
 
-// Loads settings lists (sources, role_types) from the settings table.
+// Loads settings lists (sources, role_types, rejection_reasons) from the settings table.
 function getSettingList(key, fallback = []) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?;').get(key);
   if (!row) return fallback;
@@ -83,6 +97,14 @@ function getSettingList(key, fallback = []) {
   } catch {
     return fallback;
   }
+}
+
+// Loads a single integer setting (e.g. reply_days, follow_up_days).
+function getSettingNumber(key, fallback) {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?;').get(key);
+  if (!row) return fallback;
+  const num = parseInt(row.value, 10);
+  return Number.isFinite(num) ? num : fallback;
 }
 
 // Common CTE query defining stage and is_stale in one place.
@@ -109,6 +131,7 @@ const JOB_CTE = `
       a.id AS application_id,
       a.status AS application_status,
       a.applied_date,
+      a.rejection_reason,
       CASE
         WHEN j.job_status = 'skipped' THEN 'skipped'
         WHEN a.status IS NOT NULL THEN a.status
@@ -125,6 +148,62 @@ const JOB_CTE = `
     LEFT JOIN applications a ON a.job_id = j.id
   )
 `;
+
+// Fetches a single job with its application, replies, due date, and rejection reasons.
+function getFullJob(id) {
+  const job = db.prepare(`
+    ${JOB_CTE}
+    SELECT * FROM job_entries WHERE id = ?;
+  `).get(id);
+
+  if (!job) return null;
+
+  const application = db.prepare(`
+    SELECT id, job_id, applied_date, cv_version_id, status, rejection_reason
+    FROM applications
+    WHERE job_id = ?;
+  `).get(id) || null;
+
+  let replies = [];
+  if (application) {
+    replies = db.prepare(`
+      SELECT id, application_id, kind, happened_on, note
+      FROM replies
+      WHERE application_id = ?
+      ORDER BY happened_on ASC, id ASC;
+    `).all(application.id);
+  }
+
+  // Calculate follow-up due date based on settings.
+  let dueDate = null;
+  if (application && ['applied', 'screening', 'interview'].includes(application.status)) {
+    const replyDays = getSettingNumber('reply_days', 7);
+    const followUpDays = getSettingNumber('follow_up_days', 14);
+
+    if (replies.length > 0) {
+      const latest = replies[replies.length - 1];
+      dueDate = addDaysToYMD(latest.happened_on, followUpDays);
+    } else if (application.applied_date) {
+      dueDate = addDaysToYMD(application.applied_date, replyDays);
+    }
+  }
+
+  const rejectionReasons = getSettingList('rejection_reasons', [
+    'No reply to CV',
+    'Skills gap',
+    'Salary',
+    'Role filled',
+    'Other',
+  ]);
+
+  return {
+    ...job,
+    application,
+    replies,
+    due_date: dueDate,
+    rejection_reasons: rejectionReasons,
+  };
+}
 
 // Handles GET /api/jobs and POST /api/jobs.
 async function handleJobsCollection(req, res, url, method) {
@@ -193,7 +272,6 @@ async function handleJobsCollection(req, res, url, method) {
       `).all();
     }
 
-    // Load sources and role_types settings.
     const sources = getSettingList('sources', ['Other']);
     const roleTypes = getSettingList('role_types', ['Other']);
 
@@ -218,10 +296,7 @@ async function handleJobsCollection(req, res, url, method) {
       return sendJson(res, 400, { error: 'Company name is required.' });
     }
 
-    // Source defaults to Other.
     const source = typeof body.source === 'string' && body.source.trim() ? body.source.trim() : 'Other';
-
-    // Optional fields.
     const roleType = typeof body.role_type === 'string' && body.role_type.trim() ? body.role_type.trim() : null;
     const location = typeof body.location === 'string' && body.location.trim() ? body.location.trim() : null;
     const workMode = typeof body.work_mode === 'string' && body.work_mode.trim() ? body.work_mode.trim() : null;
@@ -230,7 +305,6 @@ async function handleJobsCollection(req, res, url, method) {
     const description = typeof body.description === 'string' && body.description.trim() ? body.description.trim() : null;
     const notes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null;
 
-    // Link URL validation.
     let urlVal = typeof body.url === 'string' ? body.url.trim() : '';
     if (urlVal === '') {
       urlVal = null;
@@ -238,7 +312,6 @@ async function handleJobsCollection(req, res, url, method) {
       return sendJson(res, 400, { error: 'Job link must start with http:// or https://.' });
     }
 
-    // Date validations (YYYY-MM-DD).
     let postedDate = typeof body.posted_date === 'string' ? body.posted_date.trim() : '';
     if (postedDate === '') {
       postedDate = null;
@@ -260,7 +333,6 @@ async function handleJobsCollection(req, res, url, method) {
       return sendJson(res, 400, { error: 'Date found must be in YYYY-MM-DD format (for example, 2026-11-30).' });
     }
 
-    // Check duplicate: warn if company and title match an existing job, but never block save.
     const existing = db.prepare(`
       SELECT id FROM jobs WHERE LOWER(company) = LOWER(?) AND LOWER(title) = LOWER(?);
     `).get(company, title);
@@ -277,10 +349,7 @@ async function handleJobsCollection(req, res, url, method) {
       foundDate, description, notes
     );
 
-    const created = db.prepare(`
-      ${JOB_CTE}
-      SELECT * FROM job_entries WHERE id = ?;
-    `).get(info.lastInsertRowid);
+    const created = getFullJob(info.lastInsertRowid);
 
     return sendJson(res, 201, {
       ...created,
@@ -291,23 +360,271 @@ async function handleJobsCollection(req, res, url, method) {
   return sendJson(res, 405, { error: 'Method not allowed.' }, { Allow: 'GET, POST' });
 }
 
-// Handles GET /api/jobs/:id.
+// Handles single job item operations: GET, PUT (update), DELETE.
 async function handleJobItem(req, res, id, method) {
   if (method === 'GET') {
-    const job = db.prepare(`
-      ${JOB_CTE}
-      SELECT * FROM job_entries WHERE id = ?;
-    `).get(id);
-
+    const job = getFullJob(id);
     if (!job) {
       return sendJson(res, 404, { error: 'Job not found.' });
     }
-
     return sendJson(res, 200, job);
   }
 
-  // Update and delete are Phase 4 features.
-  return sendJson(res, 405, { error: 'Method not allowed.' }, { Allow: 'GET' });
+  if (method === 'PUT') {
+    let body;
+    try {
+      body = await readJsonBody(req);
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+
+    const existingJob = db.prepare('SELECT id FROM jobs WHERE id = ?;').get(id);
+    if (!existingJob) {
+      return sendJson(res, 404, { error: 'Job not found.' });
+    }
+
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    if (!title) {
+      return sendJson(res, 400, { error: 'Job title is required.' });
+    }
+
+    const company = typeof body.company === 'string' ? body.company.trim() : '';
+    if (!company) {
+      return sendJson(res, 400, { error: 'Company name is required.' });
+    }
+
+    const source = typeof body.source === 'string' && body.source.trim() ? body.source.trim() : 'Other';
+    const roleType = typeof body.role_type === 'string' && body.role_type.trim() ? body.role_type.trim() : null;
+    const location = typeof body.location === 'string' && body.location.trim() ? body.location.trim() : null;
+    const workMode = typeof body.work_mode === 'string' && body.work_mode.trim() ? body.work_mode.trim() : null;
+    const level = typeof body.level === 'string' && body.level.trim() ? body.level.trim() : null;
+    const salaryText = typeof body.salary_text === 'string' && body.salary_text.trim() ? body.salary_text.trim() : null;
+    const description = typeof body.description === 'string' && body.description.trim() ? body.description.trim() : null;
+    const notes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null;
+
+    let urlVal = typeof body.url === 'string' ? body.url.trim() : '';
+    if (urlVal === '') {
+      urlVal = null;
+    } else if (!isValidUrl(urlVal)) {
+      return sendJson(res, 400, { error: 'Job link must start with http:// or https://.' });
+    }
+
+    let postedDate = typeof body.posted_date === 'string' ? body.posted_date.trim() : '';
+    if (postedDate === '') {
+      postedDate = null;
+    } else if (!isValidDateYMD(postedDate)) {
+      return sendJson(res, 400, { error: 'Posted date must be in YYYY-MM-DD format (for example, 2026-11-30).' });
+    }
+
+    let closingDate = typeof body.closing_date === 'string' ? body.closing_date.trim() : '';
+    if (closingDate === '') {
+      closingDate = null;
+    } else if (!isValidDateYMD(closingDate)) {
+      return sendJson(res, 400, { error: 'Closing date must be in YYYY-MM-DD format (for example, 2026-11-30).' });
+    }
+
+    let foundDate = typeof body.found_date === 'string' ? body.found_date.trim() : '';
+    if (foundDate === '') {
+      foundDate = getTodayColombo();
+    } else if (!isValidDateYMD(foundDate)) {
+      return sendJson(res, 400, { error: 'Date found must be in YYYY-MM-DD format (for example, 2026-11-30).' });
+    }
+
+    db.prepare(`
+      UPDATE jobs
+      SET title = ?, company = ?, source = ?, role_type = ?, url = ?, location = ?,
+          work_mode = ?, level = ?, salary_text = ?, posted_date = ?, closing_date = ?,
+          found_date = ?, description = ?, notes = ?
+      WHERE id = ?;
+    `).run(
+      title, company, source, roleType, urlVal, location,
+      workMode, level, salaryText, postedDate, closingDate,
+      foundDate, description, notes, id
+    );
+
+    const updated = getFullJob(id);
+    return sendJson(res, 200, updated);
+  }
+
+  if (method === 'DELETE') {
+    const existingJob = db.prepare('SELECT id FROM jobs WHERE id = ?;').get(id);
+    if (!existingJob) {
+      return sendJson(res, 404, { error: 'Job not found.' });
+    }
+
+    const app = db.prepare('SELECT id FROM applications WHERE job_id = ?;').get(id);
+    if (app) {
+      db.prepare('DELETE FROM replies WHERE application_id = ?;').run(app.id);
+      db.prepare('DELETE FROM applications WHERE id = ?;').run(app.id);
+    }
+    db.prepare('DELETE FROM jobs WHERE id = ?;').run(id);
+
+    return sendJson(res, 200, { ok: true, id });
+  }
+
+  return sendJson(res, 405, { error: 'Method not allowed.' }, { Allow: 'GET, PUT, DELETE' });
+}
+
+// Handles setting the outcome for a job (/api/jobs/:id/outcome).
+async function handleJobOutcome(req, res, id, method) {
+  if (method !== 'POST' && method !== 'PUT') {
+    return sendJson(res, 405, { error: 'Method not allowed.' }, { Allow: 'POST, PUT' });
+  }
+
+  const job = db.prepare('SELECT id, job_status FROM jobs WHERE id = ?;').get(id);
+  if (!job) {
+    return sendJson(res, 404, { error: 'Job not found.' });
+  }
+
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    return sendJson(res, 400, { error: err.message });
+  }
+
+  const outcome = typeof body.outcome === 'string' ? body.outcome.trim().toLowerCase() : '';
+  const validOutcomes = ['applied', 'reply', 'interview', 'offer', 'rejected', 'no_reply'];
+  if (!validOutcomes.includes(outcome)) {
+    return sendJson(res, 400, { error: 'Invalid outcome. Must be applied, reply, interview, offer, rejected, or no_reply.' });
+  }
+
+  const today = getTodayColombo();
+  let app = db.prepare('SELECT id, status, rejection_reason FROM applications WHERE job_id = ?;').get(id);
+
+  // Check if job already has this outcome.
+  const outcomeToStatusMap = {
+    applied: 'applied',
+    reply: 'screening',
+    interview: 'interview',
+    offer: 'offer',
+    rejected: 'rejected',
+    no_reply: 'no_reply',
+  };
+  const targetStatus = outcomeToStatusMap[outcome];
+
+  if (app && app.status === targetStatus) {
+    // If already rejected and updating rejection reason, update it.
+    if (outcome === 'rejected' && body.rejection_reason && body.rejection_reason !== app.rejection_reason) {
+      const reason = String(body.rejection_reason).trim();
+      db.prepare('UPDATE applications SET rejection_reason = ? WHERE id = ?;').run(reason, app.id);
+    }
+    // Clicking the outcome the job already has does nothing.
+    const fullJob = getFullJob(id);
+    return sendJson(res, 200, fullJob);
+  }
+
+  // Ensure job_status is open if it was skipped.
+  if (job.job_status === 'skipped') {
+    db.prepare('UPDATE jobs SET job_status = \'open\' WHERE id = ?;').run(id);
+  }
+
+  if (outcome === 'applied') {
+    if (!app) {
+      db.prepare(`
+        INSERT INTO applications (job_id, applied_date, status, rejection_reason)
+        VALUES (?, ?, 'applied', NULL);
+      `).run(id, today);
+    } else {
+      db.prepare(`
+        UPDATE applications
+        SET status = 'applied', rejection_reason = NULL
+        WHERE id = ?;
+      `).run(app.id);
+    }
+  } else if (outcome === 'reply') {
+    if (!app) {
+      const info = db.prepare(`
+        INSERT INTO applications (job_id, applied_date, status, rejection_reason)
+        VALUES (?, ?, 'screening', NULL);
+      `).run(id, today);
+      app = { id: info.lastInsertRowid, status: 'screening' };
+    } else {
+      db.prepare(`
+        UPDATE applications
+        SET status = 'screening', rejection_reason = NULL
+        WHERE id = ?;
+      `).run(app.id);
+    }
+    db.prepare(`
+      INSERT INTO replies (application_id, kind, happened_on, note)
+      VALUES (?, 'replied', ?, NULL);
+    `).run(app.id, today);
+  } else if (outcome === 'interview') {
+    if (!app) {
+      const info = db.prepare(`
+        INSERT INTO applications (job_id, applied_date, status, rejection_reason)
+        VALUES (?, ?, 'interview', NULL);
+      `).run(id, today);
+      app = { id: info.lastInsertRowid, status: 'interview' };
+    } else {
+      db.prepare(`
+        UPDATE applications
+        SET status = 'interview', rejection_reason = NULL
+        WHERE id = ?;
+      `).run(app.id);
+    }
+    db.prepare(`
+      INSERT INTO replies (application_id, kind, happened_on, note)
+      VALUES (?, 'first_interview', ?, NULL);
+    `).run(app.id, today);
+  } else if (outcome === 'offer') {
+    if (!app) {
+      const info = db.prepare(`
+        INSERT INTO applications (job_id, applied_date, status, rejection_reason)
+        VALUES (?, ?, 'offer', NULL);
+      `).run(id, today);
+      app = { id: info.lastInsertRowid, status: 'offer' };
+    } else {
+      db.prepare(`
+        UPDATE applications
+        SET status = 'offer', rejection_reason = NULL
+        WHERE id = ?;
+      `).run(app.id);
+    }
+    db.prepare(`
+      INSERT INTO replies (application_id, kind, happened_on, note)
+      VALUES (?, 'offer', ?, NULL);
+    `).run(app.id, today);
+  } else if (outcome === 'rejected') {
+    const reason = typeof body.rejection_reason === 'string' && body.rejection_reason.trim()
+      ? body.rejection_reason.trim()
+      : 'Other';
+
+    if (!app) {
+      const info = db.prepare(`
+        INSERT INTO applications (job_id, applied_date, status, rejection_reason)
+        VALUES (?, ?, 'rejected', ?);
+      `).run(id, today, reason);
+      app = { id: info.lastInsertRowid, status: 'rejected' };
+    } else {
+      db.prepare(`
+        UPDATE applications
+        SET status = 'rejected', rejection_reason = ?
+        WHERE id = ?;
+      `).run(reason, app.id);
+    }
+    db.prepare(`
+      INSERT INTO replies (application_id, kind, happened_on, note)
+      VALUES (?, 'rejected', ?, NULL);
+    `).run(app.id, today);
+  } else if (outcome === 'no_reply') {
+    if (!app) {
+      db.prepare(`
+        INSERT INTO applications (job_id, applied_date, status, rejection_reason)
+        VALUES (?, ?, 'no_reply', NULL);
+      `).run(id, today);
+    } else {
+      db.prepare(`
+        UPDATE applications
+        SET status = 'no_reply'
+        WHERE id = ?;
+      `).run(app.id);
+    }
+  }
+
+  const fullJob = getFullJob(id);
+  return sendJson(res, 200, fullJob);
 }
 
 // Dispatches /api/jobs requests. Returns true if handled.
@@ -318,6 +635,14 @@ export async function handleJobsRequest(req, res, url) {
   // Collection: /api/jobs
   if (path === '/api/jobs') {
     await handleJobsCollection(req, res, url, method);
+    return true;
+  }
+
+  // Outcome: /api/jobs/:id/outcome
+  const outcomeMatch = path.match(/^\/api\/jobs\/(\d+)\/outcome$/);
+  if (outcomeMatch) {
+    const id = Number(outcomeMatch[1]);
+    await handleJobOutcome(req, res, id, method);
     return true;
   }
 
