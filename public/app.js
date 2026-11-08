@@ -974,16 +974,880 @@ function createItemCard(tabKey, item, container) {
   return card;
 }
 
+// Jobs state.
+const jobsState = {
+  jobs: [],
+  counts: {
+    all: 0,
+    to_apply: 0,
+    applied: 0,
+    screening: 0,
+    interview: 0,
+    offer: 0,
+    rejected: 0,
+    no_reply: 0,
+    skipped: 0,
+    stale: 0,
+  },
+  sources: ['Other'],
+  roleTypes: ['Other'],
+  stageFilter: 'all',
+  sortChoice: 'closing_date',
+  isAdding: false,
+};
+
+// Computes today's date in Asia/Colombo (YYYY-MM-DD).
+function getTodayColombo() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Colombo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+// Stage chip definitions.
+const STAGE_CHIPS = [
+  { key: 'all', label: 'All' },
+  { key: 'to_apply', label: 'To apply' },
+  { key: 'applied', label: 'Applied' },
+  { key: 'screening', label: 'Screening' },
+  { key: 'interview', label: 'Interview' },
+  { key: 'offer', label: 'Offer' },
+  { key: 'rejected', label: 'Rejected' },
+  { key: 'no_reply', label: 'No reply' },
+  { key: 'skipped', label: 'Skipped' },
+];
+
+// Returns SVG shape plus label for a job's stage.
+function renderStageBadge(stage, isStale) {
+  if (isStale) {
+    return `
+      <span class="job-stage">
+        <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+          <polygon points="7,1.5 12.5,7 7,12.5 1.5,7" fill="none" stroke="var(--grey)" stroke-width="1.5"/>
+        </svg>
+        <span>stale</span>
+      </span>
+    `;
+  }
+
+  switch (stage) {
+    case 'to_apply':
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" fill="none" stroke="var(--grey)" stroke-width="1.5" stroke-dasharray="2 2"/>
+          </svg>
+          <span>To apply</span>
+        </span>
+      `;
+    case 'applied':
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" fill="none" stroke="var(--grey)" stroke-width="1.5"/>
+          </svg>
+          <span>Applied</span>
+        </span>
+      `;
+    case 'screening':
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+          </svg>
+          <span>Screening</span>
+        </span>
+      `;
+    case 'interview':
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" fill="var(--blue)"/>
+          </svg>
+          <span>Interview</span>
+        </span>
+      `;
+    case 'offer':
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="20" height="12" viewBox="0 0 20 12" aria-hidden="true">
+            <rect x="1" y="1" width="18" height="10" rx="5" fill="var(--blue)"/>
+          </svg>
+          <span>Offer</span>
+        </span>
+      `;
+    case 'rejected':
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" fill="var(--text)"/>
+          </svg>
+          <span>Rejected</span>
+        </span>
+      `;
+    case 'no_reply':
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" fill="none" stroke="var(--grey)" stroke-width="1.5" stroke-dasharray="3.5 2"/>
+          </svg>
+          <span>No reply</span>
+        </span>
+      `;
+    case 'skipped':
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <rect x="2.5" y="2.5" width="9" height="9" fill="none" stroke="var(--grey)" stroke-width="1.5"/>
+          </svg>
+          <span>Skipped</span>
+        </span>
+      `;
+    default:
+      return `
+        <span class="job-stage">
+          <svg class="status-shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" fill="none" stroke="var(--grey)" stroke-width="1.5"/>
+          </svg>
+          <span>${escapeHtml(stage)}</span>
+        </span>
+      `;
+  }
+}
+
+// Builds the summary counts line for the Jobs screen.
+function buildJobsCountsLine(counts) {
+  if (!counts || counts.all === 0) {
+    return 'No jobs tracked yet. Click "+ Add job" above to add your first job application.';
+  }
+  const parts = [`${counts.all} ${counts.all === 1 ? 'job' : 'jobs'}`];
+  const stageLabels = [
+    { key: 'to_apply', label: 'to apply' },
+    { key: 'applied', label: 'applied' },
+    { key: 'screening', label: 'screening' },
+    { key: 'interview', label: 'interview' },
+    { key: 'offer', label: 'offer' },
+    { key: 'rejected', label: 'rejected' },
+    { key: 'no_reply', label: 'no reply' },
+    { key: 'skipped', label: 'skipped' },
+  ];
+  stageLabels.forEach((s) => {
+    const cnt = counts[s.key] || 0;
+    if (cnt > 0) {
+      parts.push(`${cnt} ${s.label}`);
+    }
+  });
+  return parts.join('   ');
+}
+
+// Loads jobs data from the backend.
+async function loadJobsData() {
+  const url = `/api/jobs?stage=${encodeURIComponent(jobsState.stageFilter)}&sort=${encodeURIComponent(jobsState.sortChoice)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error('Could not load jobs');
+  }
+  const data = await res.json();
+  jobsState.jobs = data.jobs || [];
+  jobsState.counts = data.counts || {};
+  jobsState.sources = data.sources || ['Other'];
+  jobsState.roleTypes = data.roleTypes || ['Other'];
+}
+
+// Renders the Jobs list view.
+async function renderJobs(container) {
+  container.innerHTML = '<p class="muted">Loading jobs...</p>';
+
+  try {
+    await loadJobsData();
+  } catch (err) {
+    container.innerHTML = `<p class="field-error">Error loading jobs: ${escapeHtml(err.message)}</p>`;
+    return;
+  }
+
+  drawJobsView(container);
+}
+
+// Redraws the Jobs view based on current state.
+function drawJobsView(container) {
+  const shell = document.createElement('div');
+  shell.className = 'jobs-shell';
+
+  // 1. Top bar: Heading, subtitle, and primary "+ Add job" button.
+  const topBar = document.createElement('header');
+  topBar.className = 'jobs-top-bar';
+
+  const headerText = document.createElement('div');
+  headerText.className = 'jobs-header-text';
+
+  const h1 = document.createElement('h1');
+  h1.className = 'screen-title';
+  h1.textContent = 'Jobs';
+
+  const intro = document.createElement('p');
+  intro.className = 'profile-intro';
+  intro.textContent = 'Track every job application from finding the role to the final outcome.';
+
+  headerText.append(h1, intro);
+
+  const addJobBtn = document.createElement('button');
+  addJobBtn.type = 'button';
+  addJobBtn.className = 'btn btn-primary';
+  addJobBtn.textContent = '+ Add job';
+  addJobBtn.addEventListener('click', () => {
+    jobsState.isAdding = !jobsState.isAdding;
+    drawJobsView(container);
+    if (jobsState.isAdding) {
+      const pasteEl = document.getElementById('job-paste');
+      if (pasteEl) pasteEl.focus();
+    }
+  });
+
+  topBar.append(headerText, addJobBtn);
+  shell.append(topBar);
+
+  // 2. Counts line.
+  const countsBox = document.createElement('div');
+  countsBox.className = 'jobs-counts';
+  countsBox.textContent = buildJobsCountsLine(jobsState.counts);
+  shell.append(countsBox);
+
+  // 3. Add job form (opens above the list if isAdding is true).
+  if (jobsState.isAdding) {
+    const formPanel = createAddJobForm(container);
+    shell.append(formPanel);
+  }
+
+  // 4. Controls: Stage chips and Sort choice.
+  const controlsBar = document.createElement('div');
+  controlsBar.className = 'jobs-controls';
+
+  // Stage chips.
+  const chipsContainer = document.createElement('div');
+  chipsContainer.className = 'stage-chips';
+  chipsContainer.setAttribute('role', 'group');
+  chipsContainer.setAttribute('aria-label', 'Filter jobs by stage');
+
+  STAGE_CHIPS.forEach((chip) => {
+    const chipBtn = document.createElement('button');
+    chipBtn.type = 'button';
+    chipBtn.className = 'stage-chip';
+    const isChosen = jobsState.stageFilter === chip.key;
+    chipBtn.setAttribute('aria-pressed', isChosen ? 'true' : 'false');
+
+    const count = jobsState.counts[chip.key] || 0;
+    chipBtn.textContent = `${isChosen ? '✓ ' : ''}${chip.label} (${count})`;
+
+    chipBtn.addEventListener('click', async () => {
+      if (jobsState.stageFilter !== chip.key) {
+        jobsState.stageFilter = chip.key;
+        await loadJobsData();
+        drawJobsView(container);
+      }
+    });
+
+    chipsContainer.append(chipBtn);
+  });
+
+  // Sort choice.
+  const sortGroup = document.createElement('div');
+  sortGroup.className = 'sort-group';
+
+  const sortLabel = document.createElement('label');
+  sortLabel.className = 'sort-label';
+  sortLabel.htmlFor = 'job-sort-select';
+  sortLabel.textContent = 'Sort:';
+
+  const sortSelect = document.createElement('select');
+  sortSelect.id = 'job-sort-select';
+  sortSelect.className = 'sort-select';
+
+  const optClosing = document.createElement('option');
+  optClosing.value = 'closing_date';
+  optClosing.textContent = 'Closing date';
+  if (jobsState.sortChoice === 'closing_date') optClosing.selected = true;
+
+  const optAdded = document.createElement('option');
+  optAdded.value = 'date_added';
+  optAdded.textContent = 'Date added';
+  if (jobsState.sortChoice === 'date_added') optAdded.selected = true;
+
+  sortSelect.append(optClosing, optAdded);
+
+  sortSelect.addEventListener('change', async () => {
+    jobsState.sortChoice = sortSelect.value;
+    await loadJobsData();
+    drawJobsView(container);
+  });
+
+  sortGroup.append(sortLabel, sortSelect);
+  controlsBar.append(chipsContainer, sortGroup);
+  shell.append(controlsBar);
+
+  // 5. Job list or empty filter state.
+  if (jobsState.jobs.length === 0) {
+    const emptyBox = document.createElement('div');
+    emptyBox.className = 'empty-state';
+
+    if (jobsState.stageFilter !== 'all') {
+      const emptyMsg = document.createElement('p');
+      emptyMsg.className = 'empty-text';
+      emptyMsg.textContent = 'No jobs in this stage.';
+
+      const showAllBtn = document.createElement('button');
+      showAllBtn.type = 'button';
+      showAllBtn.className = 'btn btn-secondary';
+      showAllBtn.textContent = 'Show all jobs';
+      showAllBtn.addEventListener('click', async () => {
+        jobsState.stageFilter = 'all';
+        await loadJobsData();
+        drawJobsView(container);
+      });
+
+      emptyBox.append(emptyMsg, showAllBtn);
+    } else {
+      const emptyMsg = document.createElement('p');
+      emptyMsg.className = 'empty-text';
+      emptyMsg.textContent = 'No jobs tracked yet. Add your first job using the button above.';
+
+      const emptyAddBtn = document.createElement('button');
+      emptyAddBtn.type = 'button';
+      emptyAddBtn.className = 'btn btn-primary';
+      emptyAddBtn.textContent = '+ Add job';
+      emptyAddBtn.addEventListener('click', () => {
+        jobsState.isAdding = true;
+        drawJobsView(container);
+        const pasteEl = document.getElementById('job-paste');
+        if (pasteEl) pasteEl.focus();
+      });
+
+      emptyBox.append(emptyMsg, emptyAddBtn);
+    }
+
+    shell.append(emptyBox);
+  } else {
+    const list = document.createElement('div');
+    list.className = 'jobs-list';
+
+    jobsState.jobs.forEach((job, index) => {
+      const row = document.createElement('a');
+      row.href = `#job/${job.id}`;
+      row.className = 'job-row';
+      row.id = `job-row-${job.id}`;
+
+      // Left section: index, company, title, tags.
+      const left = document.createElement('div');
+      left.className = 'job-row-left';
+
+      const idxSpan = document.createElement('span');
+      idxSpan.className = 'job-index';
+      idxSpan.textContent = `#${index + 1}`;
+
+      const main = document.createElement('div');
+      main.className = 'job-main';
+
+      const comp = document.createElement('span');
+      comp.className = 'job-company';
+      comp.textContent = job.company;
+
+      const title = document.createElement('h3');
+      title.className = 'job-title';
+      title.textContent = job.title;
+
+      const tags = document.createElement('div');
+      tags.className = 'job-tags';
+
+      if (job.work_mode) {
+        const wmTag = document.createElement('span');
+        wmTag.className = 'meta-chip';
+        wmTag.textContent = job.work_mode;
+        tags.append(wmTag);
+      }
+
+      if (job.level) {
+        const lvlTag = document.createElement('span');
+        lvlTag.className = 'meta-chip';
+        lvlTag.textContent = job.level;
+        tags.append(lvlTag);
+      }
+
+      if (job.role_type) {
+        const rtTag = document.createElement('span');
+        rtTag.className = 'meta-chip';
+        rtTag.textContent = job.role_type;
+        tags.append(rtTag);
+      }
+
+      main.append(comp, title);
+      if (tags.childNodes.length > 0) main.append(tags);
+
+      left.append(idxSpan, main);
+
+      // Right section: closing date, stage shape + word.
+      const right = document.createElement('div');
+      right.className = 'job-row-right';
+
+      const closingSpan = document.createElement('span');
+      closingSpan.className = 'job-closing';
+      closingSpan.textContent = job.closing_date ? `Closes ${job.closing_date}` : 'No closing date';
+
+      const stageHolder = document.createElement('div');
+      stageHolder.innerHTML = renderStageBadge(job.stage, Boolean(job.is_stale));
+
+      right.append(closingSpan, stageHolder);
+
+      row.append(left, right);
+      list.append(row);
+    });
+
+    shell.append(list);
+  }
+
+  container.innerHTML = '';
+  container.append(shell);
+}
+
+// Creates the Add job form.
+function createAddJobForm(container) {
+  const panel = document.createElement('div');
+  panel.className = 'form-panel';
+
+  const formTitle = document.createElement('h2');
+  formTitle.className = 'form-title';
+  formTitle.textContent = 'Add job';
+
+  const form = document.createElement('form');
+  form.noValidate = true;
+
+  // 1. Paste box first.
+  const pasteGroup = document.createElement('div');
+  pasteGroup.className = 'form-group';
+
+  const pasteLabel = document.createElement('label');
+  pasteLabel.className = 'form-label';
+  pasteLabel.htmlFor = 'job-paste';
+  pasteLabel.textContent = 'Paste job post text or link';
+
+  const pasteArea = document.createElement('textarea');
+  pasteArea.id = 'job-paste';
+  pasteArea.className = 'form-textarea';
+  pasteArea.placeholder = 'Paste the job description or advert text here...';
+
+  const pasteNote = document.createElement('p');
+  pasteNote.className = 'muted';
+  pasteNote.textContent = 'Pasting puts the text into the job description. Auto-filling fields from pasted text is coming in a later step.';
+
+  pasteGroup.append(pasteLabel, pasteArea, pasteNote);
+  form.append(pasteGroup);
+
+  // Helper to add a form field.
+  function addField(labelStr, inputEl, errorId, parent = form) {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.htmlFor = inputEl.id;
+    label.textContent = labelStr;
+
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error';
+    errorDiv.id = errorId;
+    errorDiv.style.display = 'none';
+
+    group.append(label, inputEl, errorDiv);
+    parent.append(group);
+  }
+
+  // Row 1: Title and Company.
+  const row1 = document.createElement('div');
+  row1.className = 'form-row';
+
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.id = 'job-title';
+  titleInput.className = 'form-input';
+  titleInput.placeholder = 'e.g. Frontend Engineer';
+  titleInput.required = true;
+  addField('Job title *', titleInput, 'job-title-error', row1);
+
+  const compInput = document.createElement('input');
+  compInput.type = 'text';
+  compInput.id = 'job-company';
+  compInput.className = 'form-input';
+  compInput.placeholder = 'e.g. Acme Corp';
+  compInput.required = true;
+  addField('Company *', compInput, 'job-company-error', row1);
+
+  form.append(row1);
+
+  // Row 2: Source and Role Type.
+  const row2 = document.createElement('div');
+  row2.className = 'form-row';
+
+  const sourceSelect = document.createElement('select');
+  sourceSelect.id = 'job-source';
+  sourceSelect.className = 'form-select';
+
+  // Ensure "Other" is last.
+  const cleanSources = jobsState.sources.filter((s) => s.toLowerCase() !== 'other');
+  cleanSources.push('Other');
+
+  cleanSources.forEach((src) => {
+    const opt = document.createElement('option');
+    opt.value = src;
+    opt.textContent = src;
+    if (src === 'Other') opt.selected = true;
+    sourceSelect.append(opt);
+  });
+  addField('Source', sourceSelect, 'job-source-error', row2);
+
+  const roleSelect = document.createElement('select');
+  roleSelect.id = 'job-role-type';
+  roleSelect.className = 'form-select';
+
+  const roleDefaultOpt = document.createElement('option');
+  roleDefaultOpt.value = '';
+  roleDefaultOpt.textContent = 'Select role type (optional)';
+  roleSelect.append(roleDefaultOpt);
+
+  jobsState.roleTypes.forEach((rt) => {
+    const opt = document.createElement('option');
+    opt.value = rt;
+    opt.textContent = rt;
+    roleSelect.append(opt);
+  });
+  addField('Role type (optional)', roleSelect, 'job-role-error', row2);
+
+  form.append(row2);
+
+  // Row 3: Work mode, Level, and Link.
+  const row3 = document.createElement('div');
+  row3.className = 'form-row';
+
+  const wmSelect = document.createElement('select');
+  wmSelect.id = 'job-work-mode';
+  wmSelect.className = 'form-select';
+  [
+    { val: '', lbl: 'Select work mode (optional)' },
+    { val: 'Remote', lbl: 'Remote' },
+    { val: 'Hybrid', lbl: 'Hybrid' },
+    { val: 'On-site', lbl: 'On-site' },
+  ].forEach((wm) => {
+    const opt = document.createElement('option');
+    opt.value = wm.val;
+    opt.textContent = wm.lbl;
+    wmSelect.append(opt);
+  });
+  addField('Work mode (optional)', wmSelect, 'job-wm-error', row3);
+
+  const lvlInput = document.createElement('input');
+  lvlInput.type = 'text';
+  lvlInput.id = 'job-level';
+  lvlInput.className = 'form-input';
+  lvlInput.placeholder = 'e.g. Junior, Mid, Senior, Lead';
+  addField('Level (optional)', lvlInput, 'job-lvl-error', row3);
+
+  const urlInput = document.createElement('input');
+  urlInput.type = 'url';
+  urlInput.id = 'job-url';
+  urlInput.className = 'form-input';
+  urlInput.placeholder = 'https://...';
+  addField('Job link (optional)', urlInput, 'job-url-error', row3);
+
+  form.append(row3);
+
+  // Row 4: Date found, Posted date, Closing date.
+  const row4 = document.createElement('div');
+  row4.className = 'form-row';
+
+  const foundInput = document.createElement('input');
+  foundInput.type = 'text';
+  foundInput.id = 'job-found-date';
+  foundInput.className = 'form-input';
+  foundInput.placeholder = 'YYYY-MM-DD';
+  foundInput.value = getTodayColombo();
+  addField('Date found', foundInput, 'job-found-date-error', row4);
+
+  const postedInput = document.createElement('input');
+  postedInput.type = 'text';
+  postedInput.id = 'job-posted-date';
+  postedInput.className = 'form-input';
+  postedInput.placeholder = 'YYYY-MM-DD';
+  addField('Posted date (optional)', postedInput, 'job-posted-date-error', row4);
+
+  const closingInput = document.createElement('input');
+  closingInput.type = 'text';
+  closingInput.id = 'job-closing-date';
+  closingInput.className = 'form-input';
+  closingInput.placeholder = 'YYYY-MM-DD';
+  addField('Closing date (optional)', closingInput, 'job-closing-date-error', row4);
+
+  form.append(row4);
+
+  // Row 5: Description.
+  const descArea = document.createElement('textarea');
+  descArea.id = 'job-desc';
+  descArea.className = 'form-textarea';
+  descArea.placeholder = 'Full job description or notes from the advert...';
+  addField('Description (optional)', descArea, 'job-desc-error');
+
+  // Sync pasteArea to descArea.
+  pasteArea.addEventListener('input', () => {
+    descArea.value = pasteArea.value;
+  });
+
+  // Row 6: Notes.
+  const notesArea = document.createElement('textarea');
+  notesArea.id = 'job-notes';
+  notesArea.className = 'form-textarea';
+  notesArea.placeholder = 'Personal notes, referrals, follow-up ideas...';
+  addField('Notes (optional)', notesArea, 'job-notes-error');
+
+  // Duplicate warning banner.
+  const duplicateWarning = document.createElement('div');
+  duplicateWarning.className = 'warning-banner';
+  duplicateWarning.id = 'job-duplicate-warning';
+  duplicateWarning.style.display = 'none';
+  duplicateWarning.textContent = 'A job with this company and title already exists in your list.';
+  form.append(duplicateWarning);
+
+  // Check duplicate on input.
+  function checkDuplicate() {
+    const t = titleInput.value.trim().toLowerCase();
+    const c = compInput.value.trim().toLowerCase();
+    if (t && c) {
+      const match = jobsState.jobs.find(
+        (j) => j.title.toLowerCase() === t && j.company.toLowerCase() === c
+      );
+      if (match) {
+        duplicateWarning.style.display = 'block';
+        return;
+      }
+    }
+    duplicateWarning.style.display = 'none';
+  }
+
+  titleInput.addEventListener('input', checkDuplicate);
+  compInput.addEventListener('input', checkDuplicate);
+
+  // Form actions.
+  const actions = document.createElement('div');
+  actions.className = 'form-actions';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'submit';
+  saveBtn.className = 'btn btn-primary';
+  saveBtn.textContent = 'Save job';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn btn-secondary';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => {
+    jobsState.isAdding = false;
+    drawJobsView(container);
+  });
+
+  const saveStatus = document.createElement('span');
+  saveStatus.className = 'save-status';
+  saveStatus.id = 'job-save-status';
+  saveStatus.setAttribute('aria-live', 'polite');
+
+  actions.append(saveBtn, cancelBtn, saveStatus);
+  form.append(actions);
+
+  // Form submission handler.
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Clear previous errors.
+    form.querySelectorAll('.field-error').forEach((el) => {
+      el.textContent = '';
+      el.style.display = 'none';
+    });
+
+    let isValid = true;
+    function showError(fieldId, errorId, message) {
+      isValid = false;
+      const errEl = document.getElementById(errorId);
+      if (errEl) {
+        errEl.textContent = message;
+        errEl.style.display = 'block';
+      }
+      const inputEl = document.getElementById(fieldId);
+      if (inputEl) inputEl.focus();
+    }
+
+    const title = titleInput.value.trim();
+    if (!title) {
+      showError('job-title', 'job-title-error', 'Job title is required.');
+      return;
+    }
+
+    const company = compInput.value.trim();
+    if (!company) {
+      showError('job-company', 'job-company-error', 'Company name is required.');
+      return;
+    }
+
+    function checkDate(val) {
+      if (!val) return true;
+      return /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(val);
+    }
+
+    const foundDate = foundInput.value.trim();
+    if (foundDate && !checkDate(foundDate)) {
+      showError('job-found-date', 'job-found-date-error', 'Date must be in YYYY-MM-DD format (for example, 2026-11-30).');
+      return;
+    }
+
+    const postedDate = postedInput.value.trim();
+    if (postedDate && !checkDate(postedDate)) {
+      showError('job-posted-date', 'job-posted-date-error', 'Date must be in YYYY-MM-DD format (for example, 2026-11-30).');
+      return;
+    }
+
+    const closingDate = closingInput.value.trim();
+    if (closingDate && !checkDate(closingDate)) {
+      showError('job-closing-date', 'job-closing-date-error', 'Date must be in YYYY-MM-DD format (for example, 2026-11-30).');
+      return;
+    }
+
+    const urlVal = urlInput.value.trim();
+    if (urlVal && !urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+      showError('job-url', 'job-url-error', 'Job link must start with http:// or https://.');
+      return;
+    }
+
+    if (!isValid) return;
+
+    const payload = {
+      title,
+      company,
+      source: sourceSelect.value,
+      role_type: roleSelect.value || null,
+      work_mode: wmSelect.value || null,
+      level: lvlInput.value.trim() || null,
+      url: urlVal || null,
+      found_date: foundDate || getTodayColombo(),
+      posted_date: postedDate || null,
+      closing_date: closingDate || null,
+      description: descArea.value.trim() || null,
+      notes: notesArea.value.trim() || null,
+    };
+
+    saveBtn.disabled = true;
+    try {
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        saveBtn.disabled = false;
+        const firstErr = form.querySelector('.field-error');
+        if (firstErr) {
+          firstErr.textContent = data.error || 'Failed to save job.';
+          firstErr.style.display = 'block';
+        }
+        return;
+      }
+
+      // Show "Saved" next to button.
+      saveStatus.textContent = 'Saved';
+
+      // Navigate to the job page at /#job/<id> after 1 second.
+      setTimeout(() => {
+        jobsState.isAdding = false;
+        location.hash = `#job/${data.id}`;
+      }, 1000);
+    } catch (err) {
+      saveBtn.disabled = false;
+      saveStatus.textContent = '';
+      const firstErr = form.querySelector('.field-error');
+      if (firstErr) {
+        firstErr.textContent = err.message || 'An error occurred while saving.';
+        firstErr.style.display = 'block';
+      }
+    }
+  });
+
+  panel.append(formTitle, form);
+  return panel;
+}
+
+// Renders the placeholder Job page at /#job/<id>.
+async function renderJobDetailPlaceholder(container, jobId) {
+  container.innerHTML = '<p class="muted">Loading job details...</p>';
+
+  try {
+    const res = await fetch(`/api/jobs/${jobId}`);
+    if (!res.ok) {
+      container.innerHTML = `
+        <div class="job-detail-card">
+          <h1 class="screen-title">Job not found</h1>
+          <p class="muted">The requested job could not be found.</p>
+          <p><a href="#jobs" class="link">← Back to jobs</a></p>
+        </div>
+      `;
+      return;
+    }
+
+    const job = await res.json();
+    document.title = `${job.title} | Shirube`;
+
+    const card = document.createElement('article');
+    card.className = 'job-detail-card';
+
+    const h1 = document.createElement('h1');
+    h1.className = 'screen-title';
+    h1.textContent = job.title;
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'profile-intro';
+    subtitle.innerHTML = `${escapeHtml(job.company)} &nbsp;·&nbsp; ${renderStageBadge(job.stage, Boolean(job.is_stale))}`;
+
+    const note = document.createElement('p');
+    note.className = 'muted';
+    note.textContent = 'This screen is not built yet (Phase 4: Job page).';
+
+    const backLink = document.createElement('p');
+    const a = document.createElement('a');
+    a.href = '#jobs';
+    a.className = 'link';
+    a.textContent = '← Back to jobs';
+    backLink.append(a);
+
+    card.append(h1, subtitle, note, backLink);
+    container.innerHTML = '';
+    container.append(card);
+  } catch (err) {
+    container.innerHTML = `<p class="field-error">Error loading job: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
 // Screen switcher.
 function showScreen() {
-  const name = location.hash.slice(1) || 'jobs';
-  const title = SCREENS[name];
+  const hash = location.hash.slice(1);
+  const name = hash || 'jobs';
   const app = document.getElementById('app');
 
-  if (name === 'profile') {
+  if (name === 'jobs') {
+    document.title = 'Jobs | Shirube';
+    renderJobs(app);
+  } else if (name.startsWith('job/')) {
+    const jobId = name.slice(4);
+    renderJobDetailPlaceholder(app, jobId);
+  } else if (name === 'profile') {
     document.title = 'My profile | Shirube';
     renderProfile(app);
-  } else if (title) {
+  } else if (SCREENS[name]) {
+    const title = SCREENS[name];
     document.title = `${title} | Shirube`;
     app.innerHTML = '';
 
@@ -1003,7 +1867,8 @@ function showScreen() {
 
   // Mark the current page in the navbar and in the account menu.
   document.querySelectorAll('[data-screen]').forEach((link) => {
-    link.setAttribute('aria-current', link.dataset.screen === name ? 'page' : 'false');
+    const isCurrent = link.dataset.screen === name || (name.startsWith('job/') && link.dataset.screen === 'jobs');
+    link.setAttribute('aria-current', isCurrent ? 'page' : 'false');
   });
 
   // Close the account menu after a choice is made.
