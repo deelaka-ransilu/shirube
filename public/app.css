@@ -875,6 +875,21 @@ body {
   color: var(--text);
 }
 
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .outcome-buttons-row {
   display: flex;
   flex-wrap: wrap;
@@ -918,7 +933,7 @@ body {
 
 .details-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-7) * 4), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-7) * 3), 1fr));
   gap: var(--space-3);
 }
 
@@ -946,6 +961,15 @@ body {
   font-style: italic;
 }
 
+.description-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.description-content {
+  margin-top: var(--space-2);
+}
+
 .timeline-list {
   display: flex;
   flex-direction: column;
@@ -971,12 +995,128 @@ body {
   color: var(--text);
 }
 
-.job-footer-actions {
+/* Mobile job detail layout (default, 767px wide and below).
+   Columns are stacked and the page scrolls normally. */
+.job-page-cols {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  padding-top: var(--space-2);
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.job-page-left,
+.job-page-right {
+  display: contents;
+}
+
+.job-card-what-happened {
+  order: 1;
+}
+
+.job-card-details,
+#edit-job-panel {
+  order: 2;
+}
+
+.job-card-timeline {
+  order: 3;
+}
+
+.job-card-notes {
+  order: 4;
+}
+
+.job-card-description {
+  order: 5;
+}
+
+/* At 768px wide and above (tablet and desktop): two columns, fits screen with no page scroll.
+   The 768px breakpoint is the only pixel exception outside tokens.css
+   because CSS media queries cannot use CSS custom properties. */
+@media (min-width: 768px) {
+  body:has(.job-page-shell),
+  body.job-page-active {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .shell:has(.job-page-shell),
+  body.job-page-active .shell {
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main:has(.job-page-shell),
+  body.job-page-active .main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .job-page-shell {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    overflow: hidden;
+  }
+
+  .job-page-header {
+    flex: 0 0 auto;
+  }
+
+  .job-page-cols {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    overflow: hidden;
+  }
+
+  .job-page-left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: var(--space-1);
+  }
+
+  .job-page-right {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .job-card-what-happened,
+  .job-card-details,
+  #edit-job-panel,
+  .job-card-timeline,
+  .job-card-notes,
+  .job-card-description {
+    order: initial;
+  }
+
+  .job-card-timeline {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .timeline-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: var(--space-1);
+  }
 }
 
 /* Follow-ups screen (Phase 5) */
