@@ -890,11 +890,161 @@ body {
   gap: var(--space-2);
 }
 
-.outcome-buttons-row {
+/* Job detail page header */
+.job-page-header {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.job-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.job-header-actions {
+  display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+/* Activity card: Section 1 Timeline + Section 2 Status buttons */
+.job-card-activity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+}
+
+.timeline-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+}
+
+.timeline-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  margin: 0;
+  font-weight: 500;
+}
+
+.timeline-scroll-box {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  padding-top: var(--space-1);
+  padding-bottom: var(--space-1);
+}
+
+.timeline-track {
+  position: relative;
+  width: 100%;
+  height: calc(var(--space-7) + var(--space-3));
+}
+
+.timeline-line {
+  position: absolute;
+  top: var(--space-5);
+  left: 0;
+  right: 0;
+  height: var(--line);
+  background: var(--border);
+  transform: translateY(-50%);
+}
+
+.timeline-node {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-node.is-first {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.timeline-node.is-middle {
+  align-items: center;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.timeline-node.is-last {
+  align-items: flex-end;
+  text-align: right;
+  transform: translateX(-100%);
+}
+
+.timeline-node-date {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--muted);
+  line-height: var(--space-4);
+  white-space: nowrap;
+}
+
+.timeline-date-text {
+  color: var(--muted);
+}
+
+.timeline-year {
+  color: var(--muted);
+}
+
+.timeline-dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--text);
+  position: relative;
+  z-index: 1;
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-1);
+  flex-shrink: 0;
+}
+
+.timeline-node.is-middle .timeline-dot {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.timeline-node-label {
+  font-size: var(--text-small);
+  color: var(--text);
+  white-space: nowrap;
+  line-height: var(--space-4);
+}
+
+/* Status section */
+.status-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Status buttons: on mobile (default, 767px and below), wrap into rows of 3 */
+.status-buttons-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  width: 100%;
 }
 
 .outcome-btn {
@@ -908,7 +1058,10 @@ body {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .outcome-btn:hover {
@@ -921,6 +1074,13 @@ body {
   color: var(--text);
   border-color: var(--text);
   border-width: calc(var(--line) * 2);
+  padding: calc(var(--space-2) - var(--line)) calc(var(--space-3) - var(--line));
+}
+
+.outcome-feedback-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .rejection-reason-box {
@@ -929,6 +1089,21 @@ body {
   gap: var(--space-1);
   margin-top: var(--space-2);
   max-width: calc(var(--space-7) * 7);
+}
+
+/* Bottom row: Details and Notes */
+.job-bottom-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.job-card-details,
+#edit-job-panel,
+.job-card-notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .details-grid {
@@ -961,6 +1136,10 @@ body {
   font-style: italic;
 }
 
+.job-card-description {
+  margin-top: var(--space-2);
+}
+
 .description-toggle {
   cursor: pointer;
   user-select: none;
@@ -970,66 +1149,15 @@ body {
   margin-top: var(--space-2);
 }
 
-.timeline-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-left: var(--space-3);
-  border-left: var(--line) solid var(--border);
-}
-
-.timeline-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.timeline-date {
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  color: var(--muted);
-}
-
-.timeline-text {
-  font-size: var(--text-small);
-  color: var(--text);
-}
-
 /* Mobile job detail layout (default, 767px wide and below).
-   Columns are stacked and the page scrolls normally. */
-.job-page-cols {
+   Sections are stacked and the page scrolls normally. */
+.job-page-shell {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.job-page-left,
-.job-page-right {
-  display: contents;
-}
-
-.job-card-what-happened {
-  order: 1;
-}
-
-.job-card-details,
-#edit-job-panel {
-  order: 2;
-}
-
-.job-card-timeline {
-  order: 3;
-}
-
-.job-card-notes {
-  order: 4;
-}
-
-.job-card-description {
-  order: 5;
-}
-
-/* At 768px wide and above (tablet and desktop): two columns, fits screen with no page scroll.
+/* At 768px wide and above (tablet and desktop): fills screen with no page scroll.
    The 768px breakpoint is the only pixel exception outside tokens.css
    because CSS media queries cannot use CSS custom properties. */
 @media (min-width: 768px) {
@@ -1045,6 +1173,7 @@ body {
     max-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .main:has(.job-page-shell),
@@ -1061,7 +1190,7 @@ body {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-3);
     overflow: hidden;
   }
 
@@ -1069,7 +1198,15 @@ body {
     flex: 0 0 auto;
   }
 
-  .job-page-cols {
+  .job-card-activity {
+    flex: 0 0 auto;
+  }
+
+  .status-buttons-row {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .job-bottom-row {
     flex: 1;
     min-height: 0;
     display: grid;
@@ -1078,41 +1215,9 @@ body {
     overflow: hidden;
   }
 
-  .job-page-left {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    min-height: 0;
-    overflow-y: auto;
-    padding-right: var(--space-1);
-  }
-
-  .job-page-right {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .job-card-what-happened,
   .job-card-details,
   #edit-job-panel,
-  .job-card-timeline,
-  .job-card-notes,
-  .job-card-description {
-    order: initial;
-  }
-
-  .job-card-timeline {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .timeline-list {
-    flex: 1;
+  .job-card-notes {
     min-height: 0;
     overflow-y: auto;
     padding-right: var(--space-1);

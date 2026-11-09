@@ -2185,7 +2185,6 @@ async function renderJobPage(container, jobId) {
     }
 
     let isEditing = false;
-    let isConfirmingDelete = false;
 
     function drawJobView() {
       container.innerHTML = '';
@@ -2193,14 +2192,14 @@ async function renderJobPage(container, jobId) {
       const shell = document.createElement('div');
       shell.className = 'job-page-shell';
 
-      // 1. Full-width header: Back link, title, company & stage, purpose.
+      // 1. Header (full width, top of page).
+      // Left: job title, then company and status (shape + word).
+      // Right: "Edit job" button and "Archive" button, in one row.
       const header = document.createElement('header');
       header.className = 'job-page-header';
 
-      const backLink = document.createElement('a');
-      backLink.href = '#jobs';
-      backLink.className = 'back-link';
-      backLink.textContent = '← Back to jobs';
+      const leftHeader = document.createElement('div');
+      leftHeader.className = 'job-header-left';
 
       const h1 = document.createElement('h1');
       h1.className = 'screen-title';
@@ -2210,35 +2209,208 @@ async function renderJobPage(container, jobId) {
       meta.className = 'job-page-meta';
       meta.innerHTML = `<span class="job-page-company">${escapeHtml(job.company)}</span> &nbsp;·&nbsp; ${renderStageBadge(job.stage, Boolean(job.is_stale))}`;
 
-      const intro = document.createElement('p');
-      intro.className = 'profile-intro';
-      intro.textContent = 'Record what happened with this job. Shirube uses this to show follow-ups.';
+      leftHeader.append(h1, meta);
 
-      header.append(backLink, h1, meta, intro);
+      const rightHeader = document.createElement('div');
+      rightHeader.className = 'job-header-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn btn-secondary';
+      editBtn.id = 'btn-edit-job';
+      editBtn.textContent = isEditing ? 'Close edit form' : 'Edit job';
+      editBtn.addEventListener('click', () => {
+        isEditing = !isEditing;
+        drawJobView();
+      });
+
+      const archiveBtn = document.createElement('button');
+      archiveBtn.type = 'button';
+      archiveBtn.className = 'btn btn-secondary';
+      archiveBtn.id = 'btn-archive-job';
+      archiveBtn.disabled = true;
+      archiveBtn.title = 'Archive is coming in a later step';
+      archiveBtn.textContent = 'Archive';
+
+      rightHeader.append(editBtn, archiveBtn);
+      header.append(leftHeader, rightHeader);
       shell.append(header);
 
-      // Two-column layout container.
-      const cols = document.createElement('div');
-      cols.className = 'job-page-cols';
+      // 2. Activity card: Section 1 Timeline + Section 2 Status buttons.
+      const activityCard = document.createElement('section');
+      activityCard.className = 'job-page-card job-card-activity';
+      activityCard.setAttribute('aria-labelledby', 'heading-timeline');
 
-      const leftCol = document.createElement('div');
-      leftCol.className = 'job-page-left';
+      // Section 1: Timeline.
+      const timelineSection = document.createElement('div');
+      timelineSection.className = 'timeline-section';
 
-      const rightCol = document.createElement('div');
-      rightCol.className = 'job-page-right';
+      const tlHeader = document.createElement('div');
+      tlHeader.className = 'timeline-header';
 
-      // 2. "What happened" section (inside left column).
-      const whatHappenedCard = document.createElement('section');
-      whatHappenedCard.className = 'job-page-card job-card-what-happened';
-      whatHappenedCard.setAttribute('aria-labelledby', 'heading-what-happened');
+      const tlLabel = document.createElement('h2');
+      tlLabel.id = 'heading-timeline';
+      tlLabel.className = 'timeline-label';
+      tlLabel.textContent = 'Timeline';
+      tlHeader.append(tlLabel);
 
-      const whHeading = document.createElement('h2');
-      whHeading.id = 'heading-what-happened';
-      whHeading.className = 'card-heading';
-      whHeading.textContent = 'What happened';
+      // Build events list.
+      const events = [];
+
+      if (job.found_date) {
+        events.push({
+          date: job.found_date,
+          text: `Job found (${job.source || 'Other'})`,
+        });
+      }
+
+      if (job.application?.applied_date) {
+        events.push({
+          date: job.application.applied_date,
+          text: 'Application submitted',
+        });
+      }
+
+      const kindLabels = {
+        replied: 'Reply received (screening)',
+        first_interview: 'First interview',
+        second_interview: 'Second interview',
+        test_task: 'Test task',
+        offer: 'Offer received',
+        rejected: 'Rejected',
+      };
+
+      if (Array.isArray(job.replies)) {
+        job.replies.forEach((r) => {
+          let desc = kindLabels[r.kind] || r.kind;
+          if (r.kind === 'rejected' && job.application?.rejection_reason) {
+            desc = `Rejected: ${job.application.rejection_reason}`;
+          }
+          if (r.note) {
+            desc += ` (${r.note})`;
+          }
+          events.push({
+            date: r.happened_on,
+            text: desc,
+          });
+        });
+      }
+
+      if (job.application?.status === 'no_reply' && (!job.replies || job.replies.length === 0)) {
+        events.push({
+          date: job.application.applied_date || job.found_date,
+          text: 'Marked as no reply',
+        });
+      }
+
+      // Sort chronological, oldest first.
+      events.sort((a, b) => a.date.localeCompare(b.date));
+
+      const scrollBox = document.createElement('div');
+      scrollBox.className = 'timeline-scroll-box';
+      scrollBox.setAttribute('tabindex', '0');
+      scrollBox.setAttribute('aria-label', 'Timeline events');
+
+      function formatEventDate(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return dateStr;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const mIdx = parseInt(parts[1], 10) - 1;
+        const mName = monthNames[mIdx] || parts[1];
+        const day = parts[2].padStart(2, '0');
+        return `${mName} ${day}`;
+      }
+
+      function getEventYear(dateStr) {
+        if (!dateStr) return '';
+        return dateStr.split('-')[0] || '';
+      }
+
+      const n = events.length;
+      if (n === 0) {
+        const noEvents = document.createElement('p');
+        noEvents.className = 'muted';
+        noEvents.textContent = 'No events recorded yet.';
+        scrollBox.append(noEvents);
+      } else {
+        const track = document.createElement('div');
+        track.className = 'timeline-track';
+        if (n > 6) {
+          track.style.minWidth = `calc(var(--space-7) * 3 * ${n - 1})`;
+        }
+
+        // Line starts at first dot and ends at last dot. No line before first event or after last event.
+        if (n > 1) {
+          const line = document.createElement('div');
+          line.className = 'timeline-line';
+          track.append(line);
+        }
+
+        events.forEach((ev, i) => {
+          const node = document.createElement('div');
+          node.className = 'timeline-node';
+
+          if (n === 1 || i === 0) {
+            node.style.left = '0';
+            node.classList.add('is-first');
+          } else if (i === n - 1) {
+            node.style.left = '100%';
+            node.classList.add('is-last');
+          } else {
+            const pct = (i / (n - 1)) * 100;
+            node.style.left = `${pct}%`;
+            node.classList.add('is-middle');
+          }
+
+          const dateEl = document.createElement('div');
+          dateEl.className = 'timeline-node-date';
+
+          const dateSpan = document.createElement('span');
+          dateSpan.className = 'timeline-date-text';
+          dateSpan.textContent = formatEventDate(ev.date);
+          dateEl.append(dateSpan);
+
+          // Show the year once, at the right end of the line (with the last event).
+          if (i === n - 1) {
+            const yearSpan = document.createElement('span');
+            yearSpan.className = 'timeline-year';
+            yearSpan.textContent = getEventYear(ev.date);
+            dateEl.append(document.createTextNode(' '), yearSpan);
+          }
+
+          const dotEl = document.createElement('div');
+          dotEl.className = 'timeline-dot';
+
+          const labelEl = document.createElement('div');
+          labelEl.className = 'timeline-node-label';
+          labelEl.textContent = ev.text;
+
+          node.append(dateEl, dotEl, labelEl);
+          track.append(node);
+        });
+
+        scrollBox.append(track);
+      }
+
+      timelineSection.append(tlHeader, scrollBox);
+      activityCard.append(timelineSection);
+
+      // Section 2: Status buttons directly below timeline.
+      const statusSection = document.createElement('div');
+      statusSection.className = 'status-section';
 
       const buttonsRow = document.createElement('div');
-      buttonsRow.className = 'outcome-buttons-row';
+      buttonsRow.className = 'status-buttons-row';
+
+      const outcomes = [
+        { key: 'applied', label: 'Applied', stage: 'applied' },
+        { key: 'reply', label: 'Reply', stage: 'screening' },
+        { key: 'interview', label: 'Interview', stage: 'interview' },
+        { key: 'offer', label: 'Offer', stage: 'offer' },
+        { key: 'rejected', label: 'Rejected', stage: 'rejected' },
+        { key: 'no_reply', label: 'No reply', stage: 'no_reply' },
+      ];
 
       const outcomeFeedback = document.createElement('span');
       outcomeFeedback.className = 'save-status';
@@ -2250,16 +2422,6 @@ async function renderJobPage(container, jobId) {
       outcomeError.id = 'outcome-error';
       outcomeError.style.display = 'none';
 
-      // 6 outcome buttons.
-      const outcomes = [
-        { key: 'applied', label: 'Applied', stage: 'applied' },
-        { key: 'reply', label: 'Reply', stage: 'screening' },
-        { key: 'interview', label: 'Interview', stage: 'interview' },
-        { key: 'offer', label: 'Offer', stage: 'offer' },
-        { key: 'rejected', label: 'Rejected', stage: 'rejected' },
-        { key: 'no_reply', label: 'No reply', stage: 'no_reply' },
-      ];
-
       outcomes.forEach((o) => {
         const isActive = job.stage === o.stage;
         const btn = document.createElement('button');
@@ -2269,7 +2431,6 @@ async function renderJobPage(container, jobId) {
         btn.textContent = isActive ? `✓ ${o.label}` : o.label;
 
         btn.addEventListener('click', async () => {
-          // Clicking the outcome the job already has does nothing.
           if (isActive) return;
 
           outcomeError.textContent = '';
@@ -2320,9 +2481,7 @@ async function renderJobPage(container, jobId) {
         buttonsRow.append(btn);
       });
 
-      buttonsRow.append(outcomeFeedback);
-
-      // Rejection reason dropdown - appears ONLY when Rejected is chosen.
+      // Rejection reason dropdown - appears ONLY when Rejected is selected.
       const rejectionBox = document.createElement('div');
       rejectionBox.className = 'rejection-reason-box';
       rejectionBox.id = 'rejection-reason-box';
@@ -2393,10 +2552,21 @@ async function renderJobPage(container, jobId) {
       });
 
       rejectionBox.append(rLabel, rSelect);
-      whatHappenedCard.append(whHeading, buttonsRow, rejectionBox, outcomeError);
-      leftCol.append(whatHappenedCard);
 
-      // 3. Details section (or Edit form when isEditing is true).
+      const feedbackBox = document.createElement('div');
+      feedbackBox.className = 'outcome-feedback-box';
+      feedbackBox.append(outcomeFeedback, outcomeError);
+
+      statusSection.append(buttonsRow, rejectionBox, feedbackBox);
+      activityCard.append(statusSection);
+
+      shell.append(activityCard);
+
+      // 3. Bottom row: Details and Notes side by side.
+      const bottomRow = document.createElement('div');
+      bottomRow.className = 'job-bottom-row';
+
+      // Left column: Details card (or Edit panel when editing).
       if (isEditing) {
         const editPanel = createEditJobPanel(
           job,
@@ -2411,114 +2581,17 @@ async function renderJobPage(container, jobId) {
             drawJobView();
           }
         );
-        leftCol.append(editPanel);
+        bottomRow.append(editPanel);
       } else {
         const detailsCard = document.createElement('section');
         detailsCard.className = 'job-page-card job-card-details';
         detailsCard.setAttribute('aria-labelledby', 'heading-details');
 
-        const dtHeaderRow = document.createElement('div');
-        dtHeaderRow.className = 'card-header-row';
-
         const dtHeading = document.createElement('h2');
         dtHeading.id = 'heading-details';
         dtHeading.className = 'card-heading';
         dtHeading.textContent = 'Details';
-
-        if (!isConfirmingDelete) {
-          const dtActions = document.createElement('div');
-          dtActions.className = 'card-header-actions';
-
-          const editBtn = document.createElement('button');
-          editBtn.type = 'button';
-          editBtn.className = 'btn btn-secondary';
-          editBtn.id = 'btn-edit-job';
-          editBtn.textContent = 'Edit job';
-          editBtn.addEventListener('click', () => {
-            isEditing = true;
-            drawJobView();
-            const formEl = document.getElementById('edit-job-panel');
-            if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
-          });
-
-          const deleteBtn = document.createElement('button');
-          deleteBtn.type = 'button';
-          deleteBtn.className = 'btn btn-danger';
-          deleteBtn.id = 'btn-delete-job';
-          deleteBtn.textContent = 'Delete job';
-          deleteBtn.addEventListener('click', () => {
-            isConfirmingDelete = true;
-            drawJobView();
-          });
-
-          dtActions.append(editBtn, deleteBtn);
-          dtHeaderRow.append(dtHeading, dtActions);
-          detailsCard.append(dtHeaderRow);
-        } else {
-          dtHeaderRow.append(dtHeading);
-          detailsCard.append(dtHeaderRow);
-
-          const confirmBox = document.createElement('div');
-          confirmBox.className = 'delete-confirm';
-          confirmBox.setAttribute('role', 'alert');
-
-          const promptText = document.createElement('p');
-          promptText.className = 'delete-prompt';
-          promptText.textContent = `Delete ${job.company} ${job.title}? This also deletes its application and replies. It cannot be undone.`;
-
-          const deleteActions = document.createElement('div');
-          deleteActions.className = 'delete-actions';
-
-          const confirmBtn = document.createElement('button');
-          confirmBtn.type = 'button';
-          confirmBtn.className = 'btn btn-danger';
-          confirmBtn.id = 'btn-confirm-delete';
-          confirmBtn.textContent = 'Delete';
-
-          const cancelConfirmBtn = document.createElement('button');
-          cancelConfirmBtn.type = 'button';
-          cancelConfirmBtn.className = 'btn btn-secondary';
-          cancelConfirmBtn.id = 'btn-cancel-delete';
-          cancelConfirmBtn.textContent = 'Keep it';
-
-          const deleteError = document.createElement('span');
-          deleteError.className = 'field-error';
-          deleteError.id = 'delete-job-error';
-          deleteError.style.display = 'none';
-
-          cancelConfirmBtn.addEventListener('click', () => {
-            isConfirmingDelete = false;
-            drawJobView();
-          });
-
-          confirmBtn.addEventListener('click', async () => {
-            confirmBtn.disabled = true;
-            cancelConfirmBtn.disabled = true;
-            deleteError.textContent = '';
-            deleteError.style.display = 'none';
-            try {
-              const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
-              if (!res.ok) {
-                const data = await res.json();
-                deleteError.textContent = data.error || 'Failed to delete job.';
-                deleteError.style.display = 'inline-block';
-                confirmBtn.disabled = false;
-                cancelConfirmBtn.disabled = false;
-                return;
-              }
-              location.hash = '#jobs';
-            } catch (err) {
-              deleteError.textContent = err.message || 'Error deleting job.';
-              deleteError.style.display = 'inline-block';
-              confirmBtn.disabled = false;
-              cancelConfirmBtn.disabled = false;
-            }
-          });
-
-          deleteActions.append(confirmBtn, cancelConfirmBtn, deleteError);
-          confirmBox.append(promptText, deleteActions);
-          detailsCard.append(confirmBox);
-        }
+        detailsCard.append(dtHeading);
 
         const detailsGrid = document.createElement('div');
         detailsGrid.className = 'details-grid';
@@ -2576,10 +2649,10 @@ async function renderJobPage(container, jobId) {
         );
 
         detailsCard.append(detailsGrid);
-        leftCol.append(detailsCard);
+        bottomRow.append(detailsCard);
       }
 
-      // 4. Notes section (inside left column).
+      // Right column: Notes card (contains Notes and Show description toggle).
       const notesCard = document.createElement('section');
       notesCard.className = 'job-page-card job-card-notes';
       notesCard.setAttribute('aria-labelledby', 'heading-notes');
@@ -2602,12 +2675,9 @@ async function renderJobPage(container, jobId) {
       notesArea.setAttribute('aria-label', 'Notes');
 
       notesGroup.append(notesArea);
-      notesCard.append(notesHeading, notesGroup);
-      leftCol.append(notesCard);
 
-      // 5. Description toggle (inside left column).
       const descCard = document.createElement('details');
-      descCard.className = 'job-page-card job-card-description';
+      descCard.className = 'job-card-description';
 
       const descSummary = document.createElement('summary');
       descSummary.className = 'card-heading description-toggle';
@@ -2627,104 +2697,11 @@ async function renderJobPage(container, jobId) {
 
       descGroup.append(descArea);
       descCard.append(descSummary, descGroup);
-      leftCol.append(descCard);
 
-      // 6. Timeline section (inside right column).
-      const timelineCard = document.createElement('section');
-      timelineCard.className = 'job-page-card job-card-timeline';
-      timelineCard.setAttribute('aria-labelledby', 'heading-timeline');
+      notesCard.append(notesHeading, notesGroup, descCard);
+      bottomRow.append(notesCard);
 
-      const tlHeading = document.createElement('h2');
-      tlHeading.id = 'heading-timeline';
-      tlHeading.className = 'card-heading';
-      tlHeading.textContent = 'Timeline';
-
-      // Build events list.
-      const events = [];
-
-      if (job.found_date) {
-        events.push({
-          date: job.found_date,
-          text: `Job found (${job.source || 'Other'})`,
-        });
-      }
-
-      if (job.application?.applied_date) {
-        events.push({
-          date: job.application.applied_date,
-          text: 'Application submitted',
-        });
-      }
-
-      const kindLabels = {
-        replied: 'Reply received (screening)',
-        first_interview: 'First interview',
-        second_interview: 'Second interview',
-        test_task: 'Test task',
-        offer: 'Offer received',
-        rejected: 'Rejected',
-      };
-
-      if (Array.isArray(job.replies)) {
-        job.replies.forEach((r) => {
-          let desc = kindLabels[r.kind] || r.kind;
-          if (r.kind === 'rejected' && job.application?.rejection_reason) {
-            desc = `Rejected: ${job.application.rejection_reason}`;
-          }
-          if (r.note) {
-            desc += ` (${r.note})`;
-          }
-          events.push({
-            date: r.happened_on,
-            text: desc,
-          });
-        });
-      }
-
-      if (job.application?.status === 'no_reply' && (!job.replies || job.replies.length === 0)) {
-        events.push({
-          date: job.application.applied_date || job.found_date,
-          text: 'Marked as no reply',
-        });
-      }
-
-      // Sort chronological, oldest first.
-      events.sort((a, b) => a.date.localeCompare(b.date));
-
-      const timelineList = document.createElement('div');
-      timelineList.className = 'timeline-list';
-      timelineList.setAttribute('tabindex', '0');
-      timelineList.setAttribute('aria-label', 'Timeline events');
-
-      if (events.length === 0) {
-        const noEvents = document.createElement('p');
-        noEvents.className = 'muted';
-        noEvents.textContent = 'No events recorded yet.';
-        timelineList.append(noEvents);
-      } else {
-        events.forEach((ev) => {
-          const item = document.createElement('div');
-          item.className = 'timeline-item';
-
-          const d = document.createElement('span');
-          d.className = 'timeline-date';
-          d.textContent = ev.date;
-
-          const t = document.createElement('span');
-          t.className = 'timeline-text';
-          t.textContent = ev.text;
-
-          item.append(d, t);
-          timelineList.append(item);
-        });
-      }
-
-      timelineCard.append(tlHeading, timelineList);
-      rightCol.append(timelineCard);
-
-      // Assemble columns and append to container.
-      cols.append(leftCol, rightCol);
-      shell.append(cols);
+      shell.append(bottomRow);
       container.append(shell);
     }
 
