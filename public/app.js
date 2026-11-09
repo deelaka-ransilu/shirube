@@ -1168,6 +1168,10 @@ async function renderJobs(container) {
   }
 
   drawJobsView(container);
+  if (jobsState.isAdding) {
+    const pasteEl = document.getElementById('job-paste');
+    if (pasteEl) pasteEl.focus();
+  }
 }
 
 // Redraws the Jobs view based on current state.
@@ -2403,7 +2407,7 @@ async function renderJobPage(container, jobId) {
       const detailsGrid = document.createElement('div');
       detailsGrid.className = 'details-grid';
 
-      function createDetailItem(label, value, isLink = false) {
+      function createDetailItem(label, value, isLink = false, emptyText = 'Not added yet') {
         const div = document.createElement('div');
         div.className = 'detail-item';
 
@@ -2416,7 +2420,7 @@ async function renderJobPage(container, jobId) {
 
         if (!value) {
           dd.classList.add('is-empty');
-          dd.textContent = 'Not added yet';
+          dd.textContent = emptyText;
         } else if (isLink) {
           const a = document.createElement('a');
           a.href = value;
@@ -2433,6 +2437,15 @@ async function renderJobPage(container, jobId) {
         return div;
       }
 
+      let followUpEmptyText = 'Not added yet';
+      if (!job.due_date) {
+        if (!job.application) {
+          followUpEmptyText = 'Not applied yet';
+        } else if (['offer', 'interview', 'rejected', 'no_reply'].includes(job.application.status)) {
+          followUpEmptyText = 'Not needed';
+        }
+      }
+
       detailsGrid.append(
         createDetailItem('Source', job.source),
         createDetailItem('Role type', job.role_type),
@@ -2442,7 +2455,7 @@ async function renderJobPage(container, jobId) {
         createDetailItem('Applied date', job.application?.applied_date),
         createDetailItem('Posted date', job.posted_date),
         createDetailItem('Closing date', job.closing_date),
-        createDetailItem('Follow-up due date', job.due_date),
+        createDetailItem('Follow-up due date', job.due_date, false, followUpEmptyText),
         createDetailItem('Job link', job.url, true)
       );
 
@@ -2775,7 +2788,7 @@ function drawFollowupsView(container, data) {
     emptyText.textContent = 'No follow-ups due. Add a job or apply to one.';
 
     const addBtn = document.createElement('a');
-    addBtn.href = '#jobs';
+    addBtn.href = '#jobs/new';
     addBtn.className = 'btn btn-primary';
     addBtn.textContent = '+ Add job';
 
@@ -2849,8 +2862,9 @@ function showScreen() {
   const name = hash || 'jobs';
   const app = document.getElementById('app');
 
-  if (name === 'jobs') {
+  if (name === 'jobs' || name === 'jobs/new') {
     document.title = 'Jobs | Shirube';
+    jobsState.isAdding = name === 'jobs/new';
     renderJobs(app);
   } else if (name.startsWith('job/')) {
     const jobId = name.slice(4);
@@ -2882,7 +2896,10 @@ function showScreen() {
 
   // Mark the current page in the navbar and in the account menu.
   document.querySelectorAll('[data-screen]').forEach((link) => {
-    const isCurrent = link.dataset.screen === name || (name.startsWith('job/') && link.dataset.screen === 'jobs');
+    const isCurrent =
+      link.dataset.screen === name ||
+      (name.startsWith('job/') && link.dataset.screen === 'jobs') ||
+      (name === 'jobs/new' && link.dataset.screen === 'jobs');
     link.setAttribute('aria-current', isCurrent ? 'page' : 'false');
   });
 
