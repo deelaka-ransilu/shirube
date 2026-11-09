@@ -1279,3 +1279,91 @@ body {
   text-decoration: none;
   white-space: nowrap;
 }
+
+/* Job header: Edit and Archive stacked on the right, equal width */
+.job-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-width: calc(var(--space-7) * 3);
+}
+
+.job-header-actions .btn {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .job-header-actions {
+    flex-direction: row;
+    min-width: 0;
+  }
+
+  .job-header-actions .btn {
+    width: auto;
+  }
+}
+/* Job header: title on the left, Edit and Archive on the right */
+.job-page-header {
+  flex-direction: row;
+}
+
+/* Timeline labels: keep them from running into the next label */
+.timeline-node-label {
+  max-width: calc(var(--space-7) * 2.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Timeline: labels alternate above and below the line, dots sit exactly on the line */
+.timeline-track {
+  height: calc(var(--space-7) * 2.5);
+}
+
+.timeline-line {
+  top: calc(var(--space-7) * 1.25);
+}
+
+.timeline-node {
+  top: 0;
+  height: 100%;
+}
+
+/* Odd events: date and label above the line */
+.timeline-node:nth-child(odd) {
+  justify-content: flex-end;
+  padding-bottom: calc(var(--space-7) * 1.5);
+}
+
+/* Even events: date and label below the line */
+.timeline-node:nth-child(even) {
+  justify-content: flex-start;
+  padding-top: calc(var(--space-7) * 1.5);
+}
+
+.timeline-dot {
+  position: absolute;
+  top: calc(var(--space-7) * 1.25 - var(--space-1));
+  margin: 0;
+}
+
+.timeline-node.is-first .timeline-dot {
+  left: 0;
+}
+
+.timeline-node.is-middle .timeline-dot {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.timeline-node.is-last .timeline-dot {
+  left: auto;
+  right: 0;
+}
+
+.timeline-node-label {
+  white-space: normal;
+  max-width: calc(var(--space-7) * 3);
+  overflow: visible;
+  text-overflow: clip;
+}
