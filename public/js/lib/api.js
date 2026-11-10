@@ -28,3 +28,9 @@ export async function deleteJob(id) {
   if (!res.ok) throw new Error(data.error || 'Could not delete job.');
   return data;
 }
+
+export async function getJob(id) {
+  const res = await fetch(`/api/jobs/${id}`);
+  if (!res.ok) throw new Error('Job not found.');
+  return res.json();
+}

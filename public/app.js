@@ -3194,8 +3194,7 @@ function showScreen() {
   if (name === 'jobs' || name === 'jobs/new') {
     // The Jobs page is drawn by public/js/main.js.
   } else if (name.startsWith('job/')) {
-    const jobId = name.slice(4);
-    renderJobPage(app, jobId);
+    // The job page is drawn by public/js/main.js.
   } else if (name === 'profile') {
     document.title = 'My profile | Shirube';
     renderProfile(app);
