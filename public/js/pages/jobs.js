@@ -1,5 +1,6 @@
 // Jobs page: list, stage filters, bulk actions, per-row delete, and the Add job form.
 import { escapeHtml, getTodayColombo } from '../lib/format.js';
+import { JOB_TYPES } from '../lib/job-options.js';
 import { renderStageBadge } from '../components/stage-badge.js';
 import { loadJobs, sendJson, deleteJob } from '../lib/api.js';
 
@@ -463,7 +464,7 @@ function createJobRow(job, index, container) {
   const tags = document.createElement('div');
   tags.className = 'job-tags';
 
-  [job.work_mode, job.level, job.role_type].forEach((text) => {
+  [job.job_type, job.work_mode, job.level, job.role_type].forEach((text) => {
     if (!text) return;
     const tag = document.createElement('span');
     tag.className = 'meta-chip';
@@ -662,6 +663,17 @@ function createAddJobForm(container) {
     roleSelect.append(opt);
   });
   addFieldTo(row2, 'Role type (optional)', roleSelect, 'job-role-error');
+
+  const jtSelect = document.createElement('select');
+  jtSelect.id = 'job-type-select';
+  jtSelect.className = 'form-select';
+  [{ val: '', lbl: 'Select job type (optional)' }, ...JOB_TYPES.map((t) => ({ val: t, lbl: t }))].forEach((jt) => {
+    const opt = document.createElement('option');
+    opt.value = jt.val;
+    opt.textContent = jt.lbl;
+    jtSelect.append(opt);
+  });
+  addFieldTo(row2, 'Job type (optional)', jtSelect, 'job-jt-error');
 
   form.append(row2);
 
@@ -864,6 +876,7 @@ function createAddJobForm(container) {
       source: sourceSelect.value,
       role_type: roleSelect.value || null,
       work_mode: wmSelect.value || null,
+      job_type: jtSelect.value || null,
       level: lvlInput.value.trim() || null,
       url: urlVal || null,
       found_date: foundDate || getTodayColombo(),

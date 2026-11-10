@@ -108,6 +108,9 @@ function getSettingNumber(key, fallback) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+// Job types a job can have. The Add and Edit forms use the same list.
+const JOB_TYPES = ['Internship', 'Full-time', 'Contract', 'Part-time', 'Freelance'];
+
 // Common CTE query defining stage and is_stale in one place.
 const JOB_CTE = `
   WITH job_entries AS (
@@ -120,6 +123,7 @@ const JOB_CTE = `
       j.url,
       j.location,
       j.work_mode,
+      j.job_type,
       j.level,
       j.salary_text,
       j.posted_date,
@@ -328,6 +332,10 @@ async function handleJobsCollection(req, res, url, method) {
     const roleType = typeof body.role_type === 'string' && body.role_type.trim() ? body.role_type.trim() : null;
     const location = typeof body.location === 'string' && body.location.trim() ? body.location.trim() : null;
     const workMode = typeof body.work_mode === 'string' && body.work_mode.trim() ? body.work_mode.trim() : null;
+    const jobType = typeof body.job_type === 'string' && body.job_type.trim() ? body.job_type.trim() : null;
+    if (jobType !== null && !JOB_TYPES.includes(jobType)) {
+      return sendJson(res, 400, { error: 'Job type must be Internship, Full-time, Contract, Part-time or Freelance.' });
+    }
     const level = typeof body.level === 'string' && body.level.trim() ? body.level.trim() : null;
     const salaryText = typeof body.salary_text === 'string' && body.salary_text.trim() ? body.salary_text.trim() : null;
     const description = typeof body.description === 'string' && body.description.trim() ? body.description.trim() : null;
@@ -368,12 +376,12 @@ async function handleJobsCollection(req, res, url, method) {
     const info = db.prepare(`
       INSERT INTO jobs (
         title, company, source, role_type, url, location,
-        work_mode, level, salary_text, posted_date, closing_date,
+        work_mode, job_type, level, salary_text, posted_date, closing_date,
         found_date, description, notes, job_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open');
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open');
     `).run(
       title, company, source, roleType, urlVal, location,
-      workMode, level, salaryText, postedDate, closingDate,
+      workMode, jobType, level, salaryText, postedDate, closingDate,
       foundDate, description, notes
     );
 
@@ -425,6 +433,10 @@ async function handleJobItem(req, res, id, method) {
     const roleType = typeof body.role_type === 'string' && body.role_type.trim() ? body.role_type.trim() : null;
     const location = typeof body.location === 'string' && body.location.trim() ? body.location.trim() : null;
     const workMode = typeof body.work_mode === 'string' && body.work_mode.trim() ? body.work_mode.trim() : null;
+    const jobType = typeof body.job_type === 'string' && body.job_type.trim() ? body.job_type.trim() : null;
+    if (jobType !== null && !JOB_TYPES.includes(jobType)) {
+      return sendJson(res, 400, { error: 'Job type must be Internship, Full-time, Contract, Part-time or Freelance.' });
+    }
     const level = typeof body.level === 'string' && body.level.trim() ? body.level.trim() : null;
     const salaryText = typeof body.salary_text === 'string' && body.salary_text.trim() ? body.salary_text.trim() : null;
     const description = typeof body.description === 'string' && body.description.trim() ? body.description.trim() : null;
@@ -461,12 +473,12 @@ async function handleJobItem(req, res, id, method) {
     db.prepare(`
       UPDATE jobs
       SET title = ?, company = ?, source = ?, role_type = ?, url = ?, location = ?,
-          work_mode = ?, level = ?, salary_text = ?, posted_date = ?, closing_date = ?,
+          work_mode = ?, job_type = ?, level = ?, salary_text = ?, posted_date = ?, closing_date = ?,
           found_date = ?, description = ?, notes = ?
       WHERE id = ?;
     `).run(
       title, company, source, roleType, urlVal, location,
-      workMode, level, salaryText, postedDate, closingDate,
+      workMode, jobType, level, salaryText, postedDate, closingDate,
       foundDate, description, notes, id
     );
 

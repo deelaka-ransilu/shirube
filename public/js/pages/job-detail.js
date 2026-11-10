@@ -2,6 +2,7 @@
 import { escapeHtml, getTodayColombo, formatMonthDay, yearOf } from '../lib/format.js';
 import { renderStageBadge } from '../components/stage-badge.js';
 import { getJob, loadJobs, sendJson } from '../lib/api.js';
+import { JOB_TYPES } from '../lib/job-options.js';
 
 const OUTCOMES = [
   { key: 'applied', label: 'Applied', stage: 'applied' },
@@ -355,6 +356,7 @@ function buildDetails(job) {
   grid.append(
     detailItem('Source', job.source),
     detailItem('Role type', job.role_type),
+    detailItem('Job type', job.job_type),
     detailItem('Work mode', job.work_mode),
     detailItem('Level', job.level),
     detailItem('Date found', job.found_date),
@@ -494,6 +496,11 @@ function buildEditPanel(page) {
   );
 
   const wmSelect = makeSelect('edit-job-work-mode', WORK_MODES, job.work_mode || '');
+  const jtSelect = makeSelect(
+    'edit-job-type',
+    [{ val: '', lbl: 'Select job type (optional)' }, ...JOB_TYPES.map((t) => ({ val: t, lbl: t }))],
+    job.job_type || ''
+  );
   const lvlInput = makeInput('text', 'edit-job-level', job.level, 'e.g. Junior, Mid, Senior, Lead');
   const urlInput = makeInput('url', 'edit-job-url', job.url, 'https://...');
   const foundInput = makeInput('text', 'edit-job-found-date', job.found_date || getTodayColombo(), 'YYYY-MM-DD');
@@ -536,7 +543,11 @@ function buildEditPanel(page) {
 
   form.append(
     formRow(field('Job title *', titleInput, 'edit-job-title-error'), field('Company *', compInput, 'edit-job-company-error')),
-    formRow(field('Source', sourceSelect, 'edit-job-source-error'), field('Role type (optional)', roleSelect, 'edit-job-role-error')),
+    formRow(
+      field('Source', sourceSelect, 'edit-job-source-error'),
+      field('Role type (optional)', roleSelect, 'edit-job-role-error'),
+      field('Job type (optional)', jtSelect, 'edit-job-jt-error')
+    ),
     formRow(
       field('Work mode (optional)', wmSelect, 'edit-job-wm-error'),
       field('Level (optional)', lvlInput, 'edit-job-lvl-error'),
@@ -596,6 +607,7 @@ function buildEditPanel(page) {
       source: sourceSelect.value,
       role_type: roleSelect.value || null,
       work_mode: wmSelect.value || null,
+      job_type: jtSelect.value || null,
       level: lvlInput.value.trim() || null,
       url: url || null,
       found_date: found || getTodayColombo(),
