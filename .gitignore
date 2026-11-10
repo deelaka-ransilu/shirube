@@ -2,3 +2,10 @@ node_modules/
 data/
 .env
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+.env.*
+!.env.example
