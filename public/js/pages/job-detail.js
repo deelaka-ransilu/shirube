@@ -358,6 +358,7 @@ function buildDetails(job) {
     detailItem('Role type', job.role_type),
     detailItem('Job type', job.job_type),
     detailItem('Work mode', job.work_mode),
+    detailItem('Location', job.location),
     detailItem('Level', job.level),
     detailItem('Date found', job.found_date),
     detailItem('Applied date', job.application?.applied_date),

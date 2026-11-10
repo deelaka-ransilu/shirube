@@ -496,7 +496,7 @@ function createJobRow(job, index, container) {
   const tags = document.createElement('div');
   tags.className = 'job-tags';
 
-  [job.source === 'ITPro' ? 'From ITPro' : null, job.job_type, job.work_mode, job.level, job.role_type].forEach((text) => {
+  [job.source === 'ITPro' ? 'From ITPro' : null, job.job_type, job.work_mode, job.location, job.level, job.role_type].forEach((text) => {
     if (!text) return;
     const tag = document.createElement('span');
     tag.className = 'meta-chip';
