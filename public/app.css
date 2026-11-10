@@ -1297,10 +1297,15 @@ body {
   .job-header-actions {
     flex-direction: row;
     min-width: 0;
+    align-items: center;
   }
 
   .job-header-actions .btn {
     width: auto;
+  }
+
+  .job-header-actions .field-error {
+    width: 100%;
   }
 }
 /* Job header: title on the left, Edit and Archive on the right */

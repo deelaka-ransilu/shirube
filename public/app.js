@@ -1017,6 +1017,7 @@ const STAGE_CHIPS = [
   { key: 'rejected', label: 'Rejected' },
   { key: 'no_reply', label: 'No reply' },
   { key: 'skipped', label: 'Skipped' },
+  { key: 'archived', label: 'Archived' },
 ];
 
 // Returns SVG shape plus label for a job's stage.
@@ -1298,7 +1299,11 @@ function drawJobsView(container) {
     if (jobsState.stageFilter !== 'all') {
       const emptyMsg = document.createElement('p');
       emptyMsg.className = 'empty-text';
-      emptyMsg.textContent = 'No jobs in this stage.';
+      if (jobsState.stageFilter === 'archived') {
+        emptyMsg.textContent = 'No archived jobs.';
+      } else {
+        emptyMsg.textContent = 'No jobs in this stage.';
+      }
 
       const showAllBtn = document.createElement('button');
       showAllBtn.type = 'button';
@@ -2224,15 +2229,63 @@ async function renderJobPage(container, jobId) {
         drawJobView();
       });
 
+      const isArchived = Boolean(job.archived_at);
+
       const archiveBtn = document.createElement('button');
       archiveBtn.type = 'button';
       archiveBtn.className = 'btn btn-secondary';
       archiveBtn.id = 'btn-archive-job';
-      archiveBtn.disabled = true;
-      archiveBtn.title = 'Archive is coming in a later step';
-      archiveBtn.textContent = 'Archive';
+      archiveBtn.textContent = isArchived ? 'Unarchive' : 'Archive';
 
-      rightHeader.append(editBtn, archiveBtn);
+      const archiveFeedback = document.createElement('span');
+      archiveFeedback.className = 'save-status';
+      archiveFeedback.id = 'archive-save-status';
+      archiveFeedback.setAttribute('aria-live', 'polite');
+
+      const archiveError = document.createElement('div');
+      archiveError.className = 'field-error';
+      archiveError.id = 'archive-error';
+      archiveError.style.display = 'none';
+
+      archiveBtn.addEventListener('click', async () => {
+        archiveError.textContent = '';
+        archiveError.style.display = 'none';
+        archiveFeedback.textContent = '';
+
+        try {
+          const res = await fetch(`/api/jobs/${job.id}/archive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ archived: !isArchived }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            archiveError.textContent = data.error || 'Failed to update archive status.';
+            archiveError.style.display = 'block';
+            return;
+          }
+
+          job = data;
+          document.title = `${job.title} | Shirube`;
+          drawJobView();
+
+          const newFeedback = document.getElementById('archive-save-status');
+          if (newFeedback) {
+            newFeedback.textContent = 'Saved';
+            setTimeout(() => {
+              if (newFeedback.textContent === 'Saved') {
+                newFeedback.textContent = '';
+              }
+            }, 3000);
+          }
+        } catch (err) {
+          archiveError.textContent = err.message || 'An error occurred.';
+          archiveError.style.display = 'block';
+        }
+      });
+
+      rightHeader.append(editBtn, archiveBtn, archiveFeedback, archiveError);
       header.append(leftHeader, rightHeader);
       shell.append(header);
 

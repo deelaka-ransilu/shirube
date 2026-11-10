@@ -106,7 +106,8 @@ export async function handleFollowupsRequest(req, res, url) {
     FROM applications a
     JOIN jobs j ON j.id = a.job_id
     WHERE a.status IN ('applied', 'screening')
-      AND j.job_status != 'skipped';
+      AND j.job_status != 'skipped'
+      AND j.archived_at IS NULL;
   `).all();
 
   const comingUp = [];

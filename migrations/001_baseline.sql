@@ -1,0 +1,2 @@
+-- Migration 001: Baseline schema.
+-- Marks the initial schema from schema.sql as applied.

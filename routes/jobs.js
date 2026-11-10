@@ -129,6 +129,7 @@ const JOB_CTE = `
       j.notes,
       j.job_status,
       j.created_at,
+      j.archived_at,
       a.id AS application_id,
       a.status AS application_status,
       a.applied_date,
@@ -216,16 +217,17 @@ async function handleJobsCollection(req, res, url, method) {
     const countsRow = db.prepare(`
       ${JOB_CTE}
       SELECT
-        COUNT(*) AS total_all,
-        SUM(CASE WHEN stage = 'to_apply' THEN 1 ELSE 0 END) AS count_to_apply,
-        SUM(CASE WHEN stage = 'applied' THEN 1 ELSE 0 END) AS count_applied,
-        SUM(CASE WHEN stage = 'screening' THEN 1 ELSE 0 END) AS count_screening,
-        SUM(CASE WHEN stage = 'interview' THEN 1 ELSE 0 END) AS count_interview,
-        SUM(CASE WHEN stage = 'offer' THEN 1 ELSE 0 END) AS count_offer,
-        SUM(CASE WHEN stage = 'rejected' THEN 1 ELSE 0 END) AS count_rejected,
-        SUM(CASE WHEN stage = 'no_reply' THEN 1 ELSE 0 END) AS count_no_reply,
-        SUM(CASE WHEN stage = 'skipped' THEN 1 ELSE 0 END) AS count_skipped,
-        SUM(CASE WHEN is_stale = 1 THEN 1 ELSE 0 END) AS count_stale
+        SUM(CASE WHEN archived_at IS NULL THEN 1 ELSE 0 END) AS total_all,
+        SUM(CASE WHEN archived_at IS NULL AND stage = 'to_apply' THEN 1 ELSE 0 END) AS count_to_apply,
+        SUM(CASE WHEN archived_at IS NULL AND stage = 'applied' THEN 1 ELSE 0 END) AS count_applied,
+        SUM(CASE WHEN archived_at IS NULL AND stage = 'screening' THEN 1 ELSE 0 END) AS count_screening,
+        SUM(CASE WHEN archived_at IS NULL AND stage = 'interview' THEN 1 ELSE 0 END) AS count_interview,
+        SUM(CASE WHEN archived_at IS NULL AND stage = 'offer' THEN 1 ELSE 0 END) AS count_offer,
+        SUM(CASE WHEN archived_at IS NULL AND stage = 'rejected' THEN 1 ELSE 0 END) AS count_rejected,
+        SUM(CASE WHEN archived_at IS NULL AND stage = 'no_reply' THEN 1 ELSE 0 END) AS count_no_reply,
+        SUM(CASE WHEN archived_at IS NULL AND stage = 'skipped' THEN 1 ELSE 0 END) AS count_skipped,
+        SUM(CASE WHEN archived_at IS NULL AND is_stale = 1 THEN 1 ELSE 0 END) AS count_stale,
+        SUM(CASE WHEN archived_at IS NOT NULL THEN 1 ELSE 0 END) AS count_archived
       FROM job_entries;
     `).get();
 
@@ -240,6 +242,7 @@ async function handleJobsCollection(req, res, url, method) {
       no_reply: countsRow.count_no_reply || 0,
       skipped: countsRow.count_skipped || 0,
       stale: countsRow.count_stale || 0,
+      archived: countsRow.count_archived || 0,
     };
 
     // 2. Build list query with sort and filter.
@@ -258,17 +261,25 @@ async function handleJobsCollection(req, res, url, method) {
     }
 
     let jobs;
-    if (isFiltered) {
+    if (stageParam === 'archived') {
       jobs = db.prepare(`
         ${JOB_CTE}
         SELECT * FROM job_entries
-        WHERE stage = ?
+        WHERE archived_at IS NOT NULL
+        ORDER BY archived_at DESC, id DESC;
+      `).all();
+    } else if (isFiltered) {
+      jobs = db.prepare(`
+        ${JOB_CTE}
+        SELECT * FROM job_entries
+        WHERE archived_at IS NULL AND stage = ?
         ${orderByClause};
       `).all(stageParam);
     } else {
       jobs = db.prepare(`
         ${JOB_CTE}
         SELECT * FROM job_entries
+        WHERE archived_at IS NULL
         ${orderByClause};
       `).all();
     }
@@ -628,6 +639,35 @@ async function handleJobOutcome(req, res, id, method) {
   return sendJson(res, 200, fullJob);
 }
 
+// Handles archiving and unarchiving a job (/api/jobs/:id/archive).
+async function handleJobArchive(req, res, id, method) {
+  if (method !== 'POST') {
+    return sendJson(res, 405, { error: 'Method not allowed.' }, { Allow: 'POST' });
+  }
+
+  const existing = db.prepare('SELECT id FROM jobs WHERE id = ?;').get(id);
+  if (!existing) {
+    return sendJson(res, 404, { error: 'Job not found.' });
+  }
+
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    return sendJson(res, 400, { error: err.message });
+  }
+
+  if (typeof body.archived !== 'boolean') {
+    return sendJson(res, 400, { error: 'Archived flag must be a boolean.' });
+  }
+
+  const archivedAt = body.archived ? getTodayColombo() : null;
+  db.prepare('UPDATE jobs SET archived_at = ? WHERE id = ?;').run(archivedAt, id);
+
+  const fullJob = getFullJob(id);
+  return sendJson(res, 200, fullJob);
+}
+
 // Dispatches /api/jobs requests. Returns true if handled.
 export async function handleJobsRequest(req, res, url) {
   const method = req.method.toUpperCase();
@@ -636,6 +676,14 @@ export async function handleJobsRequest(req, res, url) {
   // Collection: /api/jobs
   if (path === '/api/jobs') {
     await handleJobsCollection(req, res, url, method);
+    return true;
+  }
+
+  // Archive: /api/jobs/:id/archive
+  const archiveMatch = path.match(/^\/api\/jobs\/(\d+)\/archive$/);
+  if (archiveMatch) {
+    const id = Number(archiveMatch[1]);
+    await handleJobArchive(req, res, id, method);
     return true;
   }
 
