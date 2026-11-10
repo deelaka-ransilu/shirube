@@ -183,7 +183,21 @@ function getFullJob(id) {
     const followUpDays = getSettingNumber('follow_up_days', 14);
     const noReplyDays = getSettingNumber('no_reply_days', 21);
     const today = getTodayColombo();
-    dueDate = computeDueDate(application.applied_date, application.status, {
+
+    let referenceDate = application.applied_date;
+    if (application.status === 'screening') {
+      const latestReply = db.prepare(`
+        SELECT MAX(happened_on) AS latest_reply_date
+        FROM replies
+        WHERE application_id = ? AND kind = 'replied';
+      `).get(application.id);
+
+      if (latestReply && latestReply.latest_reply_date) {
+        referenceDate = latestReply.latest_reply_date;
+      }
+    }
+
+    dueDate = computeDueDate(referenceDate, application.status, {
       reply_days: replyDays,
       follow_up_days: followUpDays,
       no_reply_days: noReplyDays,
@@ -668,6 +682,106 @@ async function handleJobArchive(req, res, id, method) {
   return sendJson(res, 200, fullJob);
 }
 
+// Validates that an ids argument is a non-empty array of positive integers, max 200.
+function isValidJobIdArray(ids) {
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200) {
+    return false;
+  }
+  for (const id of ids) {
+    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Handles bulk archiving/unarchiving jobs (POST /api/jobs/bulk-archive).
+async function handleJobsBulkArchive(req, res, method) {
+  if (method !== 'POST') {
+    return sendJson(res, 405, { error: 'Method not allowed.' }, { Allow: 'POST' });
+  }
+
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    return sendJson(res, 400, { error: err.message });
+  }
+
+  if (!isValidJobIdArray(body.ids)) {
+    return sendJson(res, 400, { error: 'ids must be a non-empty array of up to 200 positive integers.' });
+  }
+
+  if (typeof body.archived !== 'boolean') {
+    return sendJson(res, 400, { error: 'archived must be a boolean.' });
+  }
+
+  const archivedAt = body.archived ? getTodayColombo() : null;
+  const uniqueIds = [...new Set(body.ids)];
+  let updatedCount = 0;
+
+  const updateStmt = db.prepare('UPDATE jobs SET archived_at = ? WHERE id = ?;');
+
+  db.exec('BEGIN;');
+  try {
+    for (const id of uniqueIds) {
+      const info = updateStmt.run(archivedAt, id);
+      updatedCount += info.changes;
+    }
+    db.exec('COMMIT;');
+  } catch (err) {
+    db.exec('ROLLBACK;');
+    return sendJson(res, 500, { error: 'Failed to update jobs.' });
+  }
+
+  return sendJson(res, 200, { ok: true, updated: updatedCount });
+}
+
+// Handles bulk deleting jobs (POST /api/jobs/bulk-delete).
+async function handleJobsBulkDelete(req, res, method) {
+  if (method !== 'POST') {
+    return sendJson(res, 405, { error: 'Method not allowed.' }, { Allow: 'POST' });
+  }
+
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    return sendJson(res, 400, { error: err.message });
+  }
+
+  if (!isValidJobIdArray(body.ids)) {
+    return sendJson(res, 400, { error: 'ids must be a non-empty array of up to 200 positive integers.' });
+  }
+
+  const uniqueIds = [...new Set(body.ids)];
+  let deletedCount = 0;
+
+  const findAppStmt = db.prepare('SELECT id FROM applications WHERE job_id = ?;');
+  const deleteRepliesStmt = db.prepare('DELETE FROM replies WHERE application_id = ?;');
+  const deleteAppStmt = db.prepare('DELETE FROM applications WHERE id = ?;');
+  const deleteJobStmt = db.prepare('DELETE FROM jobs WHERE id = ?;');
+
+  db.exec('BEGIN;');
+  try {
+    for (const id of uniqueIds) {
+      const app = findAppStmt.get(id);
+      if (app) {
+        deleteRepliesStmt.run(app.id);
+        deleteAppStmt.run(app.id);
+      }
+      const info = deleteJobStmt.run(id);
+      deletedCount += info.changes;
+    }
+    db.exec('COMMIT;');
+  } catch (err) {
+    db.exec('ROLLBACK;');
+    return sendJson(res, 500, { error: 'Failed to delete jobs.' });
+  }
+
+  return sendJson(res, 200, { ok: true, deleted: deletedCount });
+}
+
 // Dispatches /api/jobs requests. Returns true if handled.
 export async function handleJobsRequest(req, res, url) {
   const method = req.method.toUpperCase();
@@ -676,6 +790,18 @@ export async function handleJobsRequest(req, res, url) {
   // Collection: /api/jobs
   if (path === '/api/jobs') {
     await handleJobsCollection(req, res, url, method);
+    return true;
+  }
+
+  // Bulk archive: /api/jobs/bulk-archive
+  if (path === '/api/jobs/bulk-archive') {
+    await handleJobsBulkArchive(req, res, method);
+    return true;
+  }
+
+  // Bulk delete: /api/jobs/bulk-delete
+  if (path === '/api/jobs/bulk-delete') {
+    await handleJobsBulkDelete(req, res, method);
     return true;
   }
 

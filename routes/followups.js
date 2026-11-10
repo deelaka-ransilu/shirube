@@ -102,7 +102,12 @@ export async function handleFollowupsRequest(req, res, url) {
       j.found_date,
       a.id AS application_id,
       a.status AS application_status,
-      a.applied_date
+      a.applied_date,
+      (
+        SELECT MAX(r.happened_on)
+        FROM replies r
+        WHERE r.application_id = a.id AND r.kind = 'replied'
+      ) AS latest_reply_date
     FROM applications a
     JOIN jobs j ON j.id = a.job_id
     WHERE a.status IN ('applied', 'screening')
@@ -114,7 +119,10 @@ export async function handleFollowupsRequest(req, res, url) {
   const overdue = [];
 
   for (const row of rows) {
-    const dueDate = computeDueDate(row.applied_date, row.application_status, settings, today);
+    const referenceDate = (row.application_status === 'screening' && row.latest_reply_date)
+      ? row.latest_reply_date
+      : row.applied_date;
+    const dueDate = computeDueDate(referenceDate, row.application_status, settings, today);
     if (!dueDate) continue;
 
     const item = {

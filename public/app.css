@@ -684,6 +684,69 @@ body {
   font-size: var(--text-small);
 }
 
+/* Bulk actions bar (Jobs list) */
+.bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius);
+}
+
+.bulk-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.jobs-list-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+}
+
+.select-all-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.job-select-checkbox {
+  width: var(--space-4);
+  height: var(--space-4);
+  cursor: pointer;
+  accent-color: var(--blue);
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: var(--space-1);
+}
+
+.job-delete-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+}
+
 .jobs-list {
   display: flex;
   flex-direction: column;
@@ -1263,8 +1326,12 @@ body {
 }
 
 .job-title-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   text-decoration: none;
   color: inherit;
+  border-radius: var(--radius);
 }
 
 .job-title-link:hover .job-title {

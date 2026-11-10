@@ -994,6 +994,9 @@ const jobsState = {
   stageFilter: 'all',
   sortChoice: 'closing_date',
   isAdding: false,
+  selectedIds: new Set(),
+  confirmDeleteId: null,
+  bulkConfirmDelete: false,
 };
 
 // Computes today's date in Asia/Colombo (YYYY-MM-DD).
@@ -1248,6 +1251,9 @@ function drawJobsView(container) {
     chipBtn.addEventListener('click', async () => {
       if (jobsState.stageFilter !== chip.key) {
         jobsState.stageFilter = chip.key;
+        jobsState.selectedIds.clear();
+        jobsState.confirmDeleteId = null;
+        jobsState.bulkConfirmDelete = false;
         await loadJobsData();
         drawJobsView(container);
       }
@@ -1283,6 +1289,9 @@ function drawJobsView(container) {
 
   sortSelect.addEventListener('change', async () => {
     jobsState.sortChoice = sortSelect.value;
+    jobsState.selectedIds.clear();
+    jobsState.confirmDeleteId = null;
+    jobsState.bulkConfirmDelete = false;
     await loadJobsData();
     drawJobsView(container);
   });
@@ -1291,7 +1300,127 @@ function drawJobsView(container) {
   controlsBar.append(chipsContainer, sortGroup);
   shell.append(controlsBar);
 
-  // 5. Job list or empty filter state.
+  // 5. Bulk bar: shown above the list when one or more rows are selected.
+  if (jobsState.selectedIds.size > 0) {
+    const bulkBar = document.createElement('div');
+    bulkBar.className = 'bulk-bar';
+    bulkBar.setAttribute('role', 'region');
+    bulkBar.setAttribute('aria-label', 'Bulk actions');
+
+    const numSelected = jobsState.selectedIds.size;
+    const countSpan = document.createElement('span');
+    countSpan.className = 'bulk-count';
+    countSpan.textContent = `${numSelected} selected`;
+
+    const bulkActions = document.createElement('div');
+    bulkActions.className = 'bulk-actions';
+
+    const bulkError = document.createElement('p');
+    bulkError.className = 'field-error';
+    bulkError.style.display = 'none';
+
+    if (jobsState.bulkConfirmDelete) {
+      const confirmPrompt = document.createElement('span');
+      confirmPrompt.className = 'delete-prompt';
+      confirmPrompt.textContent = `Delete ${numSelected} jobs? This cannot be undone.`;
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.className = 'btn btn-danger';
+      confirmBtn.textContent = 'Delete';
+      confirmBtn.addEventListener('click', async () => {
+        confirmBtn.disabled = true;
+        keepBtn.disabled = true;
+        try {
+          const res = await fetch('/api/jobs/bulk-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: Array.from(jobsState.selectedIds) }),
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || 'Could not delete jobs.');
+          }
+          jobsState.selectedIds.clear();
+          jobsState.bulkConfirmDelete = false;
+          await loadJobsData();
+          drawJobsView(container);
+        } catch (err) {
+          confirmBtn.disabled = false;
+          keepBtn.disabled = false;
+          bulkError.textContent = err.message;
+          bulkError.style.display = 'block';
+        }
+      });
+
+      const keepBtn = document.createElement('button');
+      keepBtn.type = 'button';
+      keepBtn.className = 'btn btn-secondary';
+      keepBtn.textContent = 'Keep it';
+      keepBtn.addEventListener('click', () => {
+        jobsState.bulkConfirmDelete = false;
+        drawJobsView(container);
+      });
+
+      bulkActions.append(confirmPrompt, confirmBtn, keepBtn);
+    } else {
+      const isArchived = jobsState.stageFilter === 'archived';
+      const archiveBtn = document.createElement('button');
+      archiveBtn.type = 'button';
+      archiveBtn.className = 'btn btn-secondary';
+      archiveBtn.textContent = isArchived ? 'Unarchive selected' : 'Archive selected';
+      archiveBtn.addEventListener('click', async () => {
+        archiveBtn.disabled = true;
+        try {
+          const res = await fetch('/api/jobs/bulk-archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ids: Array.from(jobsState.selectedIds),
+              archived: !isArchived,
+            }),
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || 'Could not update jobs.');
+          }
+          jobsState.selectedIds.clear();
+          await loadJobsData();
+          drawJobsView(container);
+        } catch (err) {
+          archiveBtn.disabled = false;
+          bulkError.textContent = err.message;
+          bulkError.style.display = 'block';
+        }
+      });
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'btn btn-danger';
+      deleteBtn.textContent = 'Delete selected';
+      deleteBtn.addEventListener('click', () => {
+        jobsState.bulkConfirmDelete = true;
+        drawJobsView(container);
+      });
+
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'btn btn-secondary';
+      clearBtn.textContent = 'Clear selection';
+      clearBtn.addEventListener('click', () => {
+        jobsState.selectedIds.clear();
+        jobsState.bulkConfirmDelete = false;
+        drawJobsView(container);
+      });
+
+      bulkActions.append(archiveBtn, deleteBtn, clearBtn);
+    }
+
+    bulkBar.append(countSpan, bulkActions, bulkError);
+    shell.append(bulkBar);
+  }
+
+  // 6. Job list or empty filter state.
   if (jobsState.jobs.length === 0) {
     const emptyBox = document.createElement('div');
     emptyBox.className = 'empty-state';
@@ -1311,6 +1440,9 @@ function drawJobsView(container) {
       showAllBtn.textContent = 'Show all jobs';
       showAllBtn.addEventListener('click', async () => {
         jobsState.stageFilter = 'all';
+        jobsState.selectedIds.clear();
+        jobsState.confirmDeleteId = null;
+        jobsState.bulkConfirmDelete = false;
         await loadJobsData();
         drawJobsView(container);
       });
@@ -1337,77 +1469,203 @@ function drawJobsView(container) {
 
     shell.append(emptyBox);
   } else {
+    // Select all header
+    const listHeader = document.createElement('div');
+    listHeader.className = 'jobs-list-header';
+
+    const selectAllLabel = document.createElement('label');
+    selectAllLabel.className = 'select-all-label';
+
+    const selectAllCheckbox = document.createElement('input');
+    selectAllCheckbox.type = 'checkbox';
+    selectAllCheckbox.className = 'job-select-checkbox';
+    selectAllCheckbox.setAttribute('aria-label', 'Select all visible jobs');
+
+    const visibleIds = jobsState.jobs.map((j) => j.id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => jobsState.selectedIds.has(id));
+    const someVisibleSelected = visibleIds.some((id) => jobsState.selectedIds.has(id));
+
+    selectAllCheckbox.checked = allVisibleSelected;
+    selectAllCheckbox.indeterminate = !allVisibleSelected && someVisibleSelected;
+
+    selectAllCheckbox.addEventListener('change', () => {
+      if (selectAllCheckbox.checked) {
+        visibleIds.forEach((id) => jobsState.selectedIds.add(id));
+      } else {
+        visibleIds.forEach((id) => jobsState.selectedIds.delete(id));
+      }
+      jobsState.bulkConfirmDelete = false;
+      drawJobsView(container);
+    });
+
+    const selectAllText = document.createElement('span');
+    selectAllText.textContent = 'Select all';
+
+    selectAllLabel.append(selectAllCheckbox, selectAllText);
+    listHeader.append(selectAllLabel);
+    shell.append(listHeader);
+
     const list = document.createElement('div');
     list.className = 'jobs-list';
 
     jobsState.jobs.forEach((job, index) => {
-      const row = document.createElement('a');
-      row.href = `#job/${job.id}`;
+      const row = document.createElement('div');
       row.className = 'job-row';
       row.id = `job-row-${job.id}`;
 
-      // Left section: index, company, title, tags.
-      const left = document.createElement('div');
-      left.className = 'job-row-left';
+      if (jobsState.confirmDeleteId === job.id) {
+        const confirmBox = document.createElement('div');
+        confirmBox.className = 'job-delete-confirm';
+        confirmBox.setAttribute('role', 'region');
+        confirmBox.setAttribute('aria-label', `Confirm delete ${job.title}`);
 
-      const idxSpan = document.createElement('span');
-      idxSpan.className = 'job-index';
-      idxSpan.textContent = `#${index + 1}`;
+        const promptP = document.createElement('p');
+        promptP.className = 'delete-prompt';
+        promptP.textContent = `Delete ${job.company} ${job.title}? This cannot be undone.`;
 
-      const main = document.createElement('div');
-      main.className = 'job-main';
+        const actions = document.createElement('div');
+        actions.className = 'delete-actions';
 
-      const comp = document.createElement('span');
-      comp.className = 'job-company';
-      comp.textContent = job.company;
+        const confirmDelBtn = document.createElement('button');
+        confirmDelBtn.type = 'button';
+        confirmDelBtn.className = 'btn btn-danger';
+        confirmDelBtn.textContent = 'Delete';
 
-      const title = document.createElement('h3');
-      title.className = 'job-title';
-      title.textContent = job.title;
+        const keepBtn = document.createElement('button');
+        keepBtn.type = 'button';
+        keepBtn.className = 'btn btn-secondary';
+        keepBtn.textContent = 'Keep it';
 
-      const tags = document.createElement('div');
-      tags.className = 'job-tags';
+        const rowError = document.createElement('p');
+        rowError.className = 'field-error';
+        rowError.style.display = 'none';
 
-      if (job.work_mode) {
-        const wmTag = document.createElement('span');
-        wmTag.className = 'meta-chip';
-        wmTag.textContent = job.work_mode;
-        tags.append(wmTag);
+        confirmDelBtn.addEventListener('click', async () => {
+          confirmDelBtn.disabled = true;
+          keepBtn.disabled = true;
+          try {
+            const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.error || 'Could not delete job.');
+            }
+            jobsState.confirmDeleteId = null;
+            jobsState.selectedIds.delete(job.id);
+            await loadJobsData();
+            drawJobsView(container);
+          } catch (err) {
+            confirmDelBtn.disabled = false;
+            keepBtn.disabled = false;
+            rowError.textContent = err.message;
+            rowError.style.display = 'block';
+          }
+        });
+
+        keepBtn.addEventListener('click', () => {
+          jobsState.confirmDeleteId = null;
+          drawJobsView(container);
+        });
+
+        actions.append(confirmDelBtn, keepBtn);
+        confirmBox.append(promptP, actions, rowError);
+        row.append(confirmBox);
+      } else {
+        // Checkbox on the left
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'job-select-checkbox';
+        checkbox.setAttribute('aria-label', `Select ${job.title}`);
+        checkbox.checked = jobsState.selectedIds.has(job.id);
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            jobsState.selectedIds.add(job.id);
+          } else {
+            jobsState.selectedIds.delete(job.id);
+          }
+          jobsState.bulkConfirmDelete = false;
+          drawJobsView(container);
+        });
+
+        // Left section: index, company, title, tags.
+        const left = document.createElement('div');
+        left.className = 'job-row-left';
+
+        const idxSpan = document.createElement('span');
+        idxSpan.className = 'job-index';
+        idxSpan.textContent = `#${index + 1}`;
+
+        const main = document.createElement('div');
+        main.className = 'job-main';
+
+        const titleLink = document.createElement('a');
+        titleLink.href = `#job/${job.id}`;
+        titleLink.className = 'job-title-link';
+
+        const comp = document.createElement('span');
+        comp.className = 'job-company';
+        comp.textContent = job.company;
+
+        const title = document.createElement('h3');
+        title.className = 'job-title';
+        title.textContent = job.title;
+
+        titleLink.append(comp, title);
+        main.append(titleLink);
+
+        const tags = document.createElement('div');
+        tags.className = 'job-tags';
+
+        if (job.work_mode) {
+          const wmTag = document.createElement('span');
+          wmTag.className = 'meta-chip';
+          wmTag.textContent = job.work_mode;
+          tags.append(wmTag);
+        }
+
+        if (job.level) {
+          const lvlTag = document.createElement('span');
+          lvlTag.className = 'meta-chip';
+          lvlTag.textContent = job.level;
+          tags.append(lvlTag);
+        }
+
+        if (job.role_type) {
+          const rtTag = document.createElement('span');
+          rtTag.className = 'meta-chip';
+          rtTag.textContent = job.role_type;
+          tags.append(rtTag);
+        }
+
+        if (tags.childNodes.length > 0) main.append(tags);
+
+        left.append(idxSpan, main);
+
+        // Right section: closing date, stage shape + word, Delete button.
+        const right = document.createElement('div');
+        right.className = 'job-row-right';
+
+        const closingSpan = document.createElement('span');
+        closingSpan.className = 'job-closing';
+        closingSpan.textContent = job.closing_date ? `Closes ${job.closing_date}` : 'No closing date';
+
+        const stageHolder = document.createElement('div');
+        stageHolder.innerHTML = renderStageBadge(job.stage, Boolean(job.is_stale));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn btn-danger-outline btn-delete';
+        deleteBtn.setAttribute('aria-label', `Delete ${job.title}`);
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => {
+          jobsState.confirmDeleteId = job.id;
+          drawJobsView(container);
+        });
+
+        right.append(closingSpan, stageHolder, deleteBtn);
+
+        row.append(checkbox, left, right);
       }
 
-      if (job.level) {
-        const lvlTag = document.createElement('span');
-        lvlTag.className = 'meta-chip';
-        lvlTag.textContent = job.level;
-        tags.append(lvlTag);
-      }
-
-      if (job.role_type) {
-        const rtTag = document.createElement('span');
-        rtTag.className = 'meta-chip';
-        rtTag.textContent = job.role_type;
-        tags.append(rtTag);
-      }
-
-      main.append(comp, title);
-      if (tags.childNodes.length > 0) main.append(tags);
-
-      left.append(idxSpan, main);
-
-      // Right section: closing date, stage shape + word.
-      const right = document.createElement('div');
-      right.className = 'job-row-right';
-
-      const closingSpan = document.createElement('span');
-      closingSpan.className = 'job-closing';
-      closingSpan.textContent = job.closing_date ? `Closes ${job.closing_date}` : 'No closing date';
-
-      const stageHolder = document.createElement('div');
-      stageHolder.innerHTML = renderStageBadge(job.stage, Boolean(job.is_stale));
-
-      right.append(closingSpan, stageHolder);
-
-      row.append(left, right);
       list.append(row);
     });
 
