@@ -3192,9 +3192,7 @@ function showScreen() {
   document.body.classList.toggle('job-page-active', name.startsWith('job/'));
 
   if (name === 'jobs' || name === 'jobs/new') {
-    document.title = 'Jobs | Shirube';
-    jobsState.isAdding = name === 'jobs/new';
-    renderJobs(app);
+    // The Jobs page is drawn by public/js/main.js.
   } else if (name.startsWith('job/')) {
     const jobId = name.slice(4);
     renderJobPage(app, jobId);
