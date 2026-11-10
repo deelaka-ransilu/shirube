@@ -1,8 +1,15 @@
-// My profile page: progress, tabs, and cards for skills, experience, and education.
-// Add and edit forms are in this file too, added in part 2.
+// My profile page: progress, tabs, cards, and add/edit forms for skills, experience, and education.
 import { escapeHtml } from '../lib/format.js';
 
 const LEVEL_LABELS = ['Aware', 'Beginner', 'Intermediate', 'Advanced', 'Expert'];
+const LEVEL_MEANINGS = [
+  'Aware: you know what this is and can follow along in discussions.',
+  'Beginner: you can complete basic tasks using tutorials or guidance.',
+  'Intermediate: you work independently and solve common problems.',
+  'Advanced: you understand best practices, solve complex problems, and guide others.',
+  'Expert: you have deep mastery, architect solutions, and handle edge cases.',
+];
+const DATE_FORMAT = /^\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/;
 
 const state = {
   skills: [],
@@ -13,6 +20,13 @@ const state = {
   editingItem: null,
   confirmDeleteId: null,
 };
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
 
 async function loadProfileData() {
   const res = await fetch('/api/profile');
@@ -26,15 +40,27 @@ async function loadProfileData() {
 // Entry point: called by js/main.js for #profile.
 export async function renderProfile(container) {
   container.innerHTML = '<p class="muted">Loading profile...</p>';
-
   try {
     await loadProfileData();
   } catch (err) {
     container.innerHTML = `<p class="field-error">Error loading profile: ${escapeHtml(err.message)}</p>`;
     return;
   }
-
   draw(container);
+}
+
+function refresh(container) {
+  loadProfileData()
+    .then(() => draw(container))
+    .catch((err) => {
+      container.innerHTML = `<p class="field-error">Error loading profile: ${escapeHtml(err.message)}</p>`;
+    });
+}
+
+function resetPanel() {
+  state.isAdding = false;
+  state.editingItem = null;
+  state.confirmDeleteId = null;
 }
 
 function nextStepText() {
@@ -46,51 +72,32 @@ function nextStepText() {
   return 'Profile complete: all your skills, experience, and education are up to date.';
 }
 
-function refresh(container) {
-  loadProfileData().then(() => draw(container)).catch((err) => {
-    container.innerHTML = `<p class="field-error">Error loading profile: ${escapeHtml(err.message)}</p>`;
-  });
-}
-
 function draw(container) {
   const { skills, experiences, education, activeTab } = state;
 
-  const shell = document.createElement('div');
-  shell.className = 'profile-shell';
+  const shell = el('div', 'profile-shell');
 
-  const header = document.createElement('header');
-  const h1 = document.createElement('h1');
-  h1.className = 'screen-title';
-  h1.textContent = 'My profile';
-  const intro = document.createElement('p');
-  intro.className = 'profile-intro';
-  intro.textContent = 'Keep your skills, experience, and education up to date so Shirube can match them against jobs.';
-  header.append(h1, intro);
+  const header = el('header');
+  header.append(
+    el('h1', 'screen-title', 'My profile'),
+    el('p', 'profile-intro', 'Keep your skills, experience, and education up to date so Shirube can match them against jobs.')
+  );
 
-  const progress = document.createElement('section');
-  progress.className = 'profile-progress';
+  const progress = el('section', 'profile-progress');
   progress.setAttribute('aria-label', 'Profile completion progress');
+  progress.append(
+    el('div', 'progress-counts', `${skills.length} ${skills.length === 1 ? 'skill' : 'skills'}   ${experiences.length} ${experiences.length === 1 ? 'experience' : 'experiences'}   ${education.length} education`),
+    el('div', 'progress-next', nextStepText())
+  );
 
-  const counts = document.createElement('div');
-  counts.className = 'progress-counts';
-  counts.textContent = `${skills.length} ${skills.length === 1 ? 'skill' : 'skills'}   ${experiences.length} ${experiences.length === 1 ? 'experience' : 'experiences'}   ${education.length} education`;
-
-  const next = document.createElement('div');
-  next.className = 'progress-next';
-  next.textContent = nextStepText();
-
-  progress.append(counts, next);
-
-  shell.append(header, progress, buildTabs(container, skills, experiences, education, activeTab));
-  shell.append(buildPanel(container, activeTab));
-
+  shell.append(header, progress, buildTabs(container), buildPanel(container, activeTab));
   container.innerHTML = '';
   container.append(shell);
 }
 
-function buildTabs(container, skills, experiences, education, activeTab) {
-  const tabList = document.createElement('div');
-  tabList.className = 'tab-list';
+function buildTabs(container) {
+  const { skills, experiences, education, activeTab } = state;
+  const tabList = el('div', 'tab-list');
   tabList.setAttribute('role', 'tablist');
   tabList.setAttribute('aria-label', 'Profile sections');
 
@@ -101,16 +108,14 @@ function buildTabs(container, skills, experiences, education, activeTab) {
   ];
 
   tabs.forEach((tab, index) => {
-    const btn = document.createElement('button');
+    const btn = el('button', 'tab-btn', tab.label);
     btn.type = 'button';
-    btn.className = 'tab-btn';
     btn.setAttribute('role', 'tab');
     btn.id = `tab-${tab.key}`;
     btn.setAttribute('aria-controls', `panel-${tab.key}`);
     const selected = activeTab === tab.key;
     btn.setAttribute('aria-selected', selected ? 'true' : 'false');
     btn.setAttribute('tabindex', selected ? '0' : '-1');
-    btn.textContent = tab.label;
 
     btn.addEventListener('click', () => {
       if (state.activeTab !== tab.key) {
@@ -139,33 +144,18 @@ function buildTabs(container, skills, experiences, education, activeTab) {
   return tabList;
 }
 
-function resetPanel() {
-  state.isAdding = false;
-  state.editingItem = null;
-  state.confirmDeleteId = null;
-}
-
 function buildPanel(container, activeTab) {
-  const panel = document.createElement('section');
-  panel.className = 'tab-panel';
+  const panel = el('section', 'tab-panel');
   panel.id = `panel-${activeTab}`;
   panel.setAttribute('role', 'tabpanel');
   panel.setAttribute('aria-labelledby', `tab-${activeTab}`);
 
-  const header = document.createElement('div');
-  header.className = 'tab-header';
-
-  const text = document.createElement('div');
-  text.className = 'tab-header-text';
-
-  const title = document.createElement('h2');
-  title.className = 'tab-title';
-  const desc = document.createElement('p');
-  desc.className = 'tab-desc';
-
-  const addBtn = document.createElement('button');
+  const header = el('div', 'tab-header');
+  const text = el('div', 'tab-header-text');
+  const title = el('h2', 'tab-title');
+  const desc = el('p', 'tab-desc');
+  const addBtn = el('button', 'btn btn-primary tab-header-btn');
   addBtn.type = 'button';
-  addBtn.className = 'btn btn-primary tab-header-btn';
 
   if (activeTab === 'skills') {
     title.textContent = 'Skills';
@@ -192,12 +182,15 @@ function buildPanel(container, activeTab) {
   header.append(text, addBtn);
   panel.append(header);
 
+  if (state.isAdding || state.editingItem) {
+    panel.append(buildForm(activeTab, state.editingItem, container));
+  }
+
   const items = state[activeTab];
   if (items.length === 0) {
     panel.append(buildEmpty(activeTab, addBtn.textContent, container));
   } else {
-    const list = document.createElement('div');
-    list.className = 'cards-list';
+    const list = el('div', 'cards-list');
     items.forEach((item) => list.append(buildCard(activeTab, item, container)));
     panel.append(list);
   }
@@ -206,23 +199,18 @@ function buildPanel(container, activeTab) {
 }
 
 function buildEmpty(activeTab, actionLabel, container) {
-  const box = document.createElement('div');
-  box.className = 'empty-state';
-
-  const msg = document.createElement('p');
-  msg.className = 'empty-text';
+  const box = el('div', 'empty-state');
+  let text;
   if (activeTab === 'skills') {
-    msg.textContent = 'No skills added yet. Add at least one skill to start building your profile.';
+    text = 'No skills added yet. Add at least one skill to start building your profile.';
   } else if (activeTab === 'experiences') {
-    msg.textContent = 'No experience added yet. Add your past jobs or volunteering to link your skills to real projects.';
+    text = 'No experience added yet. Add your past jobs or volunteering to link your skills to real projects.';
   } else {
-    msg.textContent = 'No education added yet. Add your courses or degrees to complete your profile.';
+    text = 'No education added yet. Add your courses or degrees to complete your profile.';
   }
 
-  const btn = document.createElement('button');
+  const btn = el('button', 'btn btn-primary', actionLabel);
   btn.type = 'button';
-  btn.className = 'btn btn-primary';
-  btn.textContent = actionLabel;
   btn.addEventListener('click', () => {
     state.isAdding = true;
     state.editingItem = null;
@@ -230,36 +218,25 @@ function buildEmpty(activeTab, actionLabel, container) {
     draw(container);
   });
 
-  box.append(msg, btn);
+  box.append(el('p', 'empty-text', text), btn);
   return box;
 }
 
+// ---------- Cards ----------
+
 function buildCard(tabKey, item, container) {
-  const card = document.createElement('article');
-  card.className = 'card';
+  const card = el('article', 'card');
   card.id = `card-${tabKey}-${item.id}`;
 
-  const main = document.createElement('div');
-  main.className = 'card-main';
-
-  const title = document.createElement('h3');
-  title.className = 'card-title';
+  const main = el('div', 'card-main');
 
   if (tabKey === 'skills') {
-    title.textContent = item.name;
-    main.append(title, buildSkillMeta(item));
+    main.append(el('h3', 'card-title', item.name), buildSkillMeta(item));
   } else if (tabKey === 'experiences') {
-    title.textContent = item.title;
-    main.append(title, buildExperienceMeta(item));
-    if (item.description) {
-      const desc = document.createElement('p');
-      desc.className = 'card-desc';
-      desc.textContent = item.description;
-      main.append(desc);
-    }
+    main.append(el('h3', 'card-title', item.title), buildExperienceMeta(item));
+    if (item.description) main.append(el('p', 'card-desc', item.description));
   } else {
-    title.textContent = item.course;
-    main.append(title, buildEducationMeta(item));
+    main.append(el('h3', 'card-title', item.course), buildEducationMeta(item));
   }
 
   card.append(main);
@@ -274,112 +251,65 @@ function buildCard(tabKey, item, container) {
 }
 
 function buildSkillMeta(item) {
-  const wrap = document.createElement('div');
-  wrap.className = 'card-main';
+  const wrap = el('div', 'card-main');
 
-  const meta = document.createElement('div');
-  meta.className = 'card-meta';
-  const level = document.createElement('span');
-  level.className = 'meta-chip';
-  level.textContent = `Level ${item.level} · ${LEVEL_LABELS[item.level - 1]}`;
-  meta.append(level);
+  const meta = el('div', 'card-meta');
+  meta.append(el('span', 'meta-chip', `Level ${item.level} · ${LEVEL_LABELS[item.level - 1]}`));
   wrap.append(meta);
 
   if (item.proof_url || item.used_at_experience) {
-    const row = document.createElement('div');
-    row.className = 'verified-row';
-    const badge = document.createElement('span');
-    badge.className = 'verified-badge';
-    const dot = document.createElement('span');
-    dot.className = 'verified-marker';
+    const row = el('div', 'verified-row');
+    const badge = el('span', 'verified-badge');
+    const dot = el('span', 'verified-marker', '●');
     dot.setAttribute('aria-hidden', 'true');
-    dot.textContent = '●';
     badge.append(dot, document.createTextNode(' Verified'));
-    const note = document.createElement('span');
-    note.className = 'verified-note';
-    note.textContent = 'Verified means you can show proof or a real project.';
-    row.append(badge, note);
+    row.append(badge, el('span', 'verified-note', 'Verified means you can show proof or a real project.'));
     wrap.append(row);
   }
 
   if (item.proof_url) {
-    const p = document.createElement('p');
-    p.className = 'card-detail';
-    const a = document.createElement('a');
+    const p = el('p', 'card-detail');
+    const a = el('a', 'link', `Proof link: ${item.proof_url} ↗`);
     a.href = item.proof_url;
-    a.className = 'link';
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
-    a.textContent = `Proof link: ${item.proof_url} ↗`;
     p.append(a);
     wrap.append(p);
   }
 
   if (item.used_at_experience) {
-    const p = document.createElement('p');
-    p.className = 'card-detail muted';
     const org = item.experience_organisation ? ` at ${item.experience_organisation}` : '';
-    p.textContent = `Used at: ${item.experience_title || 'Experience'}${org}`;
-    wrap.append(p);
+    wrap.append(el('p', 'card-detail muted', `Used at: ${item.experience_title || 'Experience'}${org}`));
   }
 
   return wrap;
 }
 
 function buildExperienceMeta(item) {
-  const meta = document.createElement('div');
-  meta.className = 'card-meta';
-
-  const chip = document.createElement('span');
-  chip.className = 'meta-chip';
-  chip.textContent = item.kind === 'volunteering' ? 'Volunteering' : 'Experience';
-  meta.append(chip);
-
-  if (item.organisation) {
-    const org = document.createElement('span');
-    org.textContent = item.organisation;
-    meta.append(org);
-  }
-
-  const dates = document.createElement('span');
-  dates.className = 'card-dates';
+  const meta = el('div', 'card-meta');
+  meta.append(el('span', 'meta-chip', item.kind === 'volunteering' ? 'Volunteering' : 'Experience'));
+  if (item.organisation) meta.append(el('span', '', item.organisation));
   const end = item.is_current ? 'Present' : (item.end_date || '');
-  dates.textContent = `${item.start_date}${end ? ` – ${end}` : ''}`;
-  meta.append(dates);
-
+  meta.append(el('span', 'card-dates', `${item.start_date}${end ? ` – ${end}` : ''}`));
   return meta;
 }
 
 function buildEducationMeta(item) {
-  const meta = document.createElement('div');
-  meta.className = 'card-meta';
-
-  if (item.institution) {
-    const inst = document.createElement('span');
-    inst.textContent = item.institution;
-    meta.append(inst);
-  }
-
+  const meta = el('div', 'card-meta');
+  if (item.institution) meta.append(el('span', '', item.institution));
   if (item.start_date || item.end_date) {
-    const dates = document.createElement('span');
-    dates.className = 'card-dates';
     const s = item.start_date || '';
     const e = item.end_date || '';
-    dates.textContent = `${s}${s && e ? ' – ' : ''}${e}`;
-    meta.append(dates);
+    meta.append(el('span', 'card-dates', `${s}${s && e ? ' – ' : ''}${e}`));
   }
-
   return meta;
 }
 
 function buildCardActions(item, container) {
-  const actions = document.createElement('div');
-  actions.className = 'card-actions';
+  const actions = el('div', 'card-actions');
 
-  const editBtn = document.createElement('button');
+  const editBtn = el('button', 'btn btn-secondary btn-edit', 'Edit');
   editBtn.type = 'button';
-  editBtn.className = 'btn btn-secondary btn-edit';
-  editBtn.textContent = 'Edit';
   editBtn.addEventListener('click', () => {
     state.editingItem = item;
     state.isAdding = false;
@@ -388,10 +318,8 @@ function buildCardActions(item, container) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  const deleteBtn = document.createElement('button');
+  const deleteBtn = el('button', 'btn btn-danger-outline btn-delete', 'Delete');
   deleteBtn.type = 'button';
-  deleteBtn.className = 'btn btn-danger-outline btn-delete';
-  deleteBtn.textContent = 'Delete';
   deleteBtn.addEventListener('click', () => {
     state.confirmDeleteId = item.id;
     draw(container);
@@ -402,23 +330,17 @@ function buildCardActions(item, container) {
 }
 
 function buildDeleteConfirm(tabKey, item, container) {
-  const box = document.createElement('div');
-  box.className = 'delete-confirm';
+  const box = el('div', 'delete-confirm');
   box.setAttribute('role', 'region');
   box.setAttribute('aria-label', 'Confirm delete');
 
   const displayName = item.name || item.title || item.course;
-  const prompt = document.createElement('p');
-  prompt.className = 'delete-prompt';
-  prompt.textContent = `Delete ${displayName}? This cannot be undone.`;
+  const prompt = el('p', 'delete-prompt', `Delete ${displayName}? This cannot be undone.`);
 
-  const actions = document.createElement('div');
-  actions.className = 'delete-actions';
+  const actions = el('div', 'delete-actions');
 
-  const delBtn = document.createElement('button');
+  const delBtn = el('button', 'btn btn-danger confirm-delete-btn', 'Delete');
   delBtn.type = 'button';
-  delBtn.className = 'btn btn-danger confirm-delete-btn';
-  delBtn.textContent = 'Delete';
   delBtn.addEventListener('click', async () => {
     delBtn.disabled = true;
     try {
@@ -432,10 +354,8 @@ function buildDeleteConfirm(tabKey, item, container) {
     }
   });
 
-  const keepBtn = document.createElement('button');
+  const keepBtn = el('button', 'btn btn-secondary', 'Keep it');
   keepBtn.type = 'button';
-  keepBtn.className = 'btn btn-secondary';
-  keepBtn.textContent = 'Keep it';
   keepBtn.addEventListener('click', () => {
     state.confirmDeleteId = null;
     draw(container);
@@ -444,4 +364,305 @@ function buildDeleteConfirm(tabKey, item, container) {
   actions.append(delBtn, keepBtn);
   box.append(prompt, actions);
   return box;
+}
+
+// ---------- Forms ----------
+
+function makeField(labelText, control, errorId) {
+  const group = el('div', 'form-group');
+  const label = el('label', 'form-label', labelText);
+  label.htmlFor = control.id;
+  const err = el('div', 'field-error');
+  err.id = errorId;
+  err.style.display = 'none';
+  group.append(label, control, err);
+  return group;
+}
+
+function textInput(id, value, placeholder, type = 'text') {
+  const input = document.createElement('input');
+  input.type = type;
+  input.id = id;
+  input.className = 'form-input';
+  input.value = value || '';
+  input.placeholder = placeholder || '';
+  return input;
+}
+
+function fail(inputId, errorId, message) {
+  return { error: { inputId, errorId, message } };
+}
+
+function dateProblem(value, inputId, errorId, label) {
+  if (value && !DATE_FORMAT.test(value)) {
+    return fail(inputId, errorId, `${label} must be in YYYY-MM or YYYY-MM-DD format (for example, 2024-05).`);
+  }
+  return null;
+}
+
+function buildForm(tabKey, item, container) {
+  const panel = el('div', 'form-panel');
+
+  const noun = tabKey === 'skills' ? 'skill' : tabKey === 'experiences' ? 'experience or volunteering' : 'education';
+  panel.append(el('h3', 'form-title', `${item ? 'Edit' : 'Add'} ${noun}`));
+
+  const form = document.createElement('form');
+  form.noValidate = true;
+
+  const read = tabKey === 'skills' ? skillFields(form, item)
+    : tabKey === 'experiences' ? experienceFields(form, item)
+    : educationFields(form, item);
+
+  const actions = el('div', 'form-actions');
+  const saveBtn = el('button', 'btn btn-primary', item ? 'Save changes' : `Save ${noun}`);
+  saveBtn.type = 'submit';
+  const cancelBtn = el('button', 'btn btn-secondary', 'Cancel');
+  cancelBtn.type = 'button';
+  cancelBtn.addEventListener('click', () => {
+    resetPanel();
+    draw(container);
+  });
+  const saveStatus = el('span', 'save-status');
+  saveStatus.setAttribute('aria-live', 'polite');
+  actions.append(saveBtn, cancelBtn, saveStatus);
+  form.append(actions);
+
+  const showError = (inputId, errorId, message) => {
+    form.querySelectorAll('.field-error').forEach((n) => {
+      n.textContent = '';
+      n.style.display = 'none';
+    });
+    const errEl = document.getElementById(errorId);
+    if (errEl) {
+      errEl.textContent = message;
+      errEl.style.display = 'block';
+    }
+    const input = document.getElementById(inputId);
+    if (input) input.focus();
+  };
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const result = read();
+    if (result.error) {
+      showError(result.error.inputId, result.error.errorId, result.error.message);
+      return;
+    }
+
+    saveBtn.disabled = true;
+    try {
+      const endpoint = `/api/${tabKey}${item ? `/${item.id}` : ''}`;
+      const res = await fetch(endpoint, {
+        method: item ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result.payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to save item.');
+
+      saveStatus.textContent = 'Saved';
+      setTimeout(async () => {
+        resetPanel();
+        await loadProfileData();
+        draw(container);
+      }, 1200);
+    } catch (err) {
+      saveBtn.disabled = false;
+      saveStatus.textContent = '';
+      const firstErr = form.querySelector('.field-error');
+      if (firstErr) {
+        firstErr.textContent = err.message || 'An error occurred while saving.';
+        firstErr.style.display = 'block';
+      }
+    }
+  });
+
+  panel.append(form);
+  return panel;
+}
+
+function skillFields(form, item) {
+  const nameInput = textInput('skill-name', item ? item.name : '', 'e.g. JavaScript, Docker, Figma');
+  form.append(makeField('Skill name', nameInput, 'skill-name-error'));
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.id = 'skill-level';
+  slider.className = 'slider-input';
+  slider.min = '1';
+  slider.max = '5';
+  slider.step = '1';
+  slider.value = String(item ? item.level : 3);
+
+  const sliderLabel = el('label', 'form-label', 'Skill level');
+  sliderLabel.htmlFor = 'skill-level';
+  const steps = el('div', 'slider-steps');
+  const meaning = el('p', 'level-meaning', LEVEL_MEANINGS[Number(slider.value) - 1]);
+
+  const paintSteps = () => {
+    const v = Number(slider.value);
+    steps.replaceChildren(...LEVEL_LABELS.map((txt, idx) => el('span', idx + 1 === v ? 'slider-step is-selected' : 'slider-step', txt)));
+    meaning.textContent = LEVEL_MEANINGS[v - 1];
+  };
+  slider.addEventListener('input', paintSteps);
+  paintSteps();
+
+  const sliderGroup = el('div', 'form-group slider-container');
+  sliderGroup.append(sliderLabel, slider, steps, meaning);
+  form.append(sliderGroup);
+
+  const proofInput = textInput('skill-proof', item && item.proof_url ? item.proof_url : '', 'https://github.com/... or https://...', 'url');
+  form.append(makeField('Proof link (optional)', proofInput, 'skill-proof-error'));
+
+  const usedSelect = document.createElement('select');
+  usedSelect.id = 'skill-used-at';
+  usedSelect.className = 'form-select';
+  const none = el('option', '', 'None / Not linked to an experience');
+  none.value = '';
+  usedSelect.append(none);
+  state.experiences.forEach((exp) => {
+    const opt = el('option', '', `${exp.title}${exp.organisation ? ` (${exp.organisation})` : ''}`);
+    opt.value = String(exp.id);
+    if (item && item.used_at_experience === exp.id) opt.selected = true;
+    usedSelect.append(opt);
+  });
+  form.append(makeField('Used at (optional)', usedSelect, 'skill-used-at-error'));
+
+  return () => {
+    const name = nameInput.value.trim();
+    if (!name) return fail('skill-name', 'skill-name-error', 'Please enter a skill name.');
+
+    const duplicate = state.skills.find((s) => s.name.toLowerCase() === name.toLowerCase() && (!item || s.id !== item.id));
+    if (duplicate) return fail('skill-name', 'skill-name-error', 'A skill with this name already exists. Enter a unique name.');
+
+    const proof = proofInput.value.trim();
+    if (proof && !proof.startsWith('http://') && !proof.startsWith('https://')) {
+      return fail('skill-proof', 'skill-proof-error', 'Proof link must start with http:// or https://.');
+    }
+
+    return {
+      payload: {
+        name,
+        level: Number(slider.value),
+        proof_url: proof || null,
+        used_at_experience: usedSelect.value ? Number(usedSelect.value) : null,
+      },
+    };
+  };
+}
+
+function experienceFields(form, item) {
+  const kindSelect = document.createElement('select');
+  kindSelect.id = 'exp-kind';
+  kindSelect.className = 'form-select';
+  const optWork = el('option', '', 'Experience');
+  optWork.value = 'experience';
+  const optVol = el('option', '', 'Volunteering');
+  optVol.value = 'volunteering';
+  if (item && item.kind === 'volunteering') optVol.selected = true;
+  kindSelect.append(optWork, optVol);
+  form.append(makeField('Type', kindSelect, 'exp-kind-error'));
+
+  const titleInput = textInput('exp-title', item ? item.title : '', 'e.g. Software Engineer or Community Lead');
+  form.append(makeField('Title', titleInput, 'exp-title-error'));
+
+  const orgInput = textInput('exp-org', item && item.organisation ? item.organisation : '', 'e.g. Acme Corp or Open Source Initiative');
+  form.append(makeField('Organisation (optional)', orgInput, 'exp-org-error'));
+
+  const startInput = textInput('exp-start', item ? item.start_date : '', 'YYYY-MM or YYYY-MM-DD (e.g. 2023-01)');
+  form.append(makeField('Start date', startInput, 'exp-start-error'));
+
+  const currentCheck = document.createElement('input');
+  currentCheck.type = 'checkbox';
+  currentCheck.id = 'exp-current';
+  currentCheck.checked = item ? Boolean(item.is_current) : false;
+  const currentLabel = el('label', 'checkbox-label');
+  currentLabel.append(currentCheck, document.createTextNode(' Present (currently working or volunteering here)'));
+  const currentGroup = el('div', 'form-group');
+  currentGroup.append(currentLabel);
+  form.append(currentGroup);
+
+  const endInput = textInput('exp-end', item && item.end_date ? item.end_date : '', 'YYYY-MM or YYYY-MM-DD');
+  endInput.disabled = currentCheck.checked;
+  if (currentCheck.checked) endInput.value = '';
+  currentCheck.addEventListener('change', () => {
+    endInput.disabled = currentCheck.checked;
+    if (currentCheck.checked) endInput.value = '';
+  });
+  form.append(makeField('End date (optional)', endInput, 'exp-end-error'));
+
+  const descInput = document.createElement('textarea');
+  descInput.id = 'exp-desc';
+  descInput.className = 'form-textarea';
+  descInput.placeholder = 'Brief summary of key tasks, achievements, or projects.';
+  descInput.value = item && item.description ? item.description : '';
+  form.append(makeField('Description (optional)', descInput, 'exp-desc-error'));
+
+  return () => {
+    const title = titleInput.value.trim();
+    if (!title) return fail('exp-title', 'exp-title-error', 'Please enter a title.');
+
+    const start = startInput.value.trim();
+    if (!start) return fail('exp-start', 'exp-start-error', 'Please enter a start date.');
+    const startErr = dateProblem(start, 'exp-start', 'exp-start-error', 'Start date');
+    if (startErr) return startErr;
+
+    const isCurrent = currentCheck.checked;
+    const end = endInput.value.trim();
+    if (!isCurrent && end) {
+      const endErr = dateProblem(end, 'exp-end', 'exp-end-error', 'End date');
+      if (endErr) return endErr;
+      if (end < start) return fail('exp-end', 'exp-end-error', 'End date cannot be earlier than start date.');
+    }
+
+    return {
+      payload: {
+        kind: kindSelect.value,
+        title,
+        organisation: orgInput.value.trim() || null,
+        start_date: start,
+        end_date: isCurrent ? null : (end || null),
+        is_current: isCurrent ? 1 : 0,
+        description: descInput.value.trim() || null,
+      },
+    };
+  };
+}
+
+function educationFields(form, item) {
+  const courseInput = textInput('edu-course', item ? item.course : '', 'e.g. BSc in Computer Science, or Web Development Bootcamp');
+  form.append(makeField('Course', courseInput, 'edu-course-error'));
+
+  const instInput = textInput('edu-inst', item && item.institution ? item.institution : '', 'e.g. University of Colombo or Coursera');
+  form.append(makeField('Institution (optional)', instInput, 'edu-inst-error'));
+
+  const startInput = textInput('edu-start', item && item.start_date ? item.start_date : '', 'YYYY-MM or YYYY-MM-DD');
+  form.append(makeField('Start date (optional)', startInput, 'edu-start-error'));
+
+  const endInput = textInput('edu-end', item && item.end_date ? item.end_date : '', 'YYYY-MM or YYYY-MM-DD');
+  form.append(makeField('End date (optional)', endInput, 'edu-end-error'));
+
+  return () => {
+    const course = courseInput.value.trim();
+    if (!course) return fail('edu-course', 'edu-course-error', 'Please enter a course or degree.');
+
+    const start = startInput.value.trim();
+    const startErr = dateProblem(start, 'edu-start', 'edu-start-error', 'Start date');
+    if (startErr) return startErr;
+
+    const end = endInput.value.trim();
+    const endErr = dateProblem(end, 'edu-end', 'edu-end-error', 'End date');
+    if (endErr) return endErr;
+
+    if (start && end && end < start) return fail('edu-end', 'edu-end-error', 'End date cannot be earlier than start date.');
+
+    return {
+      payload: {
+        course,
+        institution: instInput.value.trim() || null,
+        start_date: start || null,
+        end_date: end || null,
+      },
+    };
+  };
 }
