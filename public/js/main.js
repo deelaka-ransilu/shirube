@@ -3,6 +3,7 @@
 import { renderJobs } from './pages/jobs.js';
 import { renderJobPage } from './pages/job-detail.js';
 import { renderFollowups } from './pages/followups.js';
+import { renderProfile } from './pages/profile.js';
 
 function route() {
   const name = location.hash.slice(1) || 'jobs';
@@ -16,6 +17,9 @@ function route() {
   } else if (name === 'followups') {
     document.title = 'Follow-ups | Shirube';
     renderFollowups(app);
+  } else if (name === 'profile') {
+    document.title = 'My profile | Shirube';
+    renderProfile(app);
   }
 }
 
