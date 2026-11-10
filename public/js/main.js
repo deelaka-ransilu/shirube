@@ -1,6 +1,7 @@
 // Routes each screen to its page module.
 import { renderJobs } from './pages/jobs.js';
 import { renderJobPage } from './pages/job-detail.js';
+import { renderFound } from './pages/found.js';
 import { renderFollowups } from './pages/followups.js';
 import { renderProfile } from './pages/profile.js';
 
@@ -53,6 +54,9 @@ function route() {
     renderJobs(app, name === 'jobs/new');
   } else if (name.startsWith('job/')) {
     renderJobPage(app, name.slice(4));
+  } else if (name === 'found') {
+    document.title = 'Found | Shirube';
+    renderFound(app);
   } else if (name === 'followups') {
     document.title = 'Follow-ups | Shirube';
     renderFollowups(app);

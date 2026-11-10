@@ -34,3 +34,18 @@ export async function getJob(id) {
   if (!res.ok) throw new Error('Job not found.');
   return res.json();
 }
+
+export async function loadFound(refresh) {
+  const res = await fetch(refresh ? '/api/found?refresh=1' : '/api/found');
+  const data = await readJson(res);
+  if (!res.ok) throw new Error(data.error || 'Could not load postings.');
+  return data;
+}
+
+export function saveFound(externalId) {
+  return sendJson('/api/found/save', 'POST', { external_id: externalId });
+}
+
+export function dismissFound(externalId) {
+  return sendJson('/api/found/dismiss', 'POST', { external_id: externalId });
+}
