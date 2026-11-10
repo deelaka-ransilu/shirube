@@ -41,7 +41,8 @@ export function computeDueDate(appliedDate, status, settings, today) {
   const dNoReply = addDaysToYMD(appliedDate, settings.no_reply_days);
 
   if (status === 'screening') {
-    return dFollowUp;
+    // appliedDate holds the latest reply date here (see the callers).
+    return addDaysToYMD(appliedDate, settings.screening_follow_up_days ?? settings.follow_up_days);
   }
 
   if (status === 'applied') {
@@ -84,6 +85,7 @@ export async function handleFollowupsRequest(req, res, url) {
   const settings = {
     reply_days: getSettingNumber('reply_days', 7),
     follow_up_days: getSettingNumber('follow_up_days', 14),
+    screening_follow_up_days: getSettingNumber('screening_follow_up_days', 7),
     no_reply_days: getSettingNumber('no_reply_days', 21),
   };
 

@@ -181,6 +181,7 @@ function getFullJob(id) {
   if (application && ['applied', 'screening'].includes(application.status)) {
     const replyDays = getSettingNumber('reply_days', 7);
     const followUpDays = getSettingNumber('follow_up_days', 14);
+    const screeningDays = getSettingNumber('screening_follow_up_days', 7);
     const noReplyDays = getSettingNumber('no_reply_days', 21);
     const today = getTodayColombo();
 
@@ -200,6 +201,7 @@ function getFullJob(id) {
     dueDate = computeDueDate(referenceDate, application.status, {
       reply_days: replyDays,
       follow_up_days: followUpDays,
+      screening_follow_up_days: screeningDays,
       no_reply_days: noReplyDays,
     }, today);
   }

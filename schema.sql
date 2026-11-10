@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS settings (
 INSERT OR IGNORE INTO settings (key, value) VALUES
   ('reply_days', '7'),
   ('follow_up_days', '14'),
+  ('screening_follow_up_days', '7'),
   ('no_reply_days', '21'),
   ('role_types', '["IT","Engineering","Finance","Marketing","Teaching","Healthcare","Sales","Other"]'),
   ('sources', '["TopJobs","ExpressJobs","Rooster","ITPro","LinkedIn","Other"]'),
