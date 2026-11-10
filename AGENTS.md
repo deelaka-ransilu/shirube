@@ -15,7 +15,7 @@ Sri Lankan job seekers come first. Keep field and source lists easy to extend.
 ## Layout
 - `server.js` starts the app and serves `public/`. API routes go in `routes/`.
 - `db.js` opens `data/shirube.db`. `schema.sql` holds the tables.
-- `public/index.html` is the shell. `public/app.js` switches screens by `#hash`.
+- `public/index.html` is the shell. `public/js/main.js` switches screens by `#hash`.
 - `docs/` holds the plan, spec and design notes.
 - `data/` is private and gitignored. Never read, print or commit anything in it.
 
