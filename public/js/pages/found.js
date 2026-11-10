@@ -1,5 +1,6 @@
 // Found tab: new ITPro postings you can save into Jobs or dismiss.
 import { loadFound, saveFound, dismissFound } from '../lib/api.js';
+import { createFilters, applyFilters, createFilterBar, filtersActive, parseColombo } from '../lib/filters.js';
 
 const state = {
   postings: [],
@@ -7,22 +8,19 @@ const state = {
   notice: null, // { text, jobId }
   rowErrors: new Map(), // external_id -> message
   busyIds: new Set(),
+  filters: createFilters(),
 };
 
 // ITPro times are Colombo time (UTC+5:30).
 function postedAgo(posting) {
-  if (posting.posted_at) {
-    const iso = String(posting.posted_at).replace(' ', 'T');
-    const hasZone = /[zZ]|[+-]\d\d:?\d\d$/.test(iso);
-    const when = new Date(hasZone ? iso : iso + '+05:30');
-    if (!Number.isNaN(when.getTime())) {
-      const mins = Math.max(0, Math.round((Date.now() - when.getTime()) / 60000));
-      if (mins < 60) return `Posted ${mins} min ago`;
-      const hours = Math.round(mins / 60);
-      if (hours < 24) return `Posted ${hours} h ago`;
-      const days = Math.round(hours / 24);
-      return `Posted ${days} ${days === 1 ? 'day' : 'days'} ago`;
-    }
+  const when = parseColombo(posting.posted_at);
+  if (when) {
+    const mins = Math.max(0, Math.round((Date.now() - when.getTime()) / 60000));
+    if (mins < 60) return `Posted ${mins} min ago`;
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return `Posted ${hours} h ago`;
+    const days = Math.round(hours / 24);
+    return `Posted ${days} ${days === 1 ? 'day' : 'days'} ago`;
   }
   return posting.posted_date ? `Posted ${posting.posted_date}` : '';
 }
@@ -113,11 +111,6 @@ function drawFound(container, loadError) {
     shell.append(note);
   }
 
-  const count = document.createElement('div');
-  count.className = 'jobs-counts';
-  count.textContent = `${state.postings.length} new ${state.postings.length === 1 ? 'posting' : 'postings'}`;
-  shell.append(count);
-
   if (state.postings.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'found-message';
@@ -127,14 +120,42 @@ function drawFound(container, loadError) {
     empty.append(text);
     shell.append(empty);
   } else {
-    const list = document.createElement('div');
-    list.className = 'found-list';
-    state.postings.forEach((p) => list.append(createCard(p, container)));
-    shell.append(list);
+    const results = document.createElement('div');
+    results.className = 'found-shell';
+    shell.append(createFilterBar(state.postings, state.filters, () => drawResults(results, container)));
+    shell.append(results);
+    drawResults(results, container);
   }
 
   container.innerHTML = '';
   container.append(shell);
+}
+
+// Redraws only the count and the cards, so the search box keeps focus.
+function drawResults(results, container) {
+  const total = state.postings.length;
+  const shown = applyFilters(state.postings, state.filters);
+  results.replaceChildren();
+
+  const count = document.createElement('div');
+  count.className = 'jobs-counts';
+  count.textContent = filtersActive(state.filters)
+    ? `Showing ${shown.length} of ${total} postings`
+    : `${total} new ${total === 1 ? 'posting' : 'postings'}`;
+  results.append(count);
+
+  if (shown.length === 0) {
+    const none = document.createElement('p');
+    none.className = 'muted';
+    none.textContent = 'No postings match these filters. Click "Clear filters" above to see all of them.';
+    results.append(none);
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'found-list';
+  shown.forEach((p) => list.append(createCard(p, container)));
+  results.append(list);
 }
 
 function createCard(posting, container) {
