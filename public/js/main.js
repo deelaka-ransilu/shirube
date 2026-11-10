@@ -2,13 +2,13 @@
 import { renderJobs } from './pages/jobs.js';
 import { renderJobPage } from './pages/job-detail.js';
 import { renderFound } from './pages/found.js';
+import { renderSettings } from './pages/settings.js';
 import { renderFollowups } from './pages/followups.js';
 import { renderProfile } from './pages/profile.js';
 
 // Screens that are not built yet.
 const PLACEHOLDERS = {
   learn: 'What works',
-  settings: 'Settings',
   backup: 'Export backup',
 };
 
@@ -60,6 +60,9 @@ function route() {
   } else if (name === 'followups') {
     document.title = 'Follow-ups | Shirube';
     renderFollowups(app);
+  } else if (name === 'settings') {
+    document.title = 'Settings | Shirube';
+    renderSettings(app);
   } else if (name === 'profile') {
     document.title = 'My profile | Shirube';
     renderProfile(app);
