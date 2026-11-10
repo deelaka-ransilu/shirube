@@ -49,7 +49,6 @@ function isValidDate(val) {
 }
 
 async function ensureLists() {
-  if (lists.sources.length) return;
   try {
     const data = await loadJobs('all', 'closing_date');
     lists.sources = data.sources || [];
@@ -291,8 +290,13 @@ function buildRejectionBox(page) {
   const select = el('select', 'form-select');
   select.id = 'job-rejection-reason';
 
-  const reasons = job.rejection_reasons || DEFAULT_REASONS;
   const active = job.application?.rejection_reason || 'Other';
+  const reasons = (job.rejection_reasons || DEFAULT_REASONS).slice();
+  if (!reasons.includes(active)) {
+    const at = reasons.indexOf('Other');
+    if (at === -1) reasons.push(active);
+    else reasons.splice(at, 0, active);
+  }
   reasons.forEach((reason) => {
     const opt = el('option', '', reason);
     opt.value = reason;
@@ -482,6 +486,7 @@ function buildEditPanel(page) {
   const compInput = makeInput('text', 'edit-job-company-input', job.company, 'e.g. Acme Corp');
 
   const sourceList = (lists.sources.length ? lists.sources : FALLBACK_SOURCES).filter((s) => s.toLowerCase() !== 'other');
+  if (job.source && job.source.toLowerCase() !== 'other' && !sourceList.includes(job.source)) sourceList.push(job.source);
   sourceList.push('Other');
   const sourceSelect = makeSelect(
     'edit-job-source',
@@ -489,7 +494,12 @@ function buildEditPanel(page) {
     job.source || 'Other'
   );
 
-  const roleList = lists.roleTypes.length ? lists.roleTypes : FALLBACK_ROLE_TYPES;
+  const roleList = (lists.roleTypes.length ? lists.roleTypes : FALLBACK_ROLE_TYPES).slice();
+  if (job.role_type && !roleList.includes(job.role_type)) {
+    const at = roleList.indexOf('Other');
+    if (at === -1) roleList.push(job.role_type);
+    else roleList.splice(at, 0, job.role_type);
+  }
   const roleSelect = makeSelect(
     'edit-job-role-type',
     [{ val: '', lbl: 'Select role type (optional)' }, ...roleList.map((r) => ({ val: r, lbl: r }))],
