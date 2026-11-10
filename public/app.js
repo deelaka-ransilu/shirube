@@ -3199,8 +3199,7 @@ function showScreen() {
     document.title = 'My profile | Shirube';
     renderProfile(app);
   } else if (name === 'followups') {
-    document.title = 'Follow-ups | Shirube';
-    renderFollowups(app);
+    // The Follow-ups page is drawn by public/js/main.js.
   } else if (SCREENS[name]) {
     const title = SCREENS[name];
     document.title = `${title} | Shirube`;
