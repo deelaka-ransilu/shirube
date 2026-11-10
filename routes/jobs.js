@@ -667,6 +667,62 @@ async function handleJobOutcome(req, res, id, method) {
   return sendJson(res, 200, fullJob);
 }
 
+// Undoes the last step of a job (/api/jobs/:id/undo).
+const UNDO_STATUS = {
+  replied: 'screening',
+  first_interview: 'interview',
+  offer: 'offer',
+  rejected: 'rejected',
+};
+
+async function handleJobUndo(req, res, id, method) {
+  if (method !== 'POST') {
+    return sendJson(res, 405, { error: 'Method not allowed.' }, { Allow: 'POST' });
+  }
+  const job = db.prepare('SELECT id FROM jobs WHERE id = ?;').get(id);
+  if (!job) {
+    return sendJson(res, 404, { error: 'Job not found.' });
+  }
+  const app = db.prepare('SELECT id, status FROM applications WHERE job_id = ?;').get(id);
+  if (!app) {
+    return sendJson(res, 400, { error: 'Nothing to undo.' });
+  }
+
+  const newestStmt = db.prepare('SELECT id, kind FROM replies WHERE application_id = ? ORDER BY id DESC LIMIT 1;');
+  const statusFor = (row) => (row ? (UNDO_STATUS[row.kind] || 'applied') : 'applied');
+  const setStatus = (status) => {
+    db.prepare(`
+      UPDATE applications
+      SET status = ?,
+          rejection_reason = CASE WHEN ? = 'rejected' THEN rejection_reason ELSE NULL END
+      WHERE id = ?;
+    `).run(status, status, app.id);
+  };
+
+  const newest = newestStmt.get(app.id);
+  const expected = statusFor(newest);
+
+  db.exec('BEGIN');
+  try {
+    if (app.status !== expected) {
+      // The last step was only a status click (Applied or No reply).
+      setStatus(expected);
+    } else if (newest) {
+      db.prepare('DELETE FROM replies WHERE id = ?;').run(newest.id);
+      setStatus(statusFor(newestStmt.get(app.id)));
+    } else {
+      // Only the Applied step is left, so the job goes back to To apply.
+      db.prepare('DELETE FROM applications WHERE id = ?;').run(app.id);
+    }
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    return sendJson(res, 500, { error: 'Could not undo the last step.' });
+  }
+
+  return sendJson(res, 200, getFullJob(id));
+}
+
 // Handles archiving and unarchiving a job (/api/jobs/:id/archive).
 async function handleJobArchive(req, res, id, method) {
   if (method !== 'POST') {
@@ -824,6 +880,14 @@ export async function handleJobsRequest(req, res, url) {
   if (archiveMatch) {
     const id = Number(archiveMatch[1]);
     await handleJobArchive(req, res, id, method);
+    return true;
+  }
+
+  // Undo: /api/jobs/:id/undo
+  const undoMatch = path.match(/^\/api\/jobs\/(\d+)\/undo$/);
+  if (undoMatch) {
+    const id = Number(undoMatch[1]);
+    await handleJobUndo(req, res, id, method);
     return true;
   }
 

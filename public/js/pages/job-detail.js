@@ -258,12 +258,31 @@ function buildStatusSection(page) {
 
   section.append(row, buildRejectionBox(page));
 
+  if (job.application) {
+    const undoBtn = el('button', 'btn btn-secondary undo-btn', 'Undo last step');
+    undoBtn.type = 'button';
+    undoBtn.addEventListener('click', () => undoStep(page));
+    section.append(undoBtn);
+  }
+
   const feedback = el('div', 'outcome-feedback-box');
   if (page.message) feedback.append(el('span', 'save-status', page.message));
   if (page.error) feedback.append(el('div', 'field-error', page.error));
   section.append(feedback);
 
   return section;
+}
+
+async function undoStep(page) {
+  page.error = '';
+  try {
+    page.job = await sendJson('/api/jobs/' + page.job.id + '/undo', 'POST', {});
+    document.title = page.job.title + ' | Shirube';
+    showMessage(page, 'Last step undone');
+  } catch (err) {
+    page.error = err.message;
+    draw(page);
+  }
 }
 
 async function postOutcome(page, payload) {
