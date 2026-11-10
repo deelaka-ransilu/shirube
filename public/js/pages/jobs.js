@@ -3,6 +3,7 @@ import { escapeHtml, getTodayColombo } from '../lib/format.js';
 import { JOB_TYPES } from '../lib/job-options.js';
 import { renderStageBadge } from '../components/stage-badge.js';
 import { loadJobs, sendJson, deleteJob } from '../lib/api.js';
+import { createFilters, applyFilters, createFilterBar, filtersActive } from '../lib/filters.js';
 
 const state = {
   jobs: [],
@@ -18,6 +19,8 @@ const state = {
   selectedIds: new Set(),
   confirmDeleteId: null,
   bulkConfirmDelete: false,
+  allJobs: [],
+  filters: createFilters(),
 };
 
 const STAGE_CHIPS = [
@@ -57,7 +60,8 @@ function buildJobsCountsLine(counts) {
 
 async function loadJobsData() {
   const data = await loadJobs(state.stageFilter, state.sortChoice);
-  state.jobs = data.jobs || [];
+  state.allJobs = data.jobs || [];
+  state.jobs = applyFilters(state.allJobs, state.filters);
   state.counts = data.counts || {};
   state.sources = data.sources || ['Other'];
   state.roleTypes = data.roleTypes || ['Other'];
@@ -200,13 +204,41 @@ function drawJobsView(container) {
   controlsBar.append(chipsContainer, sortGroup);
   shell.append(controlsBar);
 
+  // 4b. Filter bar, applied on top of the stage chip.
+  if (state.allJobs.length > 0 || filtersActive(state.filters)) {
+    shell.append(createFilterBar(state.allJobs, state.filters, () => {
+      const active = document.activeElement;
+      const hadSearchFocus = Boolean(active && active.type === 'search');
+      state.jobs = applyFilters(state.allJobs, state.filters);
+      const visible = new Set(state.jobs.map((j) => j.id));
+      [...state.selectedIds].forEach((id) => {
+        if (!visible.has(id)) state.selectedIds.delete(id);
+      });
+      state.confirmDeleteId = null;
+      state.bulkConfirmDelete = false;
+      drawJobsView(container);
+      if (hadSearchFocus) {
+        const box = container.querySelector('.filter-bar input[type="search"]');
+        if (box) {
+          box.focus();
+          box.setSelectionRange(box.value.length, box.value.length);
+        }
+      }
+    }));
+  }
+
   // 5. Bulk bar, shown when one or more rows are ticked.
   if (state.selectedIds.size > 0) {
     shell.append(createBulkBar(container));
   }
 
   // 6. Job list or empty state.
-  if (state.jobs.length === 0) {
+  if (state.jobs.length === 0 && state.allJobs.length > 0) {
+    const none = document.createElement('p');
+    none.className = 'muted';
+    none.textContent = 'No jobs match these filters. Click "Clear filters" above to see all of them.';
+    shell.append(none);
+  } else if (state.jobs.length === 0) {
     shell.append(createEmptyState(container));
   } else {
     shell.append(createListHeader(container));
@@ -464,7 +496,7 @@ function createJobRow(job, index, container) {
   const tags = document.createElement('div');
   tags.className = 'job-tags';
 
-  [job.job_type, job.work_mode, job.level, job.role_type].forEach((text) => {
+  [job.source === 'ITPro' ? 'From ITPro' : null, job.job_type, job.work_mode, job.level, job.role_type].forEach((text) => {
     if (!text) return;
     const tag = document.createElement('span');
     tag.className = 'meta-chip';

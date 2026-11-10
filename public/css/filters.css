@@ -39,3 +39,7 @@
   min-width: 10rem;
   max-width: 100%;
 }
+
+.filter-field input.filter-input {
+  min-width: 14rem;
+}

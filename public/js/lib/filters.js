@@ -57,7 +57,7 @@ export function applyFilters(items, filters) {
       }
     }
     if (cutoff !== null) {
-      const when = parseColombo(item.posted_at) || parseColombo(item.posted_date);
+      const when = parseColombo(item.posted_at) || parseColombo(item.posted_date) || parseColombo(item.found_date);
       if (!when || when.getTime() < cutoff) return false;
     }
     return true;
@@ -114,7 +114,7 @@ export function createFilterBar(items, filters, onChange) {
   const search = document.createElement('input');
   search.type = 'search';
   search.className = 'filter-input';
-  search.placeholder = 'Title, company, place';
+  search.placeholder = 'Search';
   search.value = filters.search;
   search.addEventListener('input', () => {
     filters.search = search.value;
