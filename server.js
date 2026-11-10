@@ -7,6 +7,7 @@ import './db.js'; // opens the database and creates the tables
 import { handleProfileRequest } from './routes/profile.js';
 import { handleJobsRequest } from './routes/jobs.js';
 import { handleFollowupsRequest } from './routes/followups.js';
+import { handleFoundRequest } from './routes/found.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(root, 'public');
@@ -24,6 +25,15 @@ const server = createServer(async (req, res) => {
   // API routes: followups, jobs, profile, and future routes.
   if (url.pathname.startsWith('/api/followups')) {
     const handled = await handleFollowupsRequest(req, res, url);
+    if (!handled) {
+      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Not found' }));
+    }
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/found')) {
+    const handled = await handleFoundRequest(req, res, url);
     if (!handled) {
       res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: 'Not found' }));
