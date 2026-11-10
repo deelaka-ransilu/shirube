@@ -11,7 +11,7 @@ const DAY_KEYS = {
 const LIST_KEYS = {
   role_types: { keepOtherLast: true },
   sources: { keepOtherLast: true },
-  rejection_reasons: { keepOtherLast: false },
+  rejection_reasons: { keepOtherLast: true },
 };
 
 const MAX_ITEMS = 50;
