@@ -1,0 +1,39 @@
+/* Screen styles (Jobs list, Add job). Load after shell.css. */
+:root { color-scheme: dark; }
+[hidden] { display: none !important; }
+
+a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.btn:disabled { opacity: 0.6; cursor: default; }
+textarea.input { resize: vertical; line-height: var(--leading-body); }
+.input[aria-invalid="true"] { border-width: 2.5px; border-color: var(--color-text); }
+
+/* Chips: 40px high, a check mark shows when chosen */
+.chip { min-height: 40px; height: auto; }
+.chip[aria-pressed="true"]::before { content: "✓ "; }
+.chip-group { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* Jobs list */
+.tiles { margin-bottom: var(--space-5); }
+.tile span { font-size: var(--text-base); }
+.filters { margin-bottom: var(--space-4); }
+.jobs-layout { margin-top: var(--space-5); }
+.row-main { flex: 1; min-width: 180px; }
+.row-title { color: var(--color-text); text-decoration: none; }
+.row-title:hover { text-decoration: underline; }
+.side-stack { display: grid; gap: var(--space-4); }
+.empty { text-align: center; padding: var(--space-6) 0; }
+
+/* Add job */
+.add-job { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--space-4); align-items: start; }
+@media (max-width: 1100px) { .add-job { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.step { display: flex; align-items: center; gap: var(--space-3); margin: 0 0 var(--space-3); }
+.step-num { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: var(--text-base); font-weight: var(--weight-semibold); background: var(--color-card); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-pill); }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.fields .wide { grid-column: 1 / -1; }
+.field-error { margin-top: var(--space-1); font-weight: var(--weight-semibold); }
+.inner-box { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-5); background: var(--color-card); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-inner); corner-shape: squircle; }
+.inner-box b { display: block; font-size: var(--text-xl); font-weight: var(--weight-medium); line-height: var(--leading-tight); }
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.save-box { display: flex; flex-direction: column; gap: var(--space-3); }
+.save-box .btn { width: 100%; }

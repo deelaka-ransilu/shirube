@@ -2,9 +2,14 @@
 // and return an object (sent as JSON) or throw HttpError.
 import { HttpError } from '../lib/errors.js';
 import { health } from './health.js';
+import { listJobs, createJob, findDuplicate, deleteJob } from './jobs.js';
 
 const list = [
   ['GET', '/api/health', health],
+  ['GET', '/api/jobs', listJobs],
+  ['POST', '/api/jobs', createJob],
+  ['GET', '/api/jobs/duplicate', findDuplicate],
+  ['DELETE', '/api/jobs/:id', deleteJob],
 ];
 
 export function buildRouter(db) {

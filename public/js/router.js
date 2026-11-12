@@ -33,6 +33,8 @@ export function startRouter(el) {
       if (stale()) return;
       document.title = `${hit.route.title} · Shirube`;
       el.scrollTop = 0;
+      // Pages attach events with el.onclick = ..., so clear the last page's events first.
+      el.onclick = el.oninput = el.onchange = el.onsubmit = null;
       await page.render(el, { params: hit.params, query, stale });
     } catch (err) {
       if (stale()) return;

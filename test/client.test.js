@@ -52,3 +52,53 @@ test('every file linked from index.html is served', async () => {
     server.close();
   }
 });
+
+// ---- step 3 helpers ----
+import { parseAdvert, parseDate } from '../public/js/lib/parse-advert.js';
+import { closingText, formatDay, initials } from '../public/js/lib/format.js';
+import { statusText, hasStatus } from '../public/js/lib/status.js';
+
+test('parseDate reads common advert dates', () => {
+  assert.equal(parseDate('Closing date: 30th November 2026'), '2026-11-30');
+  assert.equal(parseDate('apply by 3 Dec 2026'), '2026-12-03');
+  assert.equal(parseDate('deadline 05/12/2026'), '2026-12-05');
+  assert.equal(parseDate('2026-12-03'), '2026-12-03');
+  assert.equal(parseDate('31 Feb 2026'), '');
+  assert.equal(parseDate('no date here'), '');
+});
+
+test('parseAdvert fills what it can find', () => {
+  const found = parseAdvert(`Junior DevOps Engineer at Northwind Ltd
+We are hiring a full-time hybrid engineer.
+Closing date: 3 December 2026
+Apply at https://northwind.example/jobs/12.`);
+  assert.deepEqual(found, {
+    url: 'https://northwind.example/jobs/12',
+    title: 'Junior DevOps Engineer',
+    company: 'Northwind Ltd',
+    work_mode: 'hybrid',
+    job_type: 'Full-time',
+    closes_on: '2026-12-03',
+  });
+  assert.deepEqual(parseAdvert('Job Title: QA Engineer\nCompany: Globex\nRemote contract role'), {
+    title: 'QA Engineer', company: 'Globex', work_mode: 'remote', job_type: 'Contract',
+  });
+  assert.deepEqual(parseAdvert('https://example.com/job/1'), { url: 'https://example.com/job/1', onlyLink: true });
+  assert.deepEqual(parseAdvert('   '), {});
+});
+
+test('format helpers', () => {
+  assert.equal(formatDay('2026-11-30', '2026-11-12'), '30 Nov');
+  assert.equal(formatDay('2027-01-05', '2026-11-12'), '5 Jan 2027');
+  assert.equal(closingText('', '2026-11-12'), 'No closing date');
+  assert.equal(closingText('2026-10-28', '2026-11-12'), 'Closed 28 Oct');
+  assert.equal(closingText('2026-11-12', '2026-11-12'), 'Closes 12 Nov');
+  assert.equal(initials('Acme Corp'), 'AC');
+  assert.equal(initials('Globex'), 'GL');
+  assert.equal(initials(''), '?');
+});
+
+test('status helpers ignore inherited names', () => {
+  assert.equal(statusText('interview'), '■ Interview');
+  assert.equal(hasStatus('constructor'), false);
+});
