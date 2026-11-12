@@ -7,18 +7,37 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/shell.css">
 </head>
 <body>
   <div class="app">
-    <main class="panel">
-      <div class="panel-body">
-        <h1>Shirube</h1>
-        <div class="card" style="margin-top: var(--space-5); max-width: 480px;">
-          <h2>Setup check</h2>
-          <p id="status" class="text-muted">Checking the server and database…</p>
+    <nav class="sidebar" aria-label="Main">
+      <a href="#/" data-nav="dashboard" aria-label="Dashboard" title="Dashboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>
+      </a>
+      <a href="#/jobs" data-nav="jobs" aria-label="Jobs" title="Jobs">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M3 13h18"/></svg>
+      </a>
+    </nav>
+
+    <div class="panel">
+      <header class="panel-header">
+        <a class="logo" href="#/" aria-label="Shirube home">Shi<span>rube</span></a>
+        <div class="topbar">
+          <form class="search" id="search" role="search">
+            <label class="sr-only" for="search-input">Search jobs</label>
+            <input id="search-input" name="q" type="search" placeholder="Search jobs" autocomplete="off">
+            <button type="submit" aria-label="Search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            </button>
+          </form>
+          <a class="avatar-link" href="#/profile" data-nav="profile" aria-label="My profile" title="My profile">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          </a>
         </div>
-      </div>
-    </main>
+      </header>
+      <main class="panel-body" id="page"></main>
+    </div>
   </div>
   <script type="module" src="/js/main.js"></script>
 </body>

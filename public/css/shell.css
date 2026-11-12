@@ -1,0 +1,30 @@
+/* Shell pieces that base.css does not cover: top bar, search, avatar, page header.
+   Load after base.css. */
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Sidebar */
+.sidebar a, .avatar-link { text-decoration: none; }
+.sidebar svg, .search svg, .avatar-link svg { stroke-linecap: round; stroke-linejoin: round; }
+.sidebar a:hover:not([aria-current="page"]) { background: var(--color-raised); }
+
+/* Top bar */
+.panel-header { flex-wrap: wrap; }
+.logo { margin-left: 6px; font-size: 28px; font-weight: var(--weight-semibold); color: var(--color-text); text-decoration: none; }
+.logo span { color: var(--color-primary); }
+.topbar { display: flex; align-items: center; gap: var(--space-4); min-width: 0; }
+
+.search { display: flex; width: 340px; flex-shrink: 1; min-width: 120px; height: 48px; background: var(--color-card); border: var(--border-width) solid var(--color-border-strong); border-radius: 14px; corner-shape: squircle; overflow: hidden; }
+.search:focus-within { outline: 2px solid var(--color-text); outline-offset: 2px; }
+.search input { flex: 1; min-width: 0; padding: 0 var(--space-4); background: transparent; color: var(--color-text); font: var(--text-base) var(--font-sans); border: 0; outline: none; }
+.search input::placeholder { color: var(--color-muted); }
+.search button { width: 48px; display: flex; align-items: center; justify-content: center; background: var(--color-raised); color: var(--color-text); border: 0; border-left: var(--border-width) solid var(--color-border-strong); cursor: pointer; }
+.search svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+.avatar-link { width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--color-accent); color: var(--color-on-accent); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-pill); }
+.avatar-link svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.avatar-link[aria-current="page"] { box-shadow: 0 0 0 2px var(--color-panel), 0 0 0 4px var(--color-accent); }
+
+/* Page title row */
+.page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+.page-head p { margin: var(--space-2) 0 0; }

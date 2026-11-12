@@ -1,9 +1,10 @@
-// Temporary page for step 1. The real shell replaces this in step 2.
-const status = document.getElementById('status');
-try {
-  const res = await fetch('/api/health');
-  const data = await res.json();
-  status.textContent = `Server and database are working. Jobs saved: ${data.jobs}.`;
-} catch {
-  status.textContent = 'Could not reach the server.';
-}
+import { startRouter } from './router.js';
+
+// The search box in the top bar opens the Jobs list with a search word.
+document.getElementById('search').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = String(new FormData(e.currentTarget).get('q') ?? '').trim();
+  location.hash = '#/jobs' + (q ? '?q=' + encodeURIComponent(q) : '');
+});
+
+startRouter(document.getElementById('page'));
