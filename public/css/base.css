@@ -1,0 +1,63 @@
+/* Shirube base styles. Needs tokens.css loaded first.
+   Add this font link in <head>:
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap"> */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--color-frame); color: var(--color-text); font: var(--weight-regular) var(--text-base)/var(--leading-body) var(--font-sans); }
+
+/* Shell: blue frame, icon sidebar, dark panel */
+.app { display: flex; gap: var(--frame-gap); padding: var(--frame-pad); height: 100vh; background: var(--color-frame); }
+.sidebar { width: var(--sidebar-w); flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: var(--space-5); }
+.sidebar a { width: var(--nav-btn); height: var(--nav-btn); display: flex; align-items: center; justify-content: center; border-radius: 14px; corner-shape: squircle; color: #f2f2f2; }
+.sidebar a[aria-current="page"] { background: var(--color-accent); color: var(--color-on-accent); }
+.sidebar svg { width: var(--nav-icon); height: var(--nav-icon); stroke: currentColor; fill: none; stroke-width: 1.8; }
+.panel { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--color-panel); border-radius: var(--radius-card); corner-shape: squircle; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-5) var(--space-6) var(--space-2); }
+.panel-body { flex: 1; min-height: 0; overflow: auto; padding: var(--space-2) var(--space-6) var(--space-6); }
+
+/* Type */
+h1 { margin: 0; font-size: var(--text-display); font-weight: var(--weight-medium); line-height: var(--leading-tight); }
+h2 { margin: 0 0 var(--space-3); font-size: var(--text-lg); font-weight: var(--weight-medium); line-height: var(--leading-tight); }
+.text-muted { color: var(--color-muted); }
+.text-sm { font-size: var(--text-sm); }
+.text-xs { font-size: var(--text-xs); }
+.label { display: block; margin-bottom: var(--space-1); font-size: var(--text-xs); color: var(--color-muted); }
+a.link { color: var(--color-link); }
+
+/* Layout helpers */
+.stack { display: flex; flex-direction: column; gap: var(--space-4); }
+.row { display: flex; align-items: center; gap: var(--space-4); }
+.grid-tiles { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.grid-main-side { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); align-items: start; }
+
+/* Card and count tile */
+.card { background: var(--color-card); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-card); corner-shape: squircle; padding: var(--card-pad); }
+.card.compact { padding: var(--card-pad-sm); }
+.tile { background: var(--color-card); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-card); corner-shape: squircle; padding: 24px 28px; }
+.tile strong { display: block; font-size: var(--text-stat); font-weight: var(--weight-medium); }
+
+/* Buttons: one .btn-primary per screen */
+.btn { min-height: var(--hit-min); padding: 12px 20px; font: var(--weight-medium) var(--text-base) var(--font-sans); border-radius: var(--radius-control); corner-shape: squircle; border: var(--border-width) solid var(--color-border-strong); cursor: pointer; }
+.btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
+.btn-secondary { background: transparent; color: var(--color-text); font-weight: var(--weight-regular); }
+.btn-danger { background: transparent; color: var(--color-danger); border-color: var(--color-danger); font-weight: var(--weight-regular); }
+
+/* Form controls */
+.input { width: 100%; min-height: var(--hit-min); padding: 12px; background: var(--color-panel); color: var(--color-text); font: var(--text-base) var(--font-sans); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); corner-shape: squircle; }
+.chip { height: 32px; padding: 0 16px; background: transparent; color: var(--color-text); font: var(--text-base) var(--font-sans); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--color-text); color: var(--color-panel); }  /* also show a check mark */
+.tag { display: inline-block; padding: 4px 10px; font-size: var(--text-xs); white-space: nowrap; background: var(--color-card); border: 1px solid var(--color-border-strong); border-radius: var(--radius-small); }
+
+/* List row with divider */
+.list-row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: 14px 0; border-bottom: 1px solid var(--color-line); }
+.list-row:last-child { border-bottom: 0; }
+
+/* Company avatar: two letters, no logos */
+.avatar { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); background: var(--color-raised); border: 1px solid var(--color-border-strong); border-radius: var(--radius-pill); }
+
+/* Focus: needed in the real app (not drawn in the mockups) */
+:focus-visible { outline: 2px solid var(--color-text); outline-offset: 2px; }
+
+/* Status = shape + word, never colour alone:
+   ● Applied  ○ Reply  ■ Interview  ◆ Offer  ▲ Rejected  □ Due  ◇ Overdue  ✓ Chosen */

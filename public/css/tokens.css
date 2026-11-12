@@ -1,0 +1,67 @@
+/* Shirube design tokens. Values come from the v3 mockups.
+   Only variables here. Components are in base.css. */
+:root {
+  /* Colors: three layers, dark to light */
+  --color-frame: #1F4FFF;        /* outer background, behind the sidebar */
+  --color-panel: #211D1E;        /* main panel, inputs */
+  --color-card: #2B2627;         /* every card */
+  --color-raised: #3A3436;       /* avatars, selected calendar day, hover */
+
+  --color-text: #F4F1EF;
+  --color-muted: #C3BBB8;        /* labels, small and secondary text */
+
+  --color-line: #3F3739;         /* 1px dividers between list rows */
+  --color-border: #4A4143;       /* card outlines */
+  --color-border-strong: #8A8082;/* buttons, inputs, chips, today */
+
+  --color-primary: #ff5a36;      /* the one main button per screen */
+  --color-on-primary: #1a1a1a;   /* text on orange is always dark */
+  --color-accent: #ffd966;       /* active sidebar icon, profile avatar */
+  --color-on-accent: #1a1a1a;
+  --color-link: #ff8a6b;
+  --color-danger: #ff8a80;       /* delete buttons only */
+
+  /* Type: Outfit, weights 400 / 500 / 600 */
+  --font-sans: 'Outfit', system-ui, sans-serif;
+  --text-xs: 12px;     /* labels, tags, symbols */
+  --text-sm: 13px;     /* captions, dates, notes */
+  --text-base: 14px;   /* body, buttons, inputs, list rows */
+  --text-md: 16px;     /* names, card lead text */
+  --text-lg: 18px;     /* card titles (h2) */
+  --text-xl: 20px;     /* big card titles */
+  --text-stat: 32px;   /* numbers in count tiles */
+  --text-display: 40px;/* page title (h1) */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --leading-tight: 1.2;
+  --leading-body: 1.45;
+
+  /* Spacing: 4px steps */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;     /* gap between cards */
+  --space-5: 24px;     /* gap between sections */
+  --space-6: 32px;     /* side padding inside the panel */
+
+  /* Radius */
+  --radius-card: 45px;
+  --radius-inner: 24px;    /* a box inside a card */
+  --radius-control: 12px;  /* buttons, inputs, chips */
+  --radius-small: 8px;     /* tags */
+  --radius-pill: 999px;    /* avatars, round buttons */
+
+  /* Lines and sizes */
+  --border-width: 1.5px;
+  --hit-min: 44px;         /* smallest tap or click target */
+
+  /* Layout (desktop, laptop window) */
+  --frame-pad: 16px;
+  --frame-gap: 12px;
+  --sidebar-w: 88px;
+  --nav-btn: 52px;
+  --nav-icon: 24px;
+  --card-pad: 28px 32px;
+  --card-pad-sm: 18px 24px;
+}
