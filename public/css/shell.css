@@ -28,3 +28,5 @@
 /* Page title row */
 .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
 .page-head p { margin: var(--space-2) 0 0; }
+
+.avatar-link .initials { font-size: var(--text-md); font-weight: var(--weight-semibold); }

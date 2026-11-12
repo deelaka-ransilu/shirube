@@ -4,6 +4,12 @@ import { HttpError } from '../lib/errors.js';
 import { health } from './health.js';
 import { listJobs, createJob, findDuplicate, deleteJob, getJob, updateJob } from './jobs.js';
 import { addStage, updateStage, deleteStage } from './stages.js';
+import {
+  getProfile, saveProfile, createPreset, deletePreset,
+  createEducation, updateEducation, deleteEducation,
+  createExperience, updateExperience, deleteExperience,
+} from './profile.js';
+import { exportBackup, restoreBackup } from './backup.js';
 
 const list = [
   ['GET', '/api/health', health],
@@ -16,6 +22,18 @@ const list = [
   ['POST', '/api/jobs/:id/stages', addStage],
   ['PATCH', '/api/stages/:id', updateStage],
   ['DELETE', '/api/stages/:id', deleteStage],
+  ['GET', '/api/profile', getProfile],
+  ['PATCH', '/api/profile', saveProfile],
+  ['POST', '/api/presets', createPreset],
+  ['DELETE', '/api/presets/:id', deletePreset],
+  ['POST', '/api/education', createEducation],
+  ['PATCH', '/api/education/:id', updateEducation],
+  ['DELETE', '/api/education/:id', deleteEducation],
+  ['POST', '/api/experience', createExperience],
+  ['PATCH', '/api/experience/:id', updateExperience],
+  ['DELETE', '/api/experience/:id', deleteExperience],
+  ['GET', '/api/backup', exportBackup],
+  ['POST', '/api/restore', restoreBackup],
 ];
 
 export function buildRouter(db) {

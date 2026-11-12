@@ -10,7 +10,7 @@ import { HttpError } from './lib/errors.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(root, 'public');
-const MAX_BODY = 1_000_000; // 1 MB
+const MAX_BODY = 25_000_000; // 25 MB (a restored backup can be big)
 
 const types = {
   '.html': 'text/html; charset=utf-8',
