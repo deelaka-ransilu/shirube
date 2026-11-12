@@ -1,5 +1,6 @@
 import { HttpError } from '../lib/errors.js';
 import { STATUSES, cleanJob } from '../lib/validate-job.js';
+import { loadJobPage } from './stages.js';
 
 // Everything the list needs, but not the long advert text.
 const LIST_COLUMNS = 'id, title, company, status, source, work_mode, job_type, found_on, closes_on, created_at';
@@ -54,4 +55,19 @@ export function deleteJob({ db, params }) {
   const result = db.prepare('DELETE FROM jobs WHERE id = ?').run(Number(params.id));
   if (!result.changes) throw new HttpError(404, 'Job not found');
   return { ok: true };
+}
+
+export function getJob({ db, params }) {
+  return loadJobPage(db, Number(params.id));
+}
+
+export function updateJob({ db, params, body }) {
+  const id = Number(params.id);
+  loadJobPage(db, id); // 404 when the job is missing
+  const data = cleanJob(body, { partial: true });
+  const cols = Object.keys(data);
+  if (!cols.length) throw new HttpError(400, 'Nothing to change');
+  db.prepare(`UPDATE jobs SET ${cols.map((c) => `${c} = ?`).join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+    .run(...cols.map((c) => data[c]), id);
+  return loadJobPage(db, id);
 }
