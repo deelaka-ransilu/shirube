@@ -61,3 +61,19 @@ textarea.input { resize: vertical; line-height: var(--leading-body); }
 .dl a { overflow-wrap: anywhere; }
 .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 select.input { appearance: auto; }
+
+/* Dashboard */
+.dash-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+@media (max-width: 1280px) { .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 800px) { .dash-grid { grid-template-columns: minmax(0, 1fr); } }
+.dash-col { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.dash-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+.dash-head h2 { margin-bottom: var(--space-1); }
+.dash-note { margin: 0 0 var(--space-2); }
+.row-right { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); text-align: right; }
+.avatar.sym { font-size: var(--text-md); }
+.step-row { align-items: flex-start; }
+.step-row .row-main b { font-weight: var(--weight-medium); }
+.dash-tiles { margin-top: var(--space-4); }
+a.tile { display: block; color: inherit; text-decoration: none; }
+a.tile:hover { background: var(--color-raised); }

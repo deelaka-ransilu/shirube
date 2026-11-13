@@ -10,9 +10,11 @@ import {
   createExperience, updateExperience, deleteExperience,
 } from './profile.js';
 import { exportBackup, restoreBackup } from './backup.js';
+import { getDashboard } from './dashboard.js';
 
 const list = [
   ['GET', '/api/health', health],
+  ['GET', '/api/dashboard', getDashboard],
   ['GET', '/api/jobs', listJobs],
   ['POST', '/api/jobs', createJob],
   ['GET', '/api/jobs/duplicate', findDuplicate],
