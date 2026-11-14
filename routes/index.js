@@ -11,10 +11,13 @@ import {
 } from './profile.js';
 import { exportBackup, restoreBackup } from './backup.js';
 import { getDashboard } from './dashboard.js';
+import { getFollowups, getFollowupCount } from './followups.js';
 
 const list = [
   ['GET', '/api/health', health],
   ['GET', '/api/dashboard', getDashboard],
+  ['GET', '/api/followups', getFollowups],
+  ['GET', '/api/followups/count', getFollowupCount],
   ['GET', '/api/jobs', listJobs],
   ['POST', '/api/jobs', createJob],
   ['GET', '/api/jobs/duplicate', findDuplicate],

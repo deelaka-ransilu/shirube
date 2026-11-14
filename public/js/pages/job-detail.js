@@ -19,7 +19,7 @@ const WORK_MODE = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
 function stageCard(s, today) {
   const k = KIND[s.kind];
   let state = 'Done';
-  if (s.kind === 'follow_up' && s.happened_on >= today) state = '□ Due';
+  if (s.kind === 'follow_up' && s.happened_on > today) state = '□ Due';
   return html`
     <button type="button" class="stage" data-stage="${s.id}">
       <span class="stage-sym" aria-hidden="true">${k.symbol}</span>

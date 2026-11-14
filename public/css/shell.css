@@ -30,3 +30,11 @@
 .page-head p { margin: var(--space-2) 0 0; }
 
 .avatar-link .initials { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+
+/* Bell with the number of follow-ups due */
+.bell { position: relative; width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--color-text); text-decoration: none; border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-pill); }
+.bell:hover { background: var(--color-raised); }
+.bell svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bell-count { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 6px; display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); font-weight: var(--weight-semibold); background: var(--color-accent); color: var(--color-on-accent); border-radius: var(--radius-pill); }
+.bell-count[hidden] { display: none; }
+.bell[aria-current="page"] { box-shadow: 0 0 0 2px var(--color-panel), 0 0 0 4px var(--color-accent); }

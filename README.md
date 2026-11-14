@@ -9,6 +9,7 @@ Built for job seekers, starting with Sri Lanka.
 - **Dashboard**: jobs to apply to (closing soonest first), your applications, what happened lately, and what to do next.
 - **Jobs**: add a job, filter by stage, search by title or company.
 - **Job detail**: record each stage (Applied, Reply, Interview, Offer, Rejected, Follow-up). The job status follows your stages.
+- **Follow-ups** (the clock icon, "Applied jobs"): a board of every job you applied to, in four columns (waiting, calls and interviews, offer, closed), with the stages of each. A bell in the top bar shows how many follow-ups are due. The number of days to wait is set in My profile.
 - **My profile**: your details, role presets (for example "SRE / DevOps"), skills, education, experience, and a backup and restore.
 
 ## Run it

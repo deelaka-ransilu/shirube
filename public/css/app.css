@@ -77,3 +77,26 @@ select.input { appearance: auto; }
 .dash-tiles { margin-top: var(--space-4); }
 a.tile { display: block; color: inherit; text-decoration: none; }
 a.tile:hover { background: var(--color-raised); }
+
+/* Follow-ups board */
+.fu-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+@media (max-width: 1400px) { .fu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 800px) { .fu-grid { grid-template-columns: minmax(0, 1fr); } }
+.fu-col { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.fu-colhead { display: flex; justify-content: space-between; align-items: center; color: var(--color-text); }
+.fu-colhead b { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.fu-colhead span { font-size: var(--text-xl); font-weight: var(--weight-medium); }
+.fu-who { align-items: center; gap: var(--space-3); }
+.fu-stages { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); }
+.fu-stage-head b { font-weight: var(--weight-medium); }
+.fu-note { margin: 2px 0 0 18px; }
+.fu-line { margin-top: var(--space-1); font-size: var(--text-sm); }
+.fu-due { font-weight: var(--weight-medium); }
+.fu-form { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+.fu-foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); }
+.fu-actions { gap: var(--space-2); flex-wrap: wrap; }
+.fu-actions .btn { display: inline-flex; align-items: center; text-decoration: none; }
+.fu-empty { margin: var(--space-2) var(--space-3); }
+
+/* A button that looks like a link */
+.link-btn { padding: 0; min-height: var(--hit-min); background: none; border: 0; color: var(--color-link); font: inherit; font-size: var(--text-sm); text-align: left; text-decoration: underline; cursor: pointer; }

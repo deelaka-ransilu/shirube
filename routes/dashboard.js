@@ -1,5 +1,6 @@
 import { STATUSES } from '../lib/validate-job.js';
 import { todayLocal, daysBetween } from '../lib/dates.js';
+import { followUpInfo } from '../lib/followups.js';
 
 const LIMIT = 5;
 const JOB_COLUMNS = 'id, title, company, status, closes_on, applied_on';
@@ -42,20 +43,12 @@ function nextSteps(db, today, openCount) {
   const steps = [];
   const wait = db.prepare('SELECT follow_up_days FROM profile WHERE id = 1').get().follow_up_days;
 
-  // 1. Applied jobs with no reply after your follow-up days (counted from the last apply or follow-up).
-  const waiting = db.prepare(
-    `SELECT j.id, j.title, j.company, j.applied_on,
-            (SELECT MAX(happened_on) FROM stages s WHERE s.job_id = j.id AND s.kind IN ('applied', 'follow_up')) AS last_on,
-            (SELECT kind FROM stages s WHERE s.job_id = j.id AND s.kind IN ('applied', 'follow_up') AND s.happened_on != ''
-             ORDER BY happened_on DESC, id DESC LIMIT 1) AS last_kind
-     FROM jobs j WHERE j.status = 'applied'`,
-  ).all();
+  // 1. Applied jobs with no reply after your follow-up days (see lib/followups.js).
+  const stageRows = db.prepare('SELECT id, kind, happened_on FROM stages WHERE job_id = ?');
   const due = [];
-  for (const j of waiting) {
-    const from = j.last_on || j.applied_on;
-    if (!from) continue;
-    const days = daysBetween(from, today);
-    if (days >= wait) due.push({ kind: 'follow_up', job_id: j.id, title: j.title, company: j.company, date: from, days, since: j.last_kind === 'follow_up' ? 'follow_up' : 'applied' });
+  for (const j of db.prepare("SELECT id, title, company, status, applied_on FROM jobs WHERE status = 'applied'").all()) {
+    const info = followUpInfo(j, stageRows.all(j.id), wait, today);
+    if (info?.due) due.push({ kind: 'follow_up', job_id: j.id, title: j.title, company: j.company, date: info.from, days: info.days_since, since: info.since });
   }
   due.sort((a, b) => b.days - a.days || a.job_id - b.job_id);
   steps.push(...due);
