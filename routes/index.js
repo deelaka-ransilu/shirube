@@ -12,12 +12,20 @@ import {
 import { exportBackup, restoreBackup } from './backup.js';
 import { getDashboard } from './dashboard.js';
 import { getFollowups, getFollowupCount } from './followups.js';
+import { listFound, getFound, updateFound, saveFound, saveFoundSettings, leaveFound, refreshFound } from './found.js';
 
 const list = [
   ['GET', '/api/health', health],
   ['GET', '/api/dashboard', getDashboard],
   ['GET', '/api/followups', getFollowups],
   ['GET', '/api/followups/count', getFollowupCount],
+  ['GET', '/api/found', listFound],
+  ['POST', '/api/found/refresh', refreshFound],
+  ['POST', '/api/found/left', leaveFound],
+  ['PATCH', '/api/found/settings', saveFoundSettings],
+  ['GET', '/api/found/:id', getFound],
+  ['PATCH', '/api/found/:id', updateFound],
+  ['POST', '/api/found/:id/save', saveFound],
   ['GET', '/api/jobs', listJobs],
   ['POST', '/api/jobs', createJob],
   ['GET', '/api/jobs/duplicate', findDuplicate],
@@ -41,7 +49,8 @@ const list = [
   ['POST', '/api/restore', restoreBackup],
 ];
 
-export function buildRouter(db) {
+// deps are things tests replace (the feed fetcher, the clock). The app passes none.
+export function buildRouter(db, deps = {}) {
   const compiled = list.map(([method, path, handler]) => ({
     method,
     handler,
@@ -54,7 +63,7 @@ export function buildRouter(db) {
       const m = pathname.match(r.re);
       if (!m) continue;
       pathMatched = true;
-      if (r.method === method) return r.handler({ ...ctx, db, params: m.groups ?? {} });
+      if (r.method === method) return r.handler({ ...ctx, db, deps, params: m.groups ?? {} });
     }
     throw new HttpError(pathMatched ? 405 : 404, pathMatched ? 'Method not allowed' : 'Not found');
   };

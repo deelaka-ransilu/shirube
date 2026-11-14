@@ -10,6 +10,7 @@ Built for job seekers, starting with Sri Lanka.
 - **Jobs**: add a job, filter by stage, search by title or company.
 - **Job detail**: record each stage (Applied, Reply, Interview, Offer, Rejected, Follow-up). The job status follows your stages.
 - **Follow-ups** (the clock icon, "Applied jobs"): a board of every job you applied to, in four columns (waiting, calls and interviews, offer, closed), with the stages of each. A bell in the top bar shows how many follow-ups are due. The number of days to wait is set in My profile.
+- **Found** (the magnifier icon): reads ITPro's job feeds when you press Refresh. Search what is saved, filter by work mode and date, read the advert, then **Save to Jobs** or **Hide**. Jobs first seen since you last left the page are tagged New. Shirube only ever contacts `itpro.lk`, only when you press Refresh, and at most every 30 minutes.
 - **My profile**: your details, role presets (for example "SRE / DevOps"), skills, education, experience, and a backup and restore.
 
 ## Run it

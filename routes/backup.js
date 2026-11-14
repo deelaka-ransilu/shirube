@@ -3,7 +3,7 @@
 import { HttpError } from '../lib/errors.js';
 import { tx, ensurePreset } from './profile.js';
 
-const TABLES = ['profile', 'presets', 'education', 'experience', 'jobs', 'preset_experience', 'stages'];
+const TABLES = ['profile', 'presets', 'education', 'experience', 'jobs', 'preset_experience', 'stages', 'found_jobs'];
 const FORMAT = { app: 'shirube', version: 1 };
 
 export function exportBackup({ db }) {
@@ -27,9 +27,9 @@ export function restoreBackup({ db, body }) {
   try {
     tx(db, () => {
       // Children first, so foreign keys never complain.
-      for (const t of ['stages', 'preset_experience', 'jobs', 'presets', 'education', 'experience']) db.exec(`DELETE FROM ${t}`);
+      for (const t of ['found_jobs', 'stages', 'preset_experience', 'jobs', 'presets', 'education', 'experience']) db.exec(`DELETE FROM ${t}`);
 
-      for (const t of ['presets', 'education', 'experience', 'jobs', 'preset_experience', 'stages']) {
+      for (const t of ['presets', 'education', 'experience', 'jobs', 'preset_experience', 'stages', 'found_jobs']) {
         const known = columnsOf(db, t);
         for (const row of rows(t)) {
           if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error(`a row in "${t}" is not an object`);

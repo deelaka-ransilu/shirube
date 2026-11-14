@@ -83,8 +83,9 @@ async function serveStatic(pathname, res) {
   res.end(data);
 }
 
-export function createServer(db) {
-  const route = buildRouter(db);
+// deps is for tests: { fetchFeed, now }. The real app passes nothing.
+export function createServer(db, deps = {}) {
+  const route = buildRouter(db, deps);
   return http.createServer(async (req, res) => {
     try {
       if (!requestAllowed(req)) throw new HttpError(403, 'Forbidden');

@@ -14,7 +14,7 @@ function chips(name, labelId, options) {
   </div>`;
 }
 
-export function render(el) {
+export function render(el, { query = {} } = {}) {
   const state = { work_mode: '', source: '', job_type: '' };
   let timer;
 
@@ -230,6 +230,11 @@ export function render(el) {
       $('save').disabled = false;
     }
   };
+
+  // "+ Paste a job link" on Found opens this page with #/jobs/new?url=... . Only a web link is accepted.
+  try {
+    if (query.url && ['http:', 'https:'].includes(new URL(query.url).protocol)) $('url').value = query.url;
+  } catch { /* not a link: leave the field empty */ }
 
   updatePreview();
 }

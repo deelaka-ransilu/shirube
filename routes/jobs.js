@@ -41,14 +41,18 @@ export function createJob({ db, body }) {
   return { job: db.prepare('SELECT * FROM jobs WHERE id = ?').get(lastInsertRowid) };
 }
 
-export function findDuplicate({ db, query }) {
-  const title = String(query.title ?? '').trim().toLowerCase();
-  const company = String(query.company ?? '').trim().toLowerCase();
-  if (!title) return { job: null };
-  const job = db.prepare(
+// The same title + company already in Jobs (case and spaces ignored). Used by Add job and by Found.
+export function findDuplicateJob(db, title, company) {
+  const t = String(title ?? '').trim().toLowerCase();
+  const c = String(company ?? '').trim().toLowerCase();
+  if (!t) return null;
+  return db.prepare(
     'SELECT id, title, company, created_at FROM jobs WHERE lower(trim(title)) = ? AND lower(trim(company)) = ? ORDER BY id DESC LIMIT 1',
-  ).get(title, company);
-  return { job: job ?? null };
+  ).get(t, c) ?? null;
+}
+
+export function findDuplicate({ db, query }) {
+  return { job: findDuplicateJob(db, query.title, query.company) };
 }
 
 export function deleteJob({ db, params }) {
