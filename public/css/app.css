@@ -132,3 +132,20 @@ a.tile:hover { background: var(--color-raised); }
 .found-msg:empty { display: none; }
 .found-about { margin: 0; font-size: var(--text-md); font-weight: var(--weight-medium); }
 .found-advert { white-space: pre-wrap; overflow-wrap: anywhere; line-height: var(--leading-body); }
+
+/* Saved searches */
+.found-saved { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+.found-saved .label { margin: 0 var(--space-1) 0 0; }
+.found-manage { margin-left: auto; font-size: var(--text-sm); color: var(--color-link); }
+.found-buttons { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.saved-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.saved-layout:not(:has(.saved-form)) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .saved-layout { grid-template-columns: minmax(0, 1fr); } }
+.saved-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
+.saved-card { display: flex; flex-direction: column; gap: var(--space-3); }
+.saved-card h2 { margin: 0; font-size: var(--text-lg); }
+.saved-words { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.saved-count { font-weight: var(--weight-medium); }
+.saved-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.saved-form h2 { margin: 0; font-size: var(--text-lg); }
+.saved-card .found-actions .btn { display: inline-flex; align-items: center; text-decoration: none; }

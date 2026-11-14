@@ -26,9 +26,11 @@ function categoriesOf(db) {
 
 // ---- list and detail ----
 
-export function listFound({ db, query, deps = {} }) {
-  const now = nowOf(deps);
-  const today = todayLocal(now);
+// One search, used by the list AND by the saved searches' "N new" counts, so they can never disagree.
+export const POSTED_KEYS = ['today', '3d', 'week', 'any'];
+export const MODE_KEYS = ['any', ...MODES];
+
+export function searchFound(db, query, today) {
   const where = [];
   const args = [];
 
@@ -50,11 +52,16 @@ export function listFound({ db, query, deps = {} }) {
     args.push(w, w, w, w);
   }
 
-  const profile = db.prepare('SELECT found_last_fetch_at, found_last_left_at FROM profile WHERE id = 1').get();
-  const left = profile.found_last_left_at;
-  const jobs = db.prepare(
+  const left = db.prepare('SELECT found_last_left_at FROM profile WHERE id = 1').get().found_last_left_at;
+  return db.prepare(
     `SELECT ${LIST_COLUMNS} FROM found_jobs WHERE ${where.join(' AND ')} ORDER BY published_on DESC, itpro_id DESC`,
   ).all(...args).map(({ first_seen_at, hidden, ...j }) => ({ ...j, hidden: !!hidden, is_new: !hidden && first_seen_at > left }));
+}
+
+export function listFound({ db, query, deps = {} }) {
+  const today = todayLocal(nowOf(deps));
+  const jobs = searchFound(db, query, today);
+  const profile = db.prepare('SELECT found_last_fetch_at FROM profile WHERE id = 1').get();
 
   return {
     jobs,

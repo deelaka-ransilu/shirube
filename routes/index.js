@@ -13,6 +13,7 @@ import { exportBackup, restoreBackup } from './backup.js';
 import { getDashboard } from './dashboard.js';
 import { getFollowups, getFollowupCount } from './followups.js';
 import { listFound, getFound, updateFound, saveFound, saveFoundSettings, leaveFound, refreshFound } from './found.js';
+import { listSaved, createSaved, updateSaved, deleteSaved } from './saved-searches.js';
 
 const list = [
   ['GET', '/api/health', health],
@@ -26,6 +27,10 @@ const list = [
   ['GET', '/api/found/:id', getFound],
   ['PATCH', '/api/found/:id', updateFound],
   ['POST', '/api/found/:id/save', saveFound],
+  ['GET', '/api/saved-searches', listSaved],
+  ['POST', '/api/saved-searches', createSaved],
+  ['PATCH', '/api/saved-searches/:id', updateSaved],
+  ['DELETE', '/api/saved-searches/:id', deleteSaved],
   ['GET', '/api/jobs', listJobs],
   ['POST', '/api/jobs', createJob],
   ['GET', '/api/jobs/duplicate', findDuplicate],

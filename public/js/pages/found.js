@@ -3,26 +3,14 @@
 import { html } from '../lib/html.js';
 import { api } from '../lib/api.js';
 import { formatDay, initials, todayISO, closingText } from '../lib/format.js';
+import { watchLeavingFound, suggestName } from '../lib/found-marker.js';
 
 const WORK_MODES = [['any', 'Any'], ['onsite', 'On-site'], ['hybrid', 'Hybrid'], ['remote', 'Remote']];
 const MODE_LABEL = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
 const POSTED = [['today', 'Today'], ['3d', '3 days'], ['week', 'Week'], ['any', 'Any']];
 
 // Kept while the app stays open, so coming back to Found finds the same filters.
-const state = { q: '', posted: '3d', mode: 'any', showHidden: false, selectedId: null, linkOpen: false, linkValue: '', linkError: '' };
-
-// The "New" marker moves when the person leaves Found, not while they are on it.
-let stopWatching = () => {};
-function watchLeaving() {
-  stopWatching();
-  const onChange = () => {
-    if (location.hash.startsWith('#/found')) return;
-    stopWatching();
-    api('/api/found/left', { method: 'POST' }).catch(() => {});
-  };
-  window.addEventListener('hashchange', onChange);
-  stopWatching = () => { window.removeEventListener('hashchange', onChange); stopWatching = () => {}; };
-}
+const state = { saveOpen: false, saveName: '', saveError: '', q: '', posted: '3d', mode: 'any', showHidden: false, selectedId: null, linkOpen: false, linkValue: '', linkError: '' };
 
 const itproLink = (url) => (/^https:\/\/itpro\.lk\//.test(url) ? url : '');
 
@@ -44,8 +32,9 @@ function chipGroup(label, attr, options, current) {
     </div>`;
 }
 
-export async function render(el, { stale }) {
-  watchLeaving();
+export async function render(el, { stale, query = {} }) {
+  watchLeavingFound();
+  let saved = [];
   let data = null;
   let detail = null;
   let status = '';
@@ -60,9 +49,10 @@ export async function render(el, { stale }) {
     const p = new URLSearchParams({ posted: state.posted, work_mode: state.mode });
     if (state.q.trim()) p.set('q', state.q.trim());
     if (state.showHidden) p.set('hidden', '1');
-    const d = await api('/api/found?' + p);
+    const [d, s] = await Promise.all([api('/api/found?' + p), api('/api/saved-searches')]);
     if (mine !== seq) return false;
     data = d;
+    saved = s.searches;
     if (!d.jobs.some((j) => j.id === state.selectedId)) state.selectedId = d.jobs[0]?.id ?? null;
     return true;
   }
@@ -107,6 +97,33 @@ export async function render(el, { stale }) {
           ${data.available_categories.map((c) => html`<button type="button" class="chip" data-cat="${c.slug}" aria-pressed="${cats.includes(c.slug)}">${c.label}</button>`)}
         </div>
       </div>`;
+  }
+
+  const sameSearch = (x) => x.q.toLowerCase() === state.q.trim().replace(/\s+/g, ' ').toLowerCase() && x.work_mode === state.mode && x.posted === state.posted;
+
+  function savedHtml() {
+    const match = saved.find(sameSearch);
+    return html`
+      <div class="found-saved" role="group" aria-label="Saved searches">
+        <span class="label">Saved searches</span>
+        ${saved.map((x) => html`<button type="button" class="chip" data-saved="${x.id}" aria-pressed="${x === match}">${x.name}${x.new_count ? ` · ● ${x.new_count} new` : ''}</button>`)}
+        ${saved.length ? '' : html`<span class="text-sm text-muted">None yet. Search, then press “Save this search”.</span>`}
+        <a class="found-manage" href="#/saved">Manage</a>
+      </div>`;
+  }
+
+  function saveBoxHtml() {
+    if (!state.saveOpen) return '';
+    return html`
+      <form class="found-link inner-box" id="found-save-form" novalidate>
+        <label class="label" for="found-save-name">Name for this search</label>
+        <div class="found-search">
+          <input class="input" id="found-save-name" name="name" maxlength="60" autocomplete="off" value="${state.saveName}">
+          <button class="btn btn-secondary" type="submit">Save search</button>
+        </div>
+        <p class="text-sm text-muted">It keeps the words, work mode and posted filter. You can change it in Manage.</p>
+        ${state.saveError ? html`<p class="field-error" role="alert">◇ ${state.saveError}</p>` : ''}
+      </form>`;
   }
 
   function rowHtml(j) {
@@ -187,7 +204,15 @@ export async function render(el, { stale }) {
   }
 
   const $ = (sel) => el.querySelector(sel);
-  function drawFilters() { $('#found-filters').innerHTML = filtersHtml(); }
+  function drawFilters() { $('#found-filters').innerHTML = filtersHtml(); drawSaved(); }
+  function drawSaved() {
+    $('#found-saved').innerHTML = savedHtml();
+    const match = saved.find(sameSearch);
+    const star = $('#found-star');
+    star.textContent = match ? '★ Saved search' : '☆ Save this search';
+    star.disabled = !!match;
+    $('#found-savebox').innerHTML = saveBoxHtml();
+  }
   function drawStatus() { $('#found-status').textContent = status; }
   function drawDetail() { $('#found-detail').innerHTML = detailHtml(); }
   function drawResults() { $('#found-results').innerHTML = resultsHtml(); }
@@ -288,6 +313,10 @@ export async function render(el, { stale }) {
   // ---- first load, then the page ----
 
   try {
+    if (query.saved) {
+      const found = (await api('/api/saved-searches')).searches.find((x) => String(x.id) === String(query.saved));
+      if (found) { state.q = found.q; state.mode = found.work_mode; state.posted = found.posted; state.selectedId = null; }
+    }
     await load();
     await loadDetail();
   } catch (err) {
@@ -304,14 +333,19 @@ export async function render(el, { stale }) {
         <p class="text-muted">Search job sites and bring the details here.</p>
       </div>
     </div>
+    <div id="found-saved"></div>
     <section class="card compact found-controls" aria-label="Search and filters">
       <div class="found-search">
         <div>
           <label class="label" for="found-q">Search the jobs saved here</label>
           <input class="input" id="found-q" type="search" autocomplete="off" placeholder="Search by title, skill or company, e.g. DevOps Colombo" value="${state.q}">
         </div>
-        <button type="button" class="btn btn-secondary" id="found-refresh">Refresh</button>
+        <div class="found-buttons">
+          <button type="button" class="btn btn-secondary" id="found-star">☆ Save this search</button>
+          <button type="button" class="btn btn-secondary" id="found-refresh">Refresh</button>
+        </div>
       </div>
+      <div id="found-savebox"></div>
       <p class="text-sm found-status" id="found-status" role="status"></p>
       <div class="found-filters" id="found-filters"></div>
     </section>
@@ -322,6 +356,17 @@ export async function render(el, { stale }) {
     const t = e.target.closest('button, .found-row');
     if (!t || t.disabled) return;
     if (t.id === 'found-refresh') refresh();
+    else if (t.id === 'found-star') {
+      state.saveOpen = true; state.saveError = ''; state.saveName = suggestName(state.q, state.mode);
+      drawSaved(); $('#found-save-name')?.focus(); $('#found-save-name')?.select();
+    }
+    else if (t.dataset.saved !== undefined) {
+      const x = saved.find((v) => v.id === Number(t.dataset.saved));
+      if (!x) return;
+      state.q = x.q; state.mode = x.work_mode; state.posted = x.posted; state.selectedId = null; state.showHidden = false;
+      $('#found-q').value = x.q;
+      reload(`[data-saved="${x.id}"]`);
+    }
     else if (t.dataset.id !== undefined && t.classList.contains('found-row')) selectRow(Number(t.dataset.id));
     else if (t.dataset.posted !== undefined) { state.posted = t.dataset.posted; reload(`[data-posted="${state.posted}"]`); }
     else if (t.dataset.mode !== undefined) { state.mode = t.dataset.mode; reload(`[data-mode="${state.mode}"]`); }
@@ -339,11 +384,28 @@ export async function render(el, { stale }) {
       timer = setTimeout(() => reload(), 150);
     } else if (e.target.id === 'found-link') {
       state.linkValue = e.target.value;
+    } else if (e.target.id === 'found-save-name') {
+      state.saveName = e.target.value;
     }
   };
 
   // "+ Paste a job link" only opens Add job with the link filled in. Nothing is fetched.
-  el.onsubmit = (e) => {
+  el.onsubmit = async (e) => {
+    if (e.target.id === 'found-save-form') {
+      e.preventDefault();
+      try {
+        await api('/api/saved-searches', { method: 'POST', body: { name: state.saveName, q: state.q, work_mode: state.mode, posted: state.posted } });
+        state.saveOpen = false; state.saveError = '';
+        status = 'Saved. Find it under Saved searches.';
+        await reload();
+        if (!stale()) $('#found-star')?.focus();
+      } catch (err) {
+        state.saveError = err.message;
+        drawSaved();
+        $('#found-save-name')?.focus();
+      }
+      return;
+    }
     if (e.target.id !== 'found-link-form') return;
     e.preventDefault();
     const link = state.linkValue.trim();
