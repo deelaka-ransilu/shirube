@@ -1,6 +1,6 @@
 // Found: jobs read from ITPro's feeds. Refresh fetches (the server asks ITPro at most every
 // 30 minutes). Search and the filters only look at jobs already stored, so they are instant.
-import { html } from '../lib/html.js';
+import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
 import { formatDay, initials, todayISO, closingText } from '../lib/format.js';
 import { watchLeavingFound, suggestName } from '../lib/found-marker.js';
@@ -22,9 +22,37 @@ function stamp(iso) {
 
 const ago = (min) => (min < 1 ? 'just now' : `${min} min ago`);
 
-function chipGroup(label, attr, options, current) {
+const icon = (paths) => raw(`<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`);
+const ICON = {
+  save: icon('<path d="M6 4h12v17l-6-4-6 4z"/>'),
+  saved: icon('<path d="M5 12l5 5 9-10"/>'),
+  open: icon('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/>'),
+  hide: icon('<path d="M3 3l18 18M10.6 6.2A9 9 0 0121 12a13 13 0 01-3.2 3.9M6.4 7.7A13 13 0 003 12s3.5 6 9 6a9 9 0 003.4-.7M9.9 9.9a3 3 0 004.2 4.2"/>'),
+  unhide: icon('<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="3"/>'),
+};
+
+// A scroll box with no scrollbar: a soft fade (and for the list a "N more" pill) says there is more below.
+function bindScroll(wrap) {
+  const box = wrap?.querySelector('.scroller');
+  if (!box) return;
+  const pill = wrap.querySelector('.more-pill');
+  const update = () => {
+    const more = box.scrollHeight - box.scrollTop - box.clientHeight > 4;
+    wrap.classList.toggle('has-more', more);
+    if (!pill) return;
+    let n = 0;
+    if (more) for (const row of box.querySelectorAll('.found-row')) if (row.offsetTop - box.scrollTop >= box.clientHeight - 8) n++;
+    pill.hidden = !more || n === 0;
+    pill.textContent = `▾ ${n} more`;
+  };
+  box.addEventListener('scroll', update, { passive: true });
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(update).observe(box);
+  update();
+}
+
+function chipGroup(label, attr, options, current, tint) {
   return html`
-    <div class="found-group" role="group" aria-label="${label}">
+    <div class="found-group" role="group" aria-label="${label}" data-tint="${tint}">
       <span class="label">${label}</span>
       <div class="chip-group">
         ${options.map(([value, text]) => html`<button type="button" class="chip sm" data-${attr}="${value}" aria-pressed="${value === current}">${text}</button>`)}
@@ -74,30 +102,34 @@ export async function render(el, { stale, query = {} }) {
     const cats = data.categories;
     const dateLabel = state.posted === 'date' && state.since ? `From ${formatDay(state.since, data.today)}` : 'Pick a date';
     return html`
-      <div class="found-row2">
-        <div class="found-group" role="group" aria-label="Sites to search">
-          <span class="label">Sites</span>
-          <div class="chip-group">
-            <button type="button" class="chip sm" aria-pressed="true" disabled title="ITPro is always read">ITPro</button>
-            <button type="button" class="chip sm" disabled title="Not yet">TopJobs (later)</button>
-            <button type="button" class="chip sm" disabled title="Not yet">LinkedIn (later)</button>
-            <button type="button" class="chip sm" data-paste aria-expanded="${state.linkOpen}">+ Paste a job link</button>
+      <div class="found-grid">
+        <div class="found-left">
+          <div class="found-group" role="group" aria-label="Sites to search" data-tint="blue">
+            <span class="label">Sites</span>
+            <div class="chip-group">
+              <button type="button" class="chip sm" aria-pressed="true" disabled title="ITPro is always read">ITPro</button>
+              <button type="button" class="chip sm" disabled title="Not yet">TopJobs (later)</button>
+              <button type="button" class="chip sm" disabled title="Not yet">LinkedIn (later)</button>
+              <button type="button" class="chip sm" data-paste aria-expanded="${state.linkOpen}">+ Paste a job link</button>
+            </div>
+          </div>
+          <div class="found-group" role="group" aria-label="Posted" data-tint="yellow">
+            <span class="label">Posted</span>
+            <div class="chip-group">
+              ${POSTED.map(([value, text]) => html`<button type="button" class="chip sm" data-posted="${value}" aria-pressed="${value === state.posted}">${text}</button>`)}
+              <span class="found-date">
+                <button type="button" class="chip sm" data-date aria-pressed="${state.posted === 'date'}" aria-label="Pick a date: jobs from that day until today">${dateLabel} ▾</button>
+                <input type="date" id="found-date" class="found-date-input" tabindex="-1" aria-hidden="true" value="${state.since}">
+              </span>
+            </div>
           </div>
         </div>
-        ${chipGroup('Work mode', 'mode', WORK_MODES, state.mode)}
-        <div class="found-group" role="group" aria-label="Posted">
-          <span class="label">Posted</span>
-          <div class="chip-group">
-            ${POSTED.map(([value, text]) => html`<button type="button" class="chip sm" data-posted="${value}" aria-pressed="${value === state.posted}">${text}</button>`)}
-            <span class="found-date">
-              <button type="button" class="chip sm" data-date aria-pressed="${state.posted === 'date'}" aria-label="Pick a date: jobs from that day until today">${dateLabel} ▾</button>
-              <input type="date" id="found-date" class="found-date-input" tabindex="-1" aria-hidden="true" value="${state.since}">
-            </span>
+        <div class="found-right">
+          ${chipGroup('Work mode', 'mode', WORK_MODES, state.mode, 'peach')}
+          <div class="found-group" data-tint="green">
+            <button type="button" class="chip sm" data-cats-toggle aria-expanded="${state.catsOpen}">Categories (${cats.length}) ${state.catsOpen ? '▴' : '▾'}</button>
+            <a class="chip sm found-manage" href="#/saved"><span aria-hidden="true">＋</span> Manage saved searches</a>
           </div>
-        </div>
-        <div class="found-group">
-        <button type="button" class="chip sm" data-cats-toggle aria-expanded="${state.catsOpen}">Categories (${cats.length}) ${state.catsOpen ? '▴' : '▾'}</button>
-        <a class="chip sm found-manage" href="#/saved"><span aria-hidden="true">＋</span> Manage saved searches</a>
         </div>
       </div>
       ${state.linkOpen ? html`
@@ -110,7 +142,7 @@ export async function render(el, { stale, query = {} }) {
           ${state.linkError ? html`<p class="field-error" role="alert">◇ ${state.linkError}</p>` : ''}
         </form>` : ''}
       ${state.catsOpen ? html`
-        <div class="found-group found-cats" role="group" aria-label="Categories to follow">
+        <div class="found-group found-cats" role="group" aria-label="Categories to follow" data-tint="green">
           <span class="label">Categories to follow (used on the next Refresh; all jobs are always read)</span>
           <div class="chip-group">
             ${data.available_categories.map((c) => html`<button type="button" class="chip sm" data-cat="${c.slug}" aria-pressed="${cats.includes(c.slug)}">${c.label}</button>`)}
@@ -123,7 +155,7 @@ export async function render(el, { stale, query = {} }) {
   function savedHtml() {
     const match = saved.find(sameSearch);
     return html`
-      <div class="found-saved" role="group" aria-label="Saved searches">
+      <div class="found-saved" role="group" aria-label="Saved searches" data-tint="lilac">
         <span class="label">Saved searches</span>
         ${saved.map((x) => html`<button type="button" class="chip sm" data-saved="${x.id}" aria-pressed="${x === match}">${x.name}${x.new_count ? ` · ● ${x.new_count} new` : ''}</button>`)}
         ${saved.length ? '' : html`<span class="text-sm text-muted">None yet. Search, then press “Save this search”.</span>`}
@@ -150,10 +182,14 @@ export async function render(el, { stale, query = {} }) {
         <span class="avatar" aria-hidden="true">${initials(j.company || j.title)}</span>
         <span class="found-row-main">
           <b>${j.title}</b>
-          <small class="text-muted">${[j.company, j.location].filter(Boolean).join(' · ')}${j.job_id ? ' · ✓ Saved' : ''}</small>
+          <small class="text-muted">${[j.company, j.location].filter(Boolean).join(' · ')}</small>
         </span>
         <span class="found-row-right">
-          ${j.is_new ? html`<span class="tag tag-new">New</span>` : ''}
+          <span class="found-row-badges">
+            ${j.is_new ? html`<span class="tag tag-new">New</span>` : ''}
+            ${j.job_id ? html`<span class="badge b-saved">✓ Saved</span>` : ''}
+            ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : ''}
+          </span>
           <span class="text-sm text-muted">ITPro · ${formatDay(j.published_on, data.today)}</span>
         </span>
       </button>`;
@@ -165,31 +201,33 @@ export async function render(el, { stale, query = {} }) {
     const link = itproLink(j.url);
     return html`
       <article class="card compact found-detail" id="found-detail-card" aria-label="${j.title}">
-        <div class="row">
+        <div class="row found-dhead">
           <div class="avatar big" aria-hidden="true">${initials(j.company || j.title)}</div>
           <div class="row-main">
             <h2>${j.title}</h2>
-            <div>${[j.company, j.location].filter(Boolean).join(' · ')}</div>
+            <div class="text-muted">${j.company}</div>
           </div>
-          <span class="tag">ITPro</span>
+          <div class="found-actions" role="group" aria-label="Job actions">
+            ${j.job_id
+              ? html`<a class="btn btn-secondary icon-btn" href="#/jobs/${j.job_id}" aria-label="Saved. Open job" title="Saved · Open job">${ICON.saved}</a>`
+              : html`<button type="button" class="btn btn-primary icon-btn" data-save="${j.id}" aria-label="Save to Jobs" title="Save to Jobs">${ICON.save}</button>`}
+            ${link ? html`<a class="btn btn-secondary icon-btn" href="${link}" target="_blank" rel="noopener noreferrer" aria-label="Open original page" title="Open original page">${ICON.open}</a>` : ''}
+            <button type="button" class="btn btn-secondary icon-btn" data-hide="${j.id}" data-to="${j.hidden ? 0 : 1}" aria-label="${j.hidden ? 'Unhide' : 'Hide'}" title="${j.hidden ? 'Unhide' : 'Hide'}">${j.hidden ? ICON.unhide : ICON.hide}</button>
+          </div>
         </div>
-        <div class="dl found-facts">
-          <div><b>Posted</b>${formatDay(j.published_on, data.today)}</div>
-          <div><b>Job type</b>${j.job_type || 'Not stated'}</div>
-          <div><b>Location</b>${j.location || 'Not stated'}</div>
-          <div><b>Work mode</b>${MODE_LABEL[j.work_mode] ?? 'Not stated'}</div>
-          ${j.closes_on ? html`<div><b>Closes</b>${closingText(j.closes_on, data.today).replace(/^Closes /, '')}</div>` : ''}
-        </div>
-        <div class="found-actions">
-          ${j.job_id
-            ? html`<a class="btn btn-secondary" href="#/jobs/${j.job_id}">✓ Saved · Open job</a>`
-            : html`<button type="button" class="btn btn-primary" data-save="${j.id}">Save to Jobs</button>`}
-          ${link ? html`<a class="btn btn-secondary" href="${link}" target="_blank" rel="noopener noreferrer">Open original page</a>` : ''}
-          <button type="button" class="btn btn-secondary" data-hide="${j.id}" data-to="${j.hidden ? 0 : 1}">${j.hidden ? 'Unhide' : 'Hide'}</button>
+        <div class="found-badges">
+          <span class="badge b-site">ITPro</span>
+          <span class="badge b-date">Posted ${formatDay(j.published_on, data.today)}</span>
+          ${j.job_type ? html`<span class="badge b-type">${j.job_type}</span>` : ''}
+          ${j.location ? html`<span class="badge b-loc">${j.location}</span>` : ''}
+          ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : html`<span class="badge b-none">Work mode not stated</span>`}
+          ${j.closes_on ? html`<span class="badge b-close">${closingText(j.closes_on, data.today)}</span>` : ''}
         </div>
         <p class="text-sm found-msg" role="status">${detailMsg}</p>
-        <h3 class="found-about">About the job</h3>
-        <div class="found-advert">${j.description || 'The advert has no text. Open the original page.'}</div>
+        <div class="scroll-wrap found-advert-wrap">
+          <div class="found-advert scroller" tabindex="0" role="region" aria-label="About the job">${j.description || 'The advert has no text. Open the original page.'}</div>
+          <div class="scroll-fade" aria-hidden="true"></div>
+        </div>
       </article>`;
   }
 
@@ -215,7 +253,11 @@ export async function render(el, { stale, query = {} }) {
               <span class="text-muted text-sm"> · Newest first${new_count ? ` · ${new_count} new` : ''}${last_fetch_at ? ` · updated ${stamp(last_fetch_at)}` : ''}</span></div>
             ${hiddenLink}
           </div>
-          <div id="found-list">${jobs.map(rowHtml)}</div>
+          <div class="scroll-wrap found-list-wrap">
+            <div id="found-list" class="scroller">${jobs.map(rowHtml)}</div>
+            <div class="scroll-fade" aria-hidden="true"></div>
+            <button type="button" class="more-pill" data-more hidden aria-label="Show more jobs"></button>
+          </div>
         </section>
         <div id="found-detail">${detailHtml()}</div>
       </div>`;
@@ -227,23 +269,32 @@ export async function render(el, { stale, query = {} }) {
     $('#found-saved').innerHTML = savedHtml();
     const match = saved.find(sameSearch);
     const star = $('#found-star');
-    star.textContent = match ? '★ Saved search' : '☆ Save this search';
+    star.textContent = match ? '★' : '☆';
+    star.title = match ? 'Already saved' : 'Save this search';
+    star.setAttribute('aria-label', match ? 'This search is saved' : 'Save this search');
     star.disabled = !!match;
     $('#found-savebox').innerHTML = saveBoxHtml();
   }
   function drawStatus() { $('#found-status').textContent = status; }
-  function drawDetail() { $('#found-detail').innerHTML = detailHtml(); }
-  function drawResults() { $('#found-results').innerHTML = resultsHtml(); }
+  function drawDetail() { $('#found-detail').innerHTML = detailHtml(); bindScroll($('.found-advert-wrap')); }
+  function drawResults(keepTop = null) {
+    $('#found-results').innerHTML = resultsHtml();
+    const box = $('#found-list');
+    if (box && keepTop !== null) box.scrollTop = keepTop;
+    bindScroll($('.found-list-wrap'));
+    bindScroll($('.found-advert-wrap'));
+  }
 
   // Redraw after the data changed. focus: what to focus afterwards, so keyboard use keeps its place.
-  async function reload(focus = '') {
+  async function reload(focus = '', keepScroll = false) {
+    const top = keepScroll ? $('#found-list')?.scrollTop ?? null : null;
     try {
       if (await load()) await loadDetail();
     } catch (err) {
       status = err.message;
     }
     if (stale()) return;
-    drawStatus(); drawFilters(); drawResults();
+    drawStatus(); drawFilters(); drawResults(top);
     if (focus) $(focus)?.focus();
   }
 
@@ -292,7 +343,7 @@ export async function render(el, { stale, query = {} }) {
     } catch (err) {
       detailMsg = err.message;
     }
-    await reload('.found-actions .btn');
+    await reload('.found-actions .icon-btn', true);
   }
 
   async function hide(id, to) {
@@ -306,7 +357,7 @@ export async function render(el, { stale, query = {} }) {
     } catch (err) {
       detailMsg = err.message;
     }
-    await reload('.found-row[aria-current="true"]');
+    await reload('.found-row[aria-current="true"]', true);
     if (!stale() && state.showHidden && data.hidden_count === 0) {
       state.showHidden = false;
       await reload();
@@ -355,10 +406,12 @@ export async function render(el, { stale, query = {} }) {
         <div class="found-search">
           <div>
             <label class="label" for="found-q">Search the jobs saved here</label>
-            <input class="input" id="found-q" type="search" autocomplete="off" placeholder="Search by title, skill or company, e.g. DevOps Colombo" value="${state.q}">
+            <div class="found-inputwrap">
+              <input class="input" id="found-q" type="search" autocomplete="off" placeholder="Search by title, skill or company, e.g. DevOps Colombo" value="${state.q}">
+              <button type="button" class="star-btn" id="found-star" aria-label="Save this search" title="Save this search">☆</button>
+            </div>
           </div>
           <div class="found-buttons">
-            <button type="button" class="btn btn-secondary" id="found-star">☆ Save this search</button>
             <button type="button" class="btn btn-secondary" id="found-refresh">Refresh</button>
           </div>
         </div>
@@ -373,7 +426,8 @@ export async function render(el, { stale, query = {} }) {
   el.onclick = (e) => {
     const t = e.target.closest('button, .found-row');
     if (!t || t.disabled) return;
-    if (t.id === 'found-refresh') refresh();
+    if (t.dataset.more !== undefined) { const box = t.closest('.scroll-wrap')?.querySelector('.scroller'); box?.scrollBy({ top: box.clientHeight * 0.8, behavior: 'smooth' }); }
+    else if (t.id === 'found-refresh') refresh();
     else if (t.id === 'found-star') {
       state.saveOpen = true; state.saveError = ''; state.saveName = suggestName(state.q, state.mode);
       drawSaved(); $('#found-save-name')?.focus(); $('#found-save-name')?.select();

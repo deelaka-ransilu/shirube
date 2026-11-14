@@ -21,6 +21,13 @@
   --color-link: #ff8a6b;
   --color-danger: #ff8a80;       /* delete buttons only */
 
+  /* Tints for badges and chosen chips. Always paired with a word, never colour alone. */
+  --tint-blue: #9FB6FF;
+  --tint-peach: #FFB38F;
+  --tint-yellow: #FFD966;
+  --tint-green: #8FDCAB;
+  --tint-lilac: #C9B2FF;
+
   /* Type: Outfit, weights 400 / 500 / 600 */
   --font-sans: 'Outfit', system-ui, sans-serif;
   --text-xs: 12px;     /* labels, tags, symbols */
