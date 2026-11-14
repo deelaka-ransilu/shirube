@@ -149,3 +149,43 @@ a.tile:hover { background: var(--color-raised); }
 .saved-form { display: flex; flex-direction: column; gap: var(--space-4); }
 .saved-form h2 { margin: 0; font-size: var(--text-lg); }
 .saved-card .found-actions .btn { display: inline-flex; align-items: center; text-decoration: none; }
+
+/* Found: one screen, no page scrolling. The list and the advert scroll inside their own boxes. */
+.chip.sm { height: 28px; min-height: 28px; padding: 0 10px; font-size: var(--text-sm); display: inline-flex; align-items: center; gap: var(--space-1); text-decoration: none; white-space: nowrap; }
+.found-head { display: flex; align-items: baseline; justify-content: flex-start; gap: var(--space-4); margin-bottom: var(--space-3); }
+.found-head h1 { font-size: 28px; }
+.found-head p { margin: 0; }
+.found-saved { margin-bottom: var(--space-2); }
+.found-controls { gap: var(--space-2); }
+.found-controls .label { font-size: var(--text-xs); }
+.found-status { min-height: 0; }
+.found-status:empty { display: none; }
+.found-row2 { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }
+.found-row2 .found-group { flex-direction: row; align-items: center; gap: var(--space-2); }
+.found-row2 .found-group .chip-group { flex-wrap: wrap; gap: var(--space-1); }
+.found-row3 { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.found-manage { margin-left: 0; color: var(--color-text); }
+.found-date { position: relative; display: inline-flex; }
+.found-date-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+.found-cats { flex: 1 1 100%; }
+
+#page:has(.found-page) { display: flex; flex-direction: column; overflow: hidden; }
+.found-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#found-results { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#found-results > .empty { margin-top: var(--space-3); }
+.found-layout { flex: 1; min-height: 0; margin-top: var(--space-3); grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+.found-list { display: flex; flex-direction: column; min-height: 0; }
+#found-list { flex: 1; min-height: 0; overflow: auto; }
+#found-detail { min-height: 0; overflow: hidden; }
+.found-detail { position: static; height: 100%; max-height: none; overflow: auto; }
+.found-top { padding-bottom: var(--space-2); }
+
+/* Small windows: stack everything and let the page scroll as before */
+@media (max-width: 1100px) {
+  #page:has(.found-page) { display: block; overflow: auto; }
+  .found-page, #found-results { display: block; }
+  .found-layout { display: grid; grid-template-rows: none; }
+  #found-list { overflow: visible; }
+  #found-detail { overflow: visible; }
+  .found-detail { height: auto; overflow: visible; }
+}

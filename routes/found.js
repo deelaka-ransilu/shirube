@@ -5,6 +5,7 @@ import { fetchFeedText, feedUrls, CATEGORIES, CATEGORY_SLUGS, DEFAULT_CATEGORIES
 import { todayLocal, addDays } from '../lib/dates.js';
 import { parseAdvert } from '../public/js/lib/parse-advert.js';
 import { tx } from './profile.js';
+import { isRealDate } from '../lib/validate-job.js';
 import { createJob, findDuplicateJob } from './jobs.js';
 
 const FRESH_MINUTES = 30;   // ITPro's feed says ttl 30
@@ -36,8 +37,13 @@ export function searchFound(db, query, today) {
 
   where.push('hidden = ?'); args.push(query.hidden === '1' ? 1 : 0);
 
+  const since = query.since ?? '';
   const posted = query.posted ?? '3d';
-  if (posted !== 'any') {
+  if (since !== '') {
+    // A picked date: from that day until today.
+    if (!isRealDate(since)) throw new HttpError(400, 'Pick a real date');
+    where.push('published_on >= ?'); args.push(since);
+  } else if (posted !== 'any') {
     if (!Object.hasOwn(POSTED, posted)) throw new HttpError(400, 'Unknown posted filter');
     where.push('published_on >= ?'); args.push(addDays(today, -POSTED[posted]));
   }

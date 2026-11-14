@@ -10,7 +10,7 @@ const MODE_LABEL = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
 const POSTED = [['today', 'Today'], ['3d', '3 days'], ['week', 'Week'], ['any', 'Any']];
 
 // Kept while the app stays open, so coming back to Found finds the same filters.
-const state = { saveOpen: false, saveName: '', saveError: '', q: '', posted: '3d', mode: 'any', showHidden: false, selectedId: null, linkOpen: false, linkValue: '', linkError: '' };
+const state = { since: '', catsOpen: false, saveOpen: false, saveName: '', saveError: '', q: '', posted: '3d', mode: 'any', showHidden: false, selectedId: null, linkOpen: false, linkValue: '', linkError: '' };
 
 const itproLink = (url) => (/^https:\/\/itpro\.lk\//.test(url) ? url : '');
 
@@ -27,7 +27,7 @@ function chipGroup(label, attr, options, current) {
     <div class="found-group" role="group" aria-label="${label}">
       <span class="label">${label}</span>
       <div class="chip-group">
-        ${options.map(([value, text]) => html`<button type="button" class="chip" data-${attr}="${value}" aria-pressed="${value === current}">${text}</button>`)}
+        ${options.map(([value, text]) => html`<button type="button" class="chip sm" data-${attr}="${value}" aria-pressed="${value === current}">${text}</button>`)}
       </div>
     </div>`;
 }
@@ -46,7 +46,9 @@ export async function render(el, { stale, query = {} }) {
 
   async function load() {
     const mine = ++seq;
-    const p = new URLSearchParams({ posted: state.posted, work_mode: state.mode });
+    const p = new URLSearchParams({ work_mode: state.mode });
+    if (state.posted === 'date' && state.since) p.set('since', state.since);
+    else p.set('posted', state.posted === 'date' ? '3d' : state.posted);
     if (state.q.trim()) p.set('q', state.q.trim());
     if (state.showHidden) p.set('hidden', '1');
     const [d, s] = await Promise.all([api('/api/found?' + p), api('/api/saved-searches')]);
@@ -70,18 +72,34 @@ export async function render(el, { stale, query = {} }) {
 
   function filtersHtml() {
     const cats = data.categories;
+    const dateLabel = state.posted === 'date' && state.since ? `From ${formatDay(state.since, data.today)}` : 'Pick a date';
     return html`
-      <div class="found-group" role="group" aria-label="Sites to search">
-        <span class="label">Sites to search</span>
-        <div class="chip-group">
-          <button type="button" class="chip" aria-pressed="true" disabled title="ITPro is always read">ITPro</button>
-          <button type="button" class="chip" disabled title="Not yet">TopJobs (later)</button>
-          <button type="button" class="chip" disabled title="Not yet">LinkedIn (later)</button>
-          <button type="button" class="chip" data-paste aria-expanded="${state.linkOpen}">+ Paste a job link</button>
+      <div class="found-row2">
+        <div class="found-group" role="group" aria-label="Sites to search">
+          <span class="label">Sites</span>
+          <div class="chip-group">
+            <button type="button" class="chip sm" aria-pressed="true" disabled title="ITPro is always read">ITPro</button>
+            <button type="button" class="chip sm" disabled title="Not yet">TopJobs (later)</button>
+            <button type="button" class="chip sm" disabled title="Not yet">LinkedIn (later)</button>
+            <button type="button" class="chip sm" data-paste aria-expanded="${state.linkOpen}">+ Paste a job link</button>
+          </div>
+        </div>
+        ${chipGroup('Work mode', 'mode', WORK_MODES, state.mode)}
+        <div class="found-group" role="group" aria-label="Posted">
+          <span class="label">Posted</span>
+          <div class="chip-group">
+            ${POSTED.map(([value, text]) => html`<button type="button" class="chip sm" data-posted="${value}" aria-pressed="${value === state.posted}">${text}</button>`)}
+            <span class="found-date">
+              <button type="button" class="chip sm" data-date aria-pressed="${state.posted === 'date'}" aria-label="Pick a date: jobs from that day until today">${dateLabel} ▾</button>
+              <input type="date" id="found-date" class="found-date-input" tabindex="-1" aria-hidden="true" value="${state.since}">
+            </span>
+          </div>
+        </div>
+        <div class="found-group">
+        <button type="button" class="chip sm" data-cats-toggle aria-expanded="${state.catsOpen}">Categories (${cats.length}) ${state.catsOpen ? '▴' : '▾'}</button>
+        <a class="chip sm found-manage" href="#/saved"><span aria-hidden="true">＋</span> Manage saved searches</a>
         </div>
       </div>
-      ${chipGroup('Work mode', 'mode', WORK_MODES, state.mode)}
-      ${chipGroup('Posted', 'posted', POSTED, state.posted)}
       ${state.linkOpen ? html`
         <form class="found-link inner-box" id="found-link-form" novalidate>
           <label class="label" for="found-link">Job link</label>
@@ -91,12 +109,13 @@ export async function render(el, { stale, query = {} }) {
           </div>
           ${state.linkError ? html`<p class="field-error" role="alert">◇ ${state.linkError}</p>` : ''}
         </form>` : ''}
-      <div class="found-group found-cats" role="group" aria-label="Categories to follow">
-        <span class="label">Categories to follow (used on the next Refresh; all jobs are always read)</span>
-        <div class="chip-group">
-          ${data.available_categories.map((c) => html`<button type="button" class="chip" data-cat="${c.slug}" aria-pressed="${cats.includes(c.slug)}">${c.label}</button>`)}
-        </div>
-      </div>`;
+      ${state.catsOpen ? html`
+        <div class="found-group found-cats" role="group" aria-label="Categories to follow">
+          <span class="label">Categories to follow (used on the next Refresh; all jobs are always read)</span>
+          <div class="chip-group">
+            ${data.available_categories.map((c) => html`<button type="button" class="chip sm" data-cat="${c.slug}" aria-pressed="${cats.includes(c.slug)}">${c.label}</button>`)}
+          </div>
+        </div>` : ''}`;
   }
 
   const sameSearch = (x) => x.q.toLowerCase() === state.q.trim().replace(/\s+/g, ' ').toLowerCase() && x.work_mode === state.mode && x.posted === state.posted;
@@ -106,9 +125,8 @@ export async function render(el, { stale, query = {} }) {
     return html`
       <div class="found-saved" role="group" aria-label="Saved searches">
         <span class="label">Saved searches</span>
-        ${saved.map((x) => html`<button type="button" class="chip" data-saved="${x.id}" aria-pressed="${x === match}">${x.name}${x.new_count ? ` · ● ${x.new_count} new` : ''}</button>`)}
+        ${saved.map((x) => html`<button type="button" class="chip sm" data-saved="${x.id}" aria-pressed="${x === match}">${x.name}${x.new_count ? ` · ● ${x.new_count} new` : ''}</button>`)}
         ${saved.length ? '' : html`<span class="text-sm text-muted">None yet. Search, then press “Save this search”.</span>`}
-        <a class="found-manage" href="#/saved">Manage</a>
       </div>`;
   }
 
@@ -327,29 +345,29 @@ export async function render(el, { stale, query = {} }) {
   if (stale()) return;
 
   el.innerHTML = html`
-    <div class="page-head">
-      <div>
+    <div class="found-page">
+      <div class="page-head found-head">
         <h1>Found</h1>
         <p class="text-muted">Search job sites and bring the details here.</p>
       </div>
-    </div>
-    <div id="found-saved"></div>
-    <section class="card compact found-controls" aria-label="Search and filters">
-      <div class="found-search">
-        <div>
-          <label class="label" for="found-q">Search the jobs saved here</label>
-          <input class="input" id="found-q" type="search" autocomplete="off" placeholder="Search by title, skill or company, e.g. DevOps Colombo" value="${state.q}">
+      <div id="found-saved"></div>
+      <section class="card compact found-controls" aria-label="Search and filters">
+        <div class="found-search">
+          <div>
+            <label class="label" for="found-q">Search the jobs saved here</label>
+            <input class="input" id="found-q" type="search" autocomplete="off" placeholder="Search by title, skill or company, e.g. DevOps Colombo" value="${state.q}">
+          </div>
+          <div class="found-buttons">
+            <button type="button" class="btn btn-secondary" id="found-star">☆ Save this search</button>
+            <button type="button" class="btn btn-secondary" id="found-refresh">Refresh</button>
+          </div>
         </div>
-        <div class="found-buttons">
-          <button type="button" class="btn btn-secondary" id="found-star">☆ Save this search</button>
-          <button type="button" class="btn btn-secondary" id="found-refresh">Refresh</button>
-        </div>
-      </div>
-      <div id="found-savebox"></div>
-      <p class="text-sm found-status" id="found-status" role="status"></p>
-      <div class="found-filters" id="found-filters"></div>
-    </section>
-    <div id="found-results"></div>`;
+        <div id="found-savebox"></div>
+        <p class="text-sm found-status" id="found-status" role="status"></p>
+        <div class="found-filters" id="found-filters"></div>
+      </section>
+      <div id="found-results"></div>
+    </div>`;
   drawStatus(); drawFilters(); drawResults();
 
   el.onclick = (e) => {
@@ -371,10 +389,22 @@ export async function render(el, { stale, query = {} }) {
     else if (t.dataset.posted !== undefined) { state.posted = t.dataset.posted; reload(`[data-posted="${state.posted}"]`); }
     else if (t.dataset.mode !== undefined) { state.mode = t.dataset.mode; reload(`[data-mode="${state.mode}"]`); }
     else if (t.dataset.cat !== undefined) toggleCategory(t.dataset.cat);
+    else if (t.dataset.catsToggle !== undefined) { state.catsOpen = !state.catsOpen; drawFilters(); $('[data-cats-toggle]')?.focus(); }
+    else if (t.dataset.date !== undefined) {
+      const input = $('#found-date');
+      if (!input) return;
+      try { input.showPicker(); } catch { input.focus(); input.click(); }
+    }
     else if (t.dataset.paste !== undefined) { state.linkOpen = !state.linkOpen; state.linkError = ''; drawFilters(); if (state.linkOpen) $('#found-link')?.focus(); else $('[data-paste]')?.focus(); }
     else if (t.dataset.save !== undefined) { t.disabled = true; save(Number(t.dataset.save)); }
     else if (t.dataset.hide !== undefined) { t.disabled = true; hide(Number(t.dataset.hide), Number(t.dataset.to)); }
     else if (t.dataset.toggleHidden !== undefined) { state.showHidden = !state.showHidden; state.selectedId = null; reload(); }
+  };
+
+  el.onchange = (e) => {
+    if (e.target.id !== 'found-date') return;
+    if (e.target.value) { state.since = e.target.value; state.posted = 'date'; } else { state.posted = '3d'; }
+    reload('[data-date]');
   };
 
   el.oninput = (e) => {
@@ -393,6 +423,11 @@ export async function render(el, { stale, query = {} }) {
   el.onsubmit = async (e) => {
     if (e.target.id === 'found-save-form') {
       e.preventDefault();
+      if (state.posted === 'date') {
+        state.saveError = 'Saved searches use Today, 3 days, Week or Any. Pick one of those to save.';
+        drawSaved();
+        return;
+      }
       try {
         await api('/api/saved-searches', { method: 'POST', body: { name: state.saveName, q: state.q, work_mode: state.mode, posted: state.posted } });
         state.saveOpen = false; state.saveError = '';
