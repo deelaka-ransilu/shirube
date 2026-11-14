@@ -118,7 +118,7 @@ export async function render(el, { stale }) {
     el.innerHTML = html`
       <div class="page-head">
         <div>
-          <h1>My profile</h1>
+          <h1 class="sr-only">My profile</h1>
           <p class="text-muted" role="status">${state.status}</p>
         </div>
         <button type="button" class="btn btn-primary" data-act="save" ${state.busy ? 'disabled' : ''}>Save profile</button>

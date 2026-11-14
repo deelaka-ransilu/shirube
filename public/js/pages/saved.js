@@ -76,7 +76,7 @@ export async function render(el, { stale }) {
     el.innerHTML = html`
       <div class="page-head">
         <div>
-          <h1>Saved searches</h1>
+          <h1 class="sr-only">Saved searches</h1>
           <p class="text-muted">Keep the roles you look for, and search again in one tap.</p>
         </div>
         ${form ? '' : html`<button type="button" class="btn btn-secondary" data-new>+ New saved search</button>`}

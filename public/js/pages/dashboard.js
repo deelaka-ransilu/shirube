@@ -85,7 +85,7 @@ export async function render(el, { stale }) {
 
   const head = html`
     <div class="page-head">
-      <h1>Dashboard</h1>
+      <h1 class="sr-only">Dashboard</h1>
       <a class="btn btn-primary" href="#/jobs/new">+ Add job</a>
     </div>`;
 

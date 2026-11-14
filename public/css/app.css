@@ -123,7 +123,6 @@ a.tile:hover { background: var(--color-raised); }
 .found-row-main { flex: 1; min-width: 0; }
 .found-row-main b { display: block; font-size: var(--text-md); font-weight: var(--weight-medium); overflow-wrap: anywhere; }
 .found-row-main small { display: block; font-size: var(--text-sm); overflow-wrap: anywhere; }
-.found-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); flex-shrink: 0; text-align: right; }
 .tag-new { font-weight: var(--weight-semibold); background: var(--color-text); color: var(--color-panel); border-color: var(--color-text); }
 .found-detail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-4); max-height: calc(100vh - 150px); overflow: auto; }
 .found-detail h2 { margin: 0; font-size: var(--text-xl); }
@@ -152,9 +151,6 @@ a.tile:hover { background: var(--color-raised); }
 
 /* Found: one screen, no page scrolling. The list and the advert scroll inside their own boxes. */
 .chip.sm { height: 28px; min-height: 28px; padding: 0 10px; font-size: var(--text-sm); display: inline-flex; align-items: center; gap: var(--space-1); text-decoration: none; white-space: nowrap; }
-.found-head { display: flex; align-items: baseline; justify-content: flex-start; gap: var(--space-4); margin-bottom: var(--space-3); }
-.found-head h1 { font-size: 28px; }
-.found-head p { margin: 0; }
 .found-saved { margin-bottom: var(--space-2); }
 .found-controls { gap: var(--space-2); }
 .found-controls .label { font-size: var(--text-xs); }
@@ -169,7 +165,7 @@ a.tile:hover { background: var(--color-raised); }
 .found-date-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
 .found-cats { flex: 1 1 100%; }
 
-#page:has(.found-page) { display: flex; flex-direction: column; overflow: hidden; }
+#page:has(.found-page), #page:has(.jobs-page) { display: flex; flex-direction: column; overflow: hidden; }
 .found-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #found-results { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #found-results > .empty { margin-top: var(--space-3); }
@@ -182,7 +178,7 @@ a.tile:hover { background: var(--color-raised); }
 
 /* Small windows: stack everything and let the page scroll as before */
 @media (max-width: 1100px) {
-  #page:has(.found-page) { display: block; overflow: auto; }
+  #page:has(.found-page), #page:has(.jobs-page) { display: block; overflow: auto; }
   .found-page, #found-results { display: block; }
   .found-layout { display: grid; grid-template-rows: none; }
   #found-list { overflow: visible; }
@@ -192,15 +188,17 @@ a.tile:hover { background: var(--color-raised); }
 
 /* ---- Badges, tints, icon buttons, hidden scrollbars (Found look; reused on other screens) ---- */
 .badge { display: inline-flex; align-items: center; padding: 3px 10px; font-size: var(--text-xs); font-weight: var(--weight-medium); white-space: nowrap; border: 1px solid var(--color-border-strong); border-radius: var(--radius-small); color: var(--color-text); }
-.badge.b-date,  .badge.b-loc,  .badge.b-mode,  .badge.b-type,  .badge.b-close,  .badge.b-saved { background: color-mix(in srgb, var(--bt) 15%, transparent); border-color: color-mix(in srgb, var(--bt) 45%, transparent); color: var(--bt); }
+.badge.b-date,  .badge.b-loc,  .badge.b-mode,  .badge.b-type,  .badge.b-close,  .badge.b-saved,  .badge.b-interview,  .badge.b-offer { background: color-mix(in srgb, var(--bt) 15%, transparent); border-color: color-mix(in srgb, var(--bt) 45%, transparent); color: var(--bt); }
 .badge.b-date  { --bt: var(--tint-yellow); }
 .badge.b-loc   { --bt: var(--tint-blue); }
 .badge.b-mode  { --bt: var(--tint-peach); }
 .badge.b-type  { --bt: var(--tint-lilac); }
 .badge.b-close, .badge.b-saved { --bt: var(--tint-green); }
+.badge.b-interview { --bt: var(--tint-lilac); }
+.badge.b-offer { --bt: var(--tint-yellow); }
 .badge.b-none { color: var(--color-muted); border-style: dashed; }
 
-[data-tint] .chip[aria-pressed="true"], [data-tint] .chip[aria-expanded="true"] { background: var(--tt); border-color: var(--tt); color: #1a1a1a; }
+[data-tint] .chip[aria-pressed="true"], [data-tint] .chip[aria-expanded="true"], .chip[data-tint][aria-pressed="true"] { background: var(--tt); border-color: var(--tt); color: #1a1a1a; }
 [data-tint="blue"] { --tt: var(--tint-blue); }
 [data-tint="peach"] { --tt: var(--tint-peach); }
 [data-tint="yellow"] { --tt: var(--tint-yellow); }
@@ -239,7 +237,7 @@ a.tile:hover { background: var(--color-raised); }
 .found-advert-wrap { flex: 1; min-height: 0; }
 .found-advert { padding-bottom: var(--space-5); }
 .found-list-wrap { flex: 1; min-height: 0; }
-.found-row-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }
+.found-row-badges, .row-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }
 
 @media (max-width: 1100px) {
   .found-grid { grid-template-columns: minmax(0, 1fr); }
@@ -250,3 +248,56 @@ a.tile:hover { background: var(--color-raised); }
   .scroll-fade, .more-pill { display: none; }
   .found-detail { overflow: visible; }
 }
+
+/* ---- Jobs: one screen, the list scrolls inside its card ---- */
+.jobs-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.tiles.sm { gap: var(--space-3); margin-bottom: var(--space-3); }
+.tiles.sm .tile { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 10px 20px; }
+.tiles.sm .tile strong { font-size: 24px; }
+.jobs-page .filters { gap: var(--space-1); margin-bottom: var(--space-3); }
+.jobs-note { margin: 0 0 var(--space-3); }
+.jobs-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-4); margin-top: 0; align-items: stretch; }
+.jobs-card { min-height: 0; max-height: 100%; align-self: start; display: flex; flex-direction: column; overflow: hidden; }
+.jobs-card > .empty { margin: auto; }
+.jobs-list-wrap { flex: 1; min-height: 0; }
+.jobs-list-wrap .scroller { padding-bottom: var(--space-5); }
+.jobs-card .list-row { flex-wrap: nowrap; gap: var(--space-3); padding: 10px 0; }
+.jobs-card .row-main { min-width: 0; }
+.jobs-card .row-title { overflow-wrap: anywhere; }
+.jobs-card .avatar { width: 40px; height: 40px; }
+.jobs-layout .side-stack { align-self: start; }
+
+@media (max-width: 1100px) {
+  .jobs-page { display: block; }
+  .jobs-layout { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .jobs-card { display: block; overflow: visible; }
+  .jobs-card .list-row { flex-wrap: wrap; }
+  .tiles.sm { margin-top: var(--space-3); }
+}
+.btn-danger.icon-btn { border-color: var(--color-border); }
+.btn-danger.icon-btn:hover:not(:disabled) { border-color: var(--color-danger); background: var(--color-raised); }
+
+/* ---- Header: page name instead of the logo text, and an optional main action ---- */
+.top-action:empty { display: none; }
+.page-head > .btn { margin-left: auto; }
+.found-saved { margin-top: 0; }
+
+/* ---- Found list rows: three small buttons stacked on the right ---- */
+.found-item { position: relative; border-bottom: 1px solid var(--color-line); }
+.found-item:has(.found-row[aria-current="true"]) { border-bottom-color: transparent; }
+.found-item .found-row { padding-right: 48px; border-bottom-color: transparent; }
+.found-item .found-row[aria-current="true"] { border-bottom-color: var(--color-border-strong); }
+.found-row-main { display: flex; flex-direction: column; gap: 2px; }
+.found-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); margin-top: 2px; }
+.found-row-actions { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; }
+.icon-btn.sm { width: 26px; min-height: 26px; height: 26px; border-radius: var(--radius-small); }
+.icon-btn.sm .icon { width: 15px; height: 15px; }
+.found-row-actions .btn:hover:not(:disabled) { background: var(--color-raised); }
+
+/* Job detail (Found): avatar, title block, and the three buttons stacked on the right */
+.found-dhead { display: flex; align-items: flex-start; gap: var(--space-3); }
+.found-dhead .row-main { min-width: 0; }
+.found-dhead .found-badges { margin-top: var(--space-2); }
+.found-dhead .found-actions { flex-direction: column; gap: var(--space-1); align-self: flex-start; margin-left: auto; }
+.icon-btn.md { width: 34px; min-height: 34px; height: 34px; border-radius: 10px; }
+.icon-btn.md .icon { width: 18px; height: 18px; }

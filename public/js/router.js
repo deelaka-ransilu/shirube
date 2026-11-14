@@ -4,6 +4,7 @@
 // stale() is true when the person already went to another page.
 import { parseHash, matchRoute } from './routes.js';
 import { html } from './lib/html.js';
+import { setPageTitle, setTopAction } from './lib/shell.js';
 
 function markNav(nav) {
   document.querySelectorAll('[data-nav]').forEach((a) => {
@@ -21,6 +22,8 @@ export function startRouter(el) {
     const { path, query } = parseHash(location.hash);
     const hit = matchRoute(path);
     markNav(hit?.route.nav);
+    setPageTitle(hit ? hit.route.title : 'Not found');
+    setTopAction('');
 
     if (!hit) {
       document.title = 'Not found · Shirube';

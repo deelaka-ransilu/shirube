@@ -21,7 +21,7 @@ export function render(el, { query = {} } = {}) {
   el.innerHTML = html`
     <div class="page-head">
       <div>
-        <h1>Add job</h1>
+        <h1 class="sr-only">Add job</h1>
         <p class="text-muted">Only the job title is required. Everything else is optional.</p>
       </div>
     </div>

@@ -1,9 +1,11 @@
 // Found: jobs read from ITPro's feeds. Refresh fetches (the server asks ITPro at most every
 // 30 minutes). Search and the filters only look at jobs already stored, so they are instant.
-import { html, raw } from '../lib/html.js';
+import { html } from '../lib/html.js';
 import { api } from '../lib/api.js';
 import { formatDay, initials, todayISO, closingText } from '../lib/format.js';
 import { watchLeavingFound, suggestName } from '../lib/found-marker.js';
+import { ICON } from '../lib/icons.js';
+import { bindScroll } from '../lib/scroll.js';
 
 const WORK_MODES = [['any', 'Any'], ['onsite', 'On-site'], ['hybrid', 'Hybrid'], ['remote', 'Remote']];
 const MODE_LABEL = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
@@ -21,34 +23,6 @@ function stamp(iso) {
 }
 
 const ago = (min) => (min < 1 ? 'just now' : `${min} min ago`);
-
-const icon = (paths) => raw(`<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`);
-const ICON = {
-  save: icon('<path d="M6 4h12v17l-6-4-6 4z"/>'),
-  saved: icon('<path d="M5 12l5 5 9-10"/>'),
-  open: icon('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/>'),
-  hide: icon('<path d="M3 3l18 18M10.6 6.2A9 9 0 0121 12a13 13 0 01-3.2 3.9M6.4 7.7A13 13 0 003 12s3.5 6 9 6a9 9 0 003.4-.7M9.9 9.9a3 3 0 004.2 4.2"/>'),
-  unhide: icon('<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="3"/>'),
-};
-
-// A scroll box with no scrollbar: a soft fade (and for the list a "N more" pill) says there is more below.
-function bindScroll(wrap) {
-  const box = wrap?.querySelector('.scroller');
-  if (!box) return;
-  const pill = wrap.querySelector('.more-pill');
-  const update = () => {
-    const more = box.scrollHeight - box.scrollTop - box.clientHeight > 4;
-    wrap.classList.toggle('has-more', more);
-    if (!pill) return;
-    let n = 0;
-    if (more) for (const row of box.querySelectorAll('.found-row')) if (row.offsetTop - box.scrollTop >= box.clientHeight - 8) n++;
-    pill.hidden = !more || n === 0;
-    pill.textContent = `▾ ${n} more`;
-  };
-  box.addEventListener('scroll', update, { passive: true });
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(update).observe(box);
-  update();
-}
 
 function chipGroup(label, attr, options, current, tint) {
   return html`
@@ -176,23 +150,30 @@ export async function render(el, { stale, query = {} }) {
       </form>`;
   }
 
+  // Each row has one small Save icon. It sits beside the row button (not inside it),
+  // so a click on it never selects the row. Open original and Hide live in the detail panel.
   function rowHtml(j) {
     return html`
-      <button type="button" class="found-row" data-id="${j.id}" aria-current="${j.id === state.selectedId}">
-        <span class="avatar" aria-hidden="true">${initials(j.company || j.title)}</span>
-        <span class="found-row-main">
-          <b>${j.title}</b>
-          <small class="text-muted">${[j.company, j.location].filter(Boolean).join(' · ')}</small>
-        </span>
-        <span class="found-row-right">
-          <span class="found-row-badges">
-            ${j.is_new ? html`<span class="tag tag-new">New</span>` : ''}
-            ${j.job_id ? html`<span class="badge b-saved">✓ Saved</span>` : ''}
-            ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : ''}
+      <div class="found-item" data-id="${j.id}">
+        <button type="button" class="found-row" data-id="${j.id}" aria-current="${j.id === state.selectedId}">
+          <span class="avatar" aria-hidden="true">${initials(j.company || j.title)}</span>
+          <span class="found-row-main">
+            <b>${j.title}</b>
+            <small class="text-muted">${[j.company, j.location].filter(Boolean).join(' · ')}</small>
+            <span class="found-row-meta">
+              ${j.is_new ? html`<span class="tag tag-new">New</span>` : ''}
+              ${j.job_id ? html`<span class="badge b-saved">✓ Saved</span>` : ''}
+              ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : ''}
+              <span class="text-sm text-muted">ITPro · ${formatDay(j.published_on, data.today)}</span>
+            </span>
           </span>
-          <span class="text-sm text-muted">ITPro · ${formatDay(j.published_on, data.today)}</span>
-        </span>
-      </button>`;
+        </button>
+        <div class="found-row-actions">
+          ${j.job_id
+            ? html`<a class="btn btn-secondary icon-btn sm" href="#/jobs/${j.job_id}" aria-label="Saved. Open job" title="Saved · Open job">${ICON.saved}</a>`
+            : html`<button type="button" class="btn btn-secondary icon-btn sm" data-save="${j.id}" aria-label="Save to Jobs" title="Save to Jobs">${ICON.save}</button>`}
+        </div>
+      </div>`;
   }
 
   function detailHtml() {
@@ -201,27 +182,27 @@ export async function render(el, { stale, query = {} }) {
     const link = itproLink(j.url);
     return html`
       <article class="card compact found-detail" id="found-detail-card" aria-label="${j.title}">
-        <div class="row found-dhead">
+        <div class="found-dhead">
           <div class="avatar big" aria-hidden="true">${initials(j.company || j.title)}</div>
           <div class="row-main">
             <h2>${j.title}</h2>
             <div class="text-muted">${j.company}</div>
+            <div class="found-badges">
+              <span class="badge b-site">ITPro</span>
+              <span class="badge b-date">Posted ${formatDay(j.published_on, data.today)}</span>
+              ${j.job_type ? html`<span class="badge b-type">${j.job_type}</span>` : ''}
+              ${j.location ? html`<span class="badge b-loc">${j.location}</span>` : ''}
+              ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : html`<span class="badge b-none">Work mode not stated</span>`}
+              ${j.closes_on ? html`<span class="badge b-close">${closingText(j.closes_on, data.today)}</span>` : ''}
+            </div>
           </div>
           <div class="found-actions" role="group" aria-label="Job actions">
             ${j.job_id
-              ? html`<a class="btn btn-secondary icon-btn" href="#/jobs/${j.job_id}" aria-label="Saved. Open job" title="Saved · Open job">${ICON.saved}</a>`
-              : html`<button type="button" class="btn btn-primary icon-btn" data-save="${j.id}" aria-label="Save to Jobs" title="Save to Jobs">${ICON.save}</button>`}
-            ${link ? html`<a class="btn btn-secondary icon-btn" href="${link}" target="_blank" rel="noopener noreferrer" aria-label="Open original page" title="Open original page">${ICON.open}</a>` : ''}
-            <button type="button" class="btn btn-secondary icon-btn" data-hide="${j.id}" data-to="${j.hidden ? 0 : 1}" aria-label="${j.hidden ? 'Unhide' : 'Hide'}" title="${j.hidden ? 'Unhide' : 'Hide'}">${j.hidden ? ICON.unhide : ICON.hide}</button>
+              ? html`<a class="btn btn-secondary icon-btn md" href="#/jobs/${j.job_id}" aria-label="Saved. Open job" title="Saved · Open job">${ICON.saved}</a>`
+              : html`<button type="button" class="btn btn-primary icon-btn md" data-save="${j.id}" aria-label="Save to Jobs" title="Save to Jobs">${ICON.save}</button>`}
+            ${link ? html`<a class="btn btn-secondary icon-btn md" href="${link}" target="_blank" rel="noopener noreferrer" aria-label="Open original page" title="Open original page">${ICON.open}</a>` : ''}
+            <button type="button" class="btn btn-secondary icon-btn md" data-hide="${j.id}" data-to="${j.hidden ? 0 : 1}" aria-label="${j.hidden ? 'Unhide' : 'Hide'}" title="${j.hidden ? 'Unhide' : 'Hide'}">${j.hidden ? ICON.unhide : ICON.hide}</button>
           </div>
-        </div>
-        <div class="found-badges">
-          <span class="badge b-site">ITPro</span>
-          <span class="badge b-date">Posted ${formatDay(j.published_on, data.today)}</span>
-          ${j.job_type ? html`<span class="badge b-type">${j.job_type}</span>` : ''}
-          ${j.location ? html`<span class="badge b-loc">${j.location}</span>` : ''}
-          ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : html`<span class="badge b-none">Work mode not stated</span>`}
-          ${j.closes_on ? html`<span class="badge b-close">${closingText(j.closes_on, data.today)}</span>` : ''}
         </div>
         <p class="text-sm found-msg" role="status">${detailMsg}</p>
         <div class="scroll-wrap found-advert-wrap">
@@ -336,14 +317,19 @@ export async function render(el, { stale, query = {} }) {
     $('#found-refresh')?.focus();
   }
 
-  async function save(id) {
+  async function save(id, fromList = false) {
+    const asked = data.jobs.find((j) => j.id === id);
+    let text;
     try {
       const r = await api(`/api/found/${id}/save`, { method: 'POST' });
-      detailMsg = r.already ? 'Already in Jobs, so nothing was added again.' : 'Saved to Jobs.';
+      text = r.already ? 'Already in Jobs, so nothing was added again.' : 'Saved to Jobs.';
     } catch (err) {
-      detailMsg = err.message;
+      text = err.message;
     }
-    await reload('.found-actions .icon-btn', true);
+    // From the list the message goes in the status line (the open job may be a different one).
+    if (fromList && id !== state.selectedId) status = asked ? `“${asked.title}”: ${text}` : text;
+    else detailMsg = text;
+    await reload(fromList ? `.found-item[data-id="${id}"] .found-row-actions > :first-child` : '.found-actions .icon-btn', true);
   }
 
   async function hide(id, to) {
@@ -353,7 +339,7 @@ export async function render(el, { stale, query = {} }) {
       await api(`/api/found/${id}`, { method: 'PATCH', body: { hidden: to === 1 } });
       status = to === 1 ? 'Hidden. “Show hidden” brings it back.' : 'Unhidden.';
       detailMsg = '';
-      state.selectedId = list[at + 1]?.id ?? list[at - 1]?.id ?? null;
+      if (id === state.selectedId) state.selectedId = list[at + 1]?.id ?? list[at - 1]?.id ?? null;
     } catch (err) {
       detailMsg = err.message;
     }
@@ -397,10 +383,7 @@ export async function render(el, { stale, query = {} }) {
 
   el.innerHTML = html`
     <div class="found-page">
-      <div class="page-head found-head">
-        <h1>Found</h1>
-        <p class="text-muted">Search job sites and bring the details here.</p>
-      </div>
+      <h1 class="sr-only">Found</h1>
       <div id="found-saved"></div>
       <section class="card compact found-controls" aria-label="Search and filters">
         <div class="found-search">
@@ -450,7 +433,7 @@ export async function render(el, { stale, query = {} }) {
       try { input.showPicker(); } catch { input.focus(); input.click(); }
     }
     else if (t.dataset.paste !== undefined) { state.linkOpen = !state.linkOpen; state.linkError = ''; drawFilters(); if (state.linkOpen) $('#found-link')?.focus(); else $('[data-paste]')?.focus(); }
-    else if (t.dataset.save !== undefined) { t.disabled = true; save(Number(t.dataset.save)); }
+    else if (t.dataset.save !== undefined) { t.disabled = true; save(Number(t.dataset.save), Boolean(t.closest('.found-row-actions'))); }
     else if (t.dataset.hide !== undefined) { t.disabled = true; hide(Number(t.dataset.hide), Number(t.dataset.to)); }
     else if (t.dataset.toggleHidden !== undefined) { state.showHidden = !state.showHidden; state.selectedId = null; reload(); }
   };

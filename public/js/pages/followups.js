@@ -121,7 +121,7 @@ export async function render(el, { stale }) {
     el.innerHTML = html`
       <div class="page-head">
         <div>
-          <h1>Applied jobs</h1>
+          <h1 class="sr-only">Applied jobs</h1>
           <p class="text-muted">Every job you applied to, and what happened at each stage.${due ? ` ${due} follow-up${due === 1 ? '' : 's'} due.` : ''}</p>
         </div>
       </div>
