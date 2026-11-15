@@ -282,7 +282,7 @@ select.input { appearance: auto; }
 .jd-title { flex: 1; min-width: 0; }
 .jd-title h1 { margin: 0; font-size: var(--text-lg); overflow-wrap: anywhere; }
 .jd-title .found-badges { margin-top: var(--space-2); }
-.jd-actions { display: flex; flex-direction: column; gap: var(--space-1); flex-shrink: 0; }
+.jd-actions { display: flex; flex-direction: row; gap: var(--space-1); flex-shrink: 0; }
 .jd-page .section { margin-top: var(--space-3); }
 .jd-page .card h2 { margin-top: 0; }
 .jd-page .dl { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
@@ -307,7 +307,6 @@ select.input { appearance: auto; }
 .jd-details { padding: var(--space-3) var(--space-4); }
 .jd-details h2 { font-size: var(--text-base); margin: 0 0 var(--space-2); }
 .jd-details .dl { grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); font-size: var(--text-sm); }
-.jd-notes { min-height: 220px; }
 
 /* Jobs list: the whole row is the link (the title link stretches over the row; the bin stays on top) */
 .row-click { position: relative; border-radius: 12px; }
@@ -334,7 +333,6 @@ select.input { appearance: auto; }
 .jd-stage-head h2 { margin: 0; }
 .jd-stage-head .jd-badges { justify-content: flex-end; }
 .jd-side { grid-template-rows: 1fr; }
-.jd-notes { display: flex; flex-direction: column; min-height: 220px; }
 .jd-notes-head { justify-content: space-between; margin-bottom: var(--space-2); }
 .jd-notes-head h2 { margin: 0; }
 .jd-saved { font-size: var(--text-sm); }
@@ -550,7 +548,6 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
 .jd-page .grid-main-side { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .jd-page .jd-scroll .scroller { max-height: 600px; }
 .jd-aside { display: flex; flex-direction: column; min-width: 0; min-height: 220px; }
-.jd-tabs { margin-bottom: var(--space-3); }
 .jd-aside-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2) var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-2); }
 .jd-aside-head h2 { margin: 0; }
 .cv-select { width: auto; max-width: 100%; min-height: 32px; padding: 4px 12px; font-size: var(--text-sm); }
@@ -597,3 +594,9 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
   body.print-cv .cv-item { break-inside: avoid; }
   body.print-cv .cv-sec h3 { break-after: avoid; }
 }
+
+/* ---- Notes button (step 36): icon beside Edit and Delete, dot when a note exists, notes open in a dialog ---- */
+.notes-btn { position: relative; }
+.notes-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--color-accent); box-shadow: 0 0 0 2px var(--color-panel); }
+.nt-box .jd-saved { margin-left: auto; }
+.nt-box textarea.input.jd-notes-box { width: 100%; min-height: 240px; resize: vertical; }

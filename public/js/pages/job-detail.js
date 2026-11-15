@@ -160,10 +160,15 @@ function detailBadges(job) {
     ${safeLink ? html`<a class="badge b-linkout" href="${job.url}" target="_blank" rel="noopener noreferrer" title="${job.url}">${linkHost(job.url)}${ICON.open}</a>` : ''}`;
 }
 
-function notesPane(job) {
+// The notes box opens in a small dialog (the Notes button beside Edit and Delete). It saves by itself.
+function notesDialog(job) {
   return html`
-    <div class="row jd-notes-head"><h2>General notes</h2><span class="jd-saved text-muted" id="notes-state" aria-live="polite"></span></div>
-    <textarea class="input jd-notes-box" id="job-notes" aria-label="General notes" maxlength="20000" placeholder="Add a note…">${job.notes}</textarea>`;
+    <div class="pf-modal"><div class="pf-dialog" role="dialog" aria-modal="true" aria-label="Notes">
+      <div class="inner-box nt-box">
+        <div class="row jd-notes-head"><h2>Notes</h2><span class="jd-saved text-muted" id="notes-state" aria-live="polite"></span><button type="button" class="btn btn-secondary" data-act="close-notes">Close</button></div>
+        <textarea class="input jd-notes-box" id="job-notes" aria-label="Notes for this job" maxlength="20000" placeholder="Add a note…" data-focus>${job.notes}</textarea>
+      </div>
+    </div></div>`;
 }
 
 function cvPane(job, cv, mark) {
@@ -198,7 +203,7 @@ function cvPane(job, cv, mark) {
 }
 
 function details(state) {
-  const { job, cv, tab, mark } = state;
+  const { job, cv, mark } = state;
   return html`
     <div class="card">
       <h2>Description</h2>
@@ -206,11 +211,7 @@ function details(state) {
     </div>
     <div class="side-stack jd-side">
       <div class="card jd-aside">
-        <div class="chip-group jd-tabs" role="group" aria-label="Show in this panel">
-          <button type="button" class="chip sm" data-tab="cv" aria-pressed="${tab === 'cv'}">CV</button>
-          <button type="button" class="chip sm" data-tab="notes" aria-pressed="${tab === 'notes'}">Notes</button>
-        </div>
-        ${tab === 'cv' ? cvPane(job, cv, mark) : notesPane(job)}
+        ${cvPane(job, cv, mark)}
       </div>
     </div>`;
 }
@@ -231,13 +232,14 @@ export async function render(el, { params, stale }) {
   const cv = await cvRequest;
   if (stale()) return;
 
-  const state = { job: data.job, stages: data.stages, editing: false, form: null, error: '', busy: false, draft: null, cv, tab: 'cv', mark: true, presetId: null };
+  const state = { job: data.job, stages: data.stages, editing: false, form: null, error: '', busy: false, draft: null, cv, notesOpen: false, mark: true, presetId: null };
   document.title = `${state.job.title} · Shirube`;
 
   function draw() {
     const { job, stages, editing, form, error } = state;
     const today = todayISO();
     const last = stages.length ? Math.max(...stages.map((s) => s.id)) : null;
+    const hasNote = job.notes.trim() !== '';
 
     el.innerHTML = html`
       <div class="jd-page">
@@ -255,6 +257,7 @@ export async function render(el, { params, stale }) {
           </div>
         </div>
         <div class="jd-actions">
+          <button type="button" class="btn btn-secondary icon-btn md notes-btn" data-act="open-notes" aria-label="${hasNote ? 'Notes (this job has a note)' : 'Notes'}" title="${hasNote ? 'Notes (this job has a note)' : 'Notes'}" ${editing ? 'disabled' : ''}>${ICON.note}${hasNote ? html`<span class="notes-dot" aria-hidden="true"></span>` : ''}</button>
           <button type="button" class="btn btn-secondary icon-btn md" data-act="edit-job" aria-label="Edit job" title="Edit job" ${editing ? 'disabled' : ''}>${ICON.edit}</button>
           <button type="button" class="btn btn-danger icon-btn md" data-act="delete-job" aria-label="Delete job" title="Delete job">${ICON.trash}</button>
         </div>
@@ -278,13 +281,14 @@ export async function render(el, { params, stale }) {
       ${editing
         ? editForm(state.draft ? { ...job, ...state.draft } : job, error)
         : html`<div class="grid-main-side section">${details(state)}</div>`}
+      ${state.notesOpen ? notesDialog(job) : ''}
       </div>`;
 
     el.querySelectorAll('.scroll-wrap').forEach((w) => bindScroll(w, '.pre'));
     el.querySelector('[data-focus]')?.focus();
   }
 
-  // Draw again but stay where the person was on the page (tabs and the preset menu).
+  // Draw again but stay where the person was on the page (the preset menu).
   function redraw() {
     const top = el.scrollTop;
     draw();
@@ -317,11 +321,49 @@ export async function render(el, { params, stale }) {
     if (!stale()) draw();
   }
 
+  // Save the notes text. With no status tag (the dialog is already closed) a failure shows in the page banner.
+  async function saveNotes(text, tag) {
+    state.job = { ...state.job, notes: text }; // keep it if the page redraws before the save finishes
+    if (tag) tag.textContent = 'Saving…';
+    try {
+      const result = await api(`/api/jobs/${id}`, { method: 'PATCH', body: { notes: text } });
+      if (stale()) return;
+      state.job = result.job;
+      if (tag) tag.textContent = '✓ Saved';
+    } catch (err) {
+      if (stale()) return;
+      if (tag) tag.textContent = `◇ ${err.message}`;
+      else { state.error = err.message; draw(); }
+    }
+  }
+
+  function openNotes() {
+    state.notesOpen = true;
+    state.error = '';
+    draw();
+    const box = el.querySelector('#job-notes');
+    if (box) box.setSelectionRange(box.value.length, box.value.length);
+  }
+
+  function closeNotes() {
+    const box = el.querySelector('#job-notes');
+    if (box && box.value !== state.job.notes) saveNotes(box.value, null); // typed but not saved yet (for example Escape)
+    state.notesOpen = false;
+    draw();
+  }
+
+  el.onkeydown = (e) => {
+    if (e.key === 'Escape' && state.notesOpen) closeNotes();
+  };
+
   el.onclick = (e) => {
+    if (e.target.classList?.contains('pf-modal') && state.notesOpen) { closeNotes(); return; }
     const t = e.target.closest('button');
     if (!t) return;
 
-    if (t.dataset.tab) { state.tab = t.dataset.tab; redraw(); return; }
+    if (t.dataset.act === 'open-notes') { openNotes(); return; }
+    if (t.dataset.act === 'close-notes') { closeNotes(); return; }
+
     if (t.dataset.act === 'mark') { state.mark = !state.mark; redraw(); return; }
     if (t.dataset.act === 'cv-pdf') { if (state.cv) printCv(state.cv); return; }
 
@@ -372,19 +414,7 @@ export async function render(el, { params, stale }) {
       return;
     }
     if (e.target.id !== 'job-notes') return;
-    const box = e.target;
-    const tag = el.querySelector('#notes-state');
-    const text = box.value;
-    state.job = { ...state.job, notes: text }; // keep it if the page redraws before the save finishes
-    if (tag) tag.textContent = 'Saving…';
-    try {
-      const result = await api(`/api/jobs/${id}`, { method: 'PATCH', body: { notes: text } });
-      if (stale()) return;
-      state.job = result.job;
-      if (tag) tag.textContent = '✓ Saved';
-    } catch (err) {
-      if (!stale() && tag) tag.textContent = `◇ ${err.message}`;
-    }
+    await saveNotes(e.target.value, el.querySelector('#notes-state'));
   };
 
   el.onsubmit = (e) => {

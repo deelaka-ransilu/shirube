@@ -16,5 +16,6 @@ export const ICON = {
   download: icon('<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>'),
   upload: icon('<path d="M12 20V8M7 13l5-5 5 5M5 4h14"/>'),
   match: icon('<path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 4.8M3.5 12l1.2 1.2L7 10.8M3.5 18l1.2 1.2L7 16.8"/>'),
+  note: icon('<path d="M5 4h14v11l-5 5H5zM14 20v-5h5M8.5 9h7M8.5 13h4"/>'),
   trash: icon('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>'),
 };
