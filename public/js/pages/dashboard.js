@@ -67,9 +67,9 @@ function jobRow(job, right, extra = '') {
 }
 
 // A card with a heading, a short note, an optional link and a list that scrolls inside the card.
-function card(title, note, link, rows) {
+function card(title, note, link, rows, cls = '') {
   return html`
-    <section class="card compact dash-card">
+    <section class="card compact dash-card ${cls}">
       <div class="dash-head">
         <h2>${title}</h2>
         ${link ? html`<a class="link text-sm" href="${link.href}">${link.text}</a>` : ''}
@@ -117,7 +117,7 @@ export async function render(el, { stale }) {
     counts.open > open.length ? { href: '#/jobs?status=open', text: 'See all' } : null,
     open.length
       ? open.map((j) => jobRow(j, closeBadge(j.closes_on, today, j.found_on)))
-      : html`<p class="text-muted">Nothing waiting. Jobs you have not applied to yet show here.</p>`,
+      : html`<p class="text-muted dash-empty">Nothing waiting. Jobs you have not applied to yet show here.</p>`,
   );
 
   const appliedCard = card(
@@ -130,7 +130,7 @@ export async function render(el, { stale }) {
         html`<span class="badge ${badgeClass(j.status)}">${badgeText(j.status)}</span>`,
         j.applied_on ? `Applied ${formatDay(j.applied_on)}` : '',
       ))
-      : html`<p class="text-muted">No applications yet. Open a job and mark it Applied.</p>`,
+      : html`<p class="text-muted dash-empty">No applications yet. Open a job and mark it Applied.</p>`,
   );
 
   const happenedCard = card(
@@ -149,7 +149,7 @@ export async function render(el, { stale }) {
             </div>
           </div>`;
       })
-      : html`<p class="text-muted">Nothing yet. Add stages on a job and they show here.</p>`,
+      : html`<p class="text-muted dash-empty">Nothing yet. Add stages on a job and they show here.</p>`,
   );
 
   const nextCard = card(
@@ -168,7 +168,8 @@ export async function render(el, { stale }) {
             </div>
           </div>`;
       })
-      : html`<p class="text-muted">All clear. Nothing is due and no open job has a closing date coming up.</p>`,
+      : html`<p class="text-muted dash-empty">All clear. Nothing is due and no open job has a closing date coming up.</p>`,
+    'dash-next',
   );
 
   el.innerHTML = html`
@@ -179,9 +180,8 @@ export async function render(el, { stale }) {
       </div>
 
       <div class="dash-grid">
-        <div class="dash-col">${openCard}</div>
+        <div class="dash-col">${nextCard}${openCard}</div>
         <div class="dash-col">${appliedCard}${happenedCard}</div>
-        <div class="dash-col">${nextCard}</div>
       </div>
     </div>`;
 

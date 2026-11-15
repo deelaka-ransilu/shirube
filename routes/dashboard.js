@@ -2,7 +2,8 @@ import { STATUSES } from '../lib/validate-job.js';
 import { todayLocal, daysBetween } from '../lib/dates.js';
 import { followUpInfo } from '../lib/followups.js';
 
-const LIMIT = 5;
+const LIMIT = 8;
+const STEP_LIMIT = 5;
 const JOB_COLUMNS = 'id, title, company, status, closes_on, applied_on, found_on';
 
 // Everything the Dashboard shows, in one answer.
@@ -73,5 +74,5 @@ function nextSteps(db, today, openCount) {
   ).get(today);
   if (soonest) steps.push({ kind: 'apply', ...soonest, days: daysBetween(today, soonest.date), open_count: openCount });
 
-  return steps.slice(0, LIMIT);
+  return steps.slice(0, STEP_LIMIT);
 }

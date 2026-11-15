@@ -66,7 +66,7 @@ test('what happened: latest first, future dates left out', async () => {
   const mine = d.activity.filter((a) => a.job_id === j.id);
   assert.deepEqual(mine.map((a) => a.kind), ['reply', 'applied']);
   assert.ok(d.activity.every((a) => a.happened_on <= d.today));
-  assert.ok(d.activity.length <= 5);
+  assert.ok(d.activity.length <= 8);
 });
 
 test('next steps: follow-up, interview, offer, apply, in that order', async () => {
