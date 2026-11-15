@@ -21,6 +21,7 @@ export function getMatch({ db, params, query = {} }) {
     ).all(row.id)
     : [];
   const education = db.prepare('SELECT * FROM education ORDER BY position, id').all();
+  const certifications = db.prepare('SELECT * FROM certifications ORDER BY position, id').all();
 
   const presets = db.prepare('SELECT id, name FROM presets ORDER BY position, id').all();
   const hasAdvert = job.description.trim().length > 0;
@@ -32,6 +33,7 @@ export function getMatch({ db, params, query = {} }) {
     presets,
     experience,
     education,
+    certifications,
     match,
     best_skills: orderSkills(preset.skills, match),
     to_add: match.skills.filter((s) => !s.matched),

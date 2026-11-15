@@ -25,7 +25,7 @@ function raw(path, { method = 'GET', headers = {} } = {}) {
 
 test('database has all tables and one profile row', () => {
   const names = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r) => r.name);
-  for (const t of ['profile', 'presets', 'education', 'experience', 'preset_experience', 'jobs', 'stages']) {
+  for (const t of ['profile', 'presets', 'education', 'experience', 'preset_experience', 'jobs', 'stages', 'certifications']) {
     assert.ok(names.includes(t), `missing table ${t}`);
   }
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM profile').get().n, 1);

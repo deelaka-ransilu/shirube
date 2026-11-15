@@ -11,6 +11,7 @@ function part(title, body) {
 
 export function cvPaper(d, { mark = true } = {}) {
   const { person, preset, experience, education } = d;
+  const certs = d.certifications ?? [];
   const skills = d.best_skills;
   const contact = [person.email, person.phone, person.location, bare(person.portfolio), bare(person.social)].filter(Boolean);
   return html`
@@ -33,6 +34,11 @@ export function cvPaper(d, { mark = true } = {}) {
           <div class="cv-item-head"><b>${e.qualification || e.school}</b><span class="cv-when">${period(e.start_date, e.end_date)}</span></div>
           ${e.qualification && e.school ? html`<div class="cv-sub">${e.school}</div>` : ''}
           ${e.note ? html`<p class="cv-pre">${e.note}</p>` : ''}
+        </div>`)) : ''}
+      ${certs.length ? part('Certifications', certs.map((c) => html`
+        <div class="cv-item">
+          <div class="cv-item-head"><b>${c.name}</b><span class="cv-when">${c.issued_on}</span></div>
+          ${c.issuer ? html`<div class="cv-sub">${c.issuer}</div>` : ''}
         </div>`)) : ''}
     </article>`;
 }

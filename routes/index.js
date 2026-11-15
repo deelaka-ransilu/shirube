@@ -8,6 +8,7 @@ import { addStage, updateStage, deleteStage } from './stages.js';
 import {
   getProfile, saveProfile, createPreset, deletePreset,
   createEducation, updateEducation, deleteEducation,
+  createCertification, updateCertification, deleteCertification,
   createExperience, updateExperience, deleteExperience,
 } from './profile.js';
 import { exportBackup, restoreBackup } from './backup.js';
@@ -49,6 +50,9 @@ const list = [
   ['POST', '/api/education', createEducation],
   ['PATCH', '/api/education/:id', updateEducation],
   ['DELETE', '/api/education/:id', deleteEducation],
+  ['POST', '/api/certifications', createCertification],
+  ['PATCH', '/api/certifications/:id', updateCertification],
+  ['DELETE', '/api/certifications/:id', deleteCertification],
   ['POST', '/api/experience', createExperience],
   ['PATCH', '/api/experience/:id', updateExperience],
   ['DELETE', '/api/experience/:id', deleteExperience],

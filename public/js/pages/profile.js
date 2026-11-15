@@ -1,4 +1,4 @@
-// My profile: basics, settings, presets (skills, shown experience), education, experience, backup.
+// My profile: basics, settings, presets (skills, shown experience), education, certifications, experience, backup.
 // Text typed into the main fields lives in the page until Save profile is pressed.
 // Adding or editing an education or experience entry is saved at once (its own small form).
 import { html, raw } from '../lib/html.js';
@@ -7,6 +7,13 @@ import { todayISO } from '../lib/format.js';
 import { ICON } from '../lib/icons.js';
 import { bindScroll } from '../lib/scroll.js';
 import { setTopAction } from '../lib/shell.js';
+
+// Which API path and word each kind of small form uses.
+const ENTRY = {
+  edu: { path: 'education', noun: 'education' },
+  exp: { path: 'experience', noun: 'experience' },
+  cert: { path: 'certifications', noun: 'certification' },
+};
 
 const BASICS = [
   ['name', 'Full name', 'Your name'],
@@ -36,9 +43,9 @@ export async function render(el, { stale }) {
   if (stale()) return;
 
   const state = {
-    profile: data.profile, presets: data.presets, education: data.education, experience: data.experience,
+    profile: data.profile, presets: data.presets, education: data.education, certifications: data.certifications, experience: data.experience,
     activeId: data.profile.active_preset_id ?? data.presets[0].id,
-    form: null,        // { kind: 'preset' | 'skill' | 'edu' | 'exp', id, draft, error }
+    form: null,        // { kind: 'preset' | 'skill' | 'edu' | 'cert' | 'exp', id, draft, error }
     status: '',        // line next to the Save button
     backup: '',        // line in the Backup card
     busy: false,
@@ -46,7 +53,7 @@ export async function render(el, { stale }) {
   const active = () => state.presets.find((p) => p.id === state.activeId) ?? state.presets[0];
 
   function load(r) {
-    state.profile = r.profile; state.presets = r.presets; state.education = r.education; state.experience = r.experience;
+    state.profile = r.profile; state.presets = r.presets; state.education = r.education; state.certifications = r.certifications; state.experience = r.experience;
     state.activeId = r.profile.active_preset_id ?? r.presets[0].id;
   }
 
@@ -64,6 +71,7 @@ export async function render(el, { stale }) {
     const old = new Map(state.presets.map((p) => [p.id, p]));
     state.presets = r.presets.map((p) => old.get(p.id) ?? p);
     state.education = r.education;
+    state.certifications = r.certifications;
     state.experience = r.experience;
     const ids = new Set(r.experience.map((x) => x.id));
     state.presets.forEach((p) => { p.experience_ids = p.experience_ids.filter((i) => ids.has(i)); });
@@ -85,6 +93,26 @@ export async function render(el, { stale }) {
           <div><label class="label" for="np-name">Preset name</label><input class="input" id="np-name" name="name" maxlength="60" placeholder="UI/UX designer" data-focus></div>
           ${error ? html`<div class="field-error" role="alert">◇ ${error}</div>` : ''}
           <div class="row"><button class="btn btn-primary" type="submit">Create preset</button><button class="btn btn-secondary" type="button" data-act="close-form">Cancel</button></div>
+        </form>`;
+    }
+    if (kind === 'cert') {
+      const row = state.certifications.find((r) => r.id === id) ?? {};
+      const cv = (k) => (draft ? draft[k] ?? '' : row[k] ?? '');
+      return html`
+        <form class="inner-box" data-form="cert">
+          <b>${id ? 'Edit' : 'Add'} certification</b>
+          <div class="fields">
+            ${field('Name', 'f-cname', cv('name'), 'name="name" maxlength="200" data-focus', 'AWS Certified Cloud Practitioner')}
+            ${field('Issuer', 'f-issuer', cv('issuer'), 'name="issuer" maxlength="200"', 'Amazon Web Services')}
+            ${field('Date', 'f-issued', cv('issued_on'), 'name="issued_on" maxlength="20"', '2026')}
+            ${field('Link (optional)', 'f-curl', cv('url'), 'name="url" maxlength="2000"', 'https://...')}
+          </div>
+          ${error ? html`<div class="field-error" role="alert">◇ ${error}</div>` : ''}
+          <div class="row">
+            <button class="btn btn-primary" type="submit">Save certification</button>
+            <button class="btn btn-secondary" type="button" data-act="close-form">Cancel</button>
+            ${id ? html`<button class="btn btn-danger" type="button" data-act="delete-entry" data-kind="cert" data-id="${id}">Remove</button>` : ''}
+          </div>
         </form>`;
     }
     const isEdu = kind === 'edu';
@@ -118,7 +146,7 @@ export async function render(el, { stale }) {
   function dialog() {
     const f = state.form;
     if (!f || f.kind === 'skill') return '';
-    const label = f.kind === 'preset' ? 'New preset' : `${f.id ? 'Edit' : 'Add'} ${f.kind === 'edu' ? 'education' : 'experience'}`;
+    const label = f.kind === 'preset' ? 'New preset' : `${f.id ? 'Edit' : 'Add'} ${ENTRY[f.kind].noun}`;
     return html`<div class="pf-modal"><div class="pf-dialog" role="dialog" aria-modal="true" aria-label="${label}">${entryForm()}</div></div>`;
   }
 
@@ -183,6 +211,18 @@ export async function render(el, { stale }) {
                 <div class="entry">
                   <div class="entry-text"><b>${r.qualification || r.school}</b><span class="text-muted text-sm">${sub(r.qualification ? r.school : '', period(r.start_date, r.end_date))}</span></div>
                   <button type="button" class="btn btn-secondary icon-btn sm" data-edit="edu" data-id="${r.id}" aria-label="Edit ${r.qualification || r.school}" title="Edit">${ICON.edit}</button>
+                </div>`)) : html`<div class="text-muted">Nothing added yet.</div>`}
+            </div>
+
+            <div class="card pf-card pf-list">
+              <div class="row pf-head">
+                <h2>Certifications <span class="text-muted text-sm">same for all presets</span></h2>
+                <button type="button" class="chip sm" data-act="add-cert">+ Add</button>
+              </div>
+              ${state.certifications.length ? scrollList(state.certifications.map((r) => html`
+                <div class="entry">
+                  <div class="entry-text"><b>${r.name}</b><span class="text-muted text-sm">${sub(r.issuer, r.issued_on)}</span></div>
+                  <button type="button" class="btn btn-secondary icon-btn sm" data-edit="cert" data-id="${r.id}" aria-label="Edit ${r.name}" title="Edit">${ICON.edit}</button>
                 </div>`)) : html`<div class="text-muted">Nothing added yet.</div>`}
             </div>
           </div>
@@ -347,6 +387,7 @@ export async function render(el, { stale }) {
       case 'save': save(); break;
       case 'new-preset': collect(); state.form = { kind: 'preset' }; draw(); break;
       case 'add-skill': collect(); state.form = { kind: 'skill' }; draw(); break;
+      case 'add-cert': collect(); state.form = { kind: 'cert', id: null }; draw(); break;
       case 'add-edu': collect(); state.form = { kind: 'edu', id: null }; draw(); break;
       case 'add-exp': collect(); state.form = { kind: 'exp', id: null }; draw(); break;
       case 'close-form': collect(); state.form = null; draw(); break;
@@ -363,7 +404,7 @@ export async function render(el, { stale }) {
       case 'delete-entry': {
         const { kind, id } = t.dataset;
         if (!confirm('Remove this entry from every preset?')) return;
-        entryCall(() => api(`/api/${kind === 'edu' ? 'education' : 'experience'}/${id}`, { method: 'DELETE' }), (r) => { merge(r); state.form = null; });
+        entryCall(() => api(`/api/${ENTRY[kind].path}/${id}`, { method: 'DELETE' }), (r) => { merge(r); state.form = null; });
         break;
       }
       case 'download': download(); break;
@@ -400,12 +441,12 @@ export async function render(el, { stale }) {
       });
       return;
     }
-    const isEdu = kind === 'edu';
+    const isExp = kind === 'exp';
     const id = state.form?.id;
-    const path = `/api/${isEdu ? 'education' : 'experience'}`;
+    const path = `/api/${ENTRY[kind].path}`;
     entryCall(
-      () => (id ? api(`${path}/${id}`, { method: 'PATCH', body: v }) : api(path, { method: 'POST', body: isEdu ? v : { ...v, show_in: state.activeId } })),
-      (r) => { merge(r, { showId: !isEdu && !id ? r.id : null }); state.form = null; },
+      () => (id ? api(`${path}/${id}`, { method: 'PATCH', body: v }) : api(path, { method: 'POST', body: isExp ? { ...v, show_in: state.activeId } : v })),
+      (r) => { merge(r, { showId: isExp && !id ? r.id : null }); state.form = null; },
     );
   };
 
