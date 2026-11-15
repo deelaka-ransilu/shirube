@@ -1,7 +1,10 @@
-import { html } from '../lib/html.js';
+import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
-import { statusText } from '../lib/status.js';
+import { STATUS, hasStatus, statusText } from '../lib/status.js';
 import { formatDay, initials, todayISO } from '../lib/format.js';
+import { ICON } from '../lib/icons.js';
+import { bindScroll } from '../lib/scroll.js';
+import { closeBadge } from '../lib/badges.js';
 
 const KIND = {
   applied:   { label: 'Applied',   symbol: '●' },
@@ -16,27 +19,26 @@ const SLOTS = ['applied', 'follow_up', 'reply', 'interview', 'offer'];
 const OUTCOMES = ['applied', 'reply', 'interview', 'offer', 'rejected'];
 const WORK_MODE = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
 
+// Each stage has its own colour. Always paired with its word; stages not reached yet stay grey.
+const TINT = { applied: 'blue', reply: 'green', interview: 'lilac', offer: 'yellow', follow_up: 'peach' };
+const tintAttr = (key) => (TINT[key] ? raw(`data-tint="${TINT[key]}"`) : '');
+const kindBadge = (kind) => html`<span class="badge s-${kind}">${KIND[kind].label}</span>`;
+
 function stageCard(s, today) {
-  const k = KIND[s.kind];
   let state = 'Done';
-  if (s.kind === 'follow_up' && s.happened_on > today) state = '□ Due';
+  if (s.kind === 'follow_up' && s.happened_on > today) state = 'Due';
   return html`
     <button type="button" class="stage" data-stage="${s.id}">
-      <span class="stage-sym" aria-hidden="true">${k.symbol}</span>
-      <b>${k.label}</b>
-      <small>${s.happened_on ? formatDay(s.happened_on) : 'No date'}</small>
-      <small>${state}</small>
+      ${kindBadge(s.kind)}
+      <small>${s.happened_on ? formatDay(s.happened_on) : 'No date'} · ${state}</small>
       ${s.note ? html`<small class="stage-note">${s.note}</small>` : ''}
     </button>`;
 }
 
 function pendingCard(kind) {
-  const k = KIND[kind];
   return html`
     <button type="button" class="stage pending" data-new="${kind}">
-      <span class="stage-sym" aria-hidden="true">${k.symbol}</span>
-      <b>${k.label}</b>
-      <small>No date yet</small>
+      <span class="badge">${KIND[kind].label}</span>
       <small>Not yet</small>
       <small class="stage-note">+ Add note</small>
     </button>`;
@@ -52,9 +54,8 @@ function stageRow(stages, today) {
   stages.filter((s) => s.kind === 'rejected' || s.kind === 'other').forEach((s) => cards.push(stageCard(s, today)));
   cards.push(html`
     <button type="button" class="stage pending" data-new="">
-      <span class="stage-sym" aria-hidden="true">+</span>
-      <b>Add stage</b>
-      <small>HR call, second interview, test</small>
+      <span class="badge">+ Add stage</span>
+      <small>HR call, test…</small>
     </button>`);
   return cards;
 }
@@ -140,25 +141,34 @@ function editForm(job, error) {
     </form>`;
 }
 
-function linkText(url) {
-  return url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+function linkHost(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
+}
+
+function scrollBox(content) {
+  return html`<div class="scroll-wrap jd-scroll"><div class="scroller">${content}</div><div class="scroll-fade"></div></div>`;
+}
+
+function detailBadges(job) {
+  const safeLink = /^https?:\/\//i.test(job.url);
+  return html`
+    ${job.job_type ? html`<span class="badge b-type">${job.job_type}</span>` : ''}
+    ${job.location ? html`<span class="badge b-loc">${job.location}</span>` : ''}
+    ${job.found_on ? html`<span class="badge b-date">Found ${formatDay(job.found_on)}</span>` : ''}
+    ${safeLink ? html`<a class="badge b-linkout" href="${job.url}" target="_blank" rel="noopener noreferrer" title="${job.url}">${linkHost(job.url)}${ICON.open}</a>` : ''}`;
 }
 
 function details(job) {
-  const safeLink = /^https?:\/\//i.test(job.url);
   return html`
     <div class="card">
-      <h2>Details</h2>
-      <div class="dl">
-        <div><b>Job type</b>${job.job_type || 'Not set'}</div>
-        <div><b>Location</b>${job.location || 'Not set'}</div>
-        <div><b>Date found</b>${job.found_on ? formatDay(job.found_on) : 'Not set'}</div>
-        <div><b>Job link</b>${safeLink ? html`<a class="link" href="${job.url}" target="_blank" rel="noopener noreferrer">${linkText(job.url)}</a>` : 'Not added yet'}</div>
-      </div>
+      <h2>Description</h2>
+      ${job.description ? scrollBox(html`<div class="pre">${job.description}</div>`) : html`<div class="text-muted">Not added yet. Use Edit job to paste the advert here.</div>`}
     </div>
-    <div class="side-stack">
-      <div class="card"><h2>General notes</h2>${job.notes ? html`<div class="pre">${job.notes}</div>` : html`<div class="text-muted">Not added yet</div>`}</div>
-      <div class="card"><h2>Description</h2>${job.description ? html`<div class="pre">${job.description}</div>` : html`<div class="text-muted">Not added yet. Use Edit job to paste the advert here.</div>`}</div>
+    <div class="side-stack jd-side">
+      <div class="card jd-notes">
+        <div class="row jd-notes-head"><h2>General notes</h2><span class="jd-saved text-muted" id="notes-state" aria-live="polite"></span></div>
+        <textarea class="input jd-notes-box" id="job-notes" aria-label="General notes" maxlength="20000" placeholder="Add a note…">${job.notes}</textarea>
+      </div>
     </div>`;
 }
 
@@ -185,47 +195,47 @@ export async function render(el, { params, stale }) {
     const last = stages.length ? Math.max(...stages.map((s) => s.id)) : null;
 
     el.innerHTML = html`
-      <a class="link back" href="#/jobs">← Jobs</a>
-      <div class="page-head detail-head">
-        <div class="row">
-          <div class="avatar big" aria-hidden="true">${initials(job.company || job.title)}</div>
-          <div>
-            ${job.company ? html`<div class="text-muted">${job.company}</div>` : ''}
-            <h1>${job.title}</h1>
+      <div class="jd-page">
+      <div class="jd-head">
+        <a class="btn btn-secondary icon-btn md back-btn" href="#/jobs" aria-label="Back to Jobs" title="Back to Jobs">${ICON.back}</a>
+        <div class="avatar big" aria-hidden="true">${initials(job.company || job.title)}</div>
+        <div class="jd-title">
+          ${job.company ? html`<div class="text-muted">${job.company}</div>` : ''}
+          <h1>${job.title}</h1>
+          <div class="found-badges">
+            <span class="badge s-${job.status}">${hasStatus(job.status) ? STATUS[job.status].label : job.status}</span>
+            ${closeBadge(job.closes_on)}
+            ${WORK_MODE[job.work_mode] ? html`<span class="badge b-mode">${WORK_MODE[job.work_mode]}</span>` : ''}
+            <span class="badge">${job.source === 'manual' ? 'Added by hand' : job.source}</span>
           </div>
         </div>
-        <button type="button" class="btn btn-secondary" data-act="edit-job" ${editing ? 'disabled' : ''}>Edit job</button>
+        <div class="jd-actions">
+          <button type="button" class="btn btn-secondary icon-btn md" data-act="edit-job" aria-label="Edit job" title="Edit job" ${editing ? 'disabled' : ''}>${ICON.edit}</button>
+          <button type="button" class="btn btn-danger icon-btn md" data-act="delete-job" aria-label="Delete job" title="Delete job">${ICON.trash}</button>
+        </div>
       </div>
 
       ${error && !editing ? html`<div class="card compact" role="alert">◇ ${error}</div>` : ''}
 
-      <div class="grid-tiles tiles">
-        <div class="tile"><span>Status</span><strong class="tile-value">${statusText(job.status)}</strong></div>
-        <div class="tile"><span>Closes</span><strong class="tile-value">${job.closes_on ? formatDay(job.closes_on) : 'No date'}</strong></div>
-        <div class="tile"><span>Work mode</span><strong class="tile-value">${WORK_MODE[job.work_mode] ?? 'Not set'}</strong></div>
-        <div class="tile"><span>Source</span><strong class="tile-value">${job.source === 'manual' ? 'Added by hand' : job.source}</strong></div>
-      </div>
-
       <div class="card section">
-        <h2>Stages and notes</h2>
+        <div class="row jd-stage-head"><h2>Stages and notes</h2><div class="jd-badges">${detailBadges(job)}</div></div>
         <div class="stage-row">${stageRow(stages, today)}</div>
         ${form ? stageForm(form, stages) : ''}
-      </div>
-
-      <div class="card section">
-        <h2>Outcome</h2>
         <div class="row outcome">
+          <span class="text-muted">Outcome</span>
           <div class="chip-group" role="group" aria-label="Set the outcome">
-            ${OUTCOMES.map((k) => html`<button type="button" class="chip" data-outcome="${k}" aria-pressed="${job.status === k}">${KIND[k].label}</button>`)}
+            ${OUTCOMES.map((k) => html`<button type="button" class="chip sm" ${tintAttr(k)} data-outcome="${k}" aria-pressed="${job.status === k}">${KIND[k].label}</button>`)}
           </div>
-          <button type="button" class="btn btn-secondary undo" data-act="undo" ${last === null ? 'disabled' : ''}>Undo last step</button>
+          <button type="button" class="btn btn-secondary icon-btn md undo" data-act="undo" aria-label="Undo last step" title="Undo last step" ${last === null ? 'disabled' : ''}>${ICON.undo}</button>
         </div>
       </div>
 
       ${editing
         ? editForm(state.draft ? { ...job, ...state.draft } : job, error)
-        : html`<div class="grid-main-side section">${details(job)}</div>`}`;
+        : html`<div class="grid-main-side section">${details(job)}</div>`}
+      </div>`;
 
+    el.querySelectorAll('.scroll-wrap').forEach((w) => bindScroll(w, '.pre'));
     el.querySelector('[data-focus]')?.focus();
   }
 
@@ -264,6 +274,13 @@ export async function render(el, { params, stale }) {
 
     switch (t.dataset.act) {
       case 'edit-job': state.editing = true; state.draft = null; state.form = null; state.error = ''; draw(); break;
+      case 'delete-job':
+        if (!confirm(`Delete “${state.job.title}”? This cannot be undone.`)) return;
+        run(async () => {
+          await api(`/api/jobs/${id}`, { method: 'DELETE' });
+          location.hash = '#/jobs';
+        });
+        break;
       case 'cancel-edit': state.editing = false; state.draft = null; state.error = ''; draw(); break;
       case 'cancel-stage': state.form = null; state.error = ''; draw(); break;
       case 'remove-stage':
@@ -279,6 +296,23 @@ export async function render(el, { params, stale }) {
         break;
       }
       default:
+    }
+  };
+
+  el.onchange = async (e) => {
+    if (e.target.id !== 'job-notes') return;
+    const box = e.target;
+    const tag = el.querySelector('#notes-state');
+    const text = box.value;
+    state.job = { ...state.job, notes: text }; // keep it if the page redraws before the save finishes
+    if (tag) tag.textContent = 'Saving…';
+    try {
+      const result = await api(`/api/jobs/${id}`, { method: 'PATCH', body: { notes: text } });
+      if (stale()) return;
+      state.job = result.job;
+      if (tag) tag.textContent = '✓ Saved';
+    } catch (err) {
+      if (!stale() && tag) tag.textContent = `◇ ${err.message}`;
     }
   };
 

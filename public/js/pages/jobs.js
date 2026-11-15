@@ -1,9 +1,10 @@
 import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
 import { STATUS, STATUS_KEYS, hasStatus, statusText } from '../lib/status.js';
-import { closingText, formatDay, initials, todayISO } from '../lib/format.js';
+import { formatDay, initials, todayISO } from '../lib/format.js';
 import { MODE_LABEL } from '../lib/found-marker.js';
 import { ICON } from '../lib/icons.js';
+import { closeBadge } from '../lib/badges.js';
 import { bindScroll } from '../lib/scroll.js';
 import { setTopAction } from '../lib/shell.js';
 
@@ -21,15 +22,10 @@ function jobsHash(status, q) {
   return '#/jobs' + (text ? '?' + text : '');
 }
 
-function closeBadge(iso, today) {
-  if (!iso) return html`<span class="badge b-none">No closing date</span>`;
-  return html`<span class="badge ${iso < today ? 'b-none' : 'b-close'}">${closingText(iso, today)}</span>`;
-}
-
 function row(job, today) {
   const name = job.company || job.title;
   return html`
-    <div class="list-row">
+    <div class="list-row row-click">
       <div class="avatar" aria-hidden="true">${initials(name)}</div>
       <div class="row-main">
         ${job.company ? html`<div class="text-muted">${job.company}</div>` : ''}
