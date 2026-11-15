@@ -2,7 +2,9 @@
    Only variables here. Components are in base.css. */
 :root {
   /* Colors: three layers, dark to light */
-  --color-frame: #1F4FFF;        /* outer background, behind the sidebar */
+  --color-frame: #E8DFCB;        /* outer background (soft beige), behind the black rail */
+  --frame-gradient: none;
+  --color-rail: #E8DFCB;         /* the same beige: the rail that holds the sidebar and the panel */
   --color-panel: #211D1E;        /* main panel, inputs */
   --color-card: #2B2627;         /* every card */
   --color-raised: #3A3436;       /* avatars, selected calendar day, hover */
@@ -64,7 +66,7 @@
   --hit-min: 44px;         /* smallest tap or click target */
 
   /* Layout (desktop, laptop window) */
-  --frame-pad: 16px;
+  --frame-pad: 0;
   --frame-gap: 12px;
   --sidebar-w: 88px;
   --nav-btn: 52px;

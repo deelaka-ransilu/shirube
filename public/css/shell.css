@@ -6,7 +6,7 @@
 /* Sidebar */
 .sidebar a, .avatar-link { text-decoration: none; }
 .sidebar svg, .search svg, .avatar-link svg { stroke-linecap: round; stroke-linejoin: round; }
-.sidebar a:hover:not([aria-current="page"]) { background: var(--color-raised); }
+.sidebar a:hover:not([aria-current="page"]) { color: #141010; }
 
 /* Top bar */
 .panel-header { flex-wrap: wrap; }
