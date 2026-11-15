@@ -1,4 +1,5 @@
 import { html } from '../lib/html.js';
+import { bindScroll } from '../lib/scroll.js';
 import { api } from '../lib/api.js';
 import { formatDay, initials, todayISO } from '../lib/format.js';
 
@@ -12,16 +13,15 @@ const KIND = {
   other:     { label: 'Other',     symbol: '•' },
 };
 const ADD_KINDS = ['follow_up', 'reply', 'interview', 'offer', 'rejected', 'other'];
-const SHOW = 8; // jobs per column before "Show more"
 
-const state = { data: null, openId: null, error: '', expanded: {} };
+const state = { data: null, openId: null, error: '' };
 
-// The follow-up line under the Applied stage (waiting column only).
+// The follow-up state under the Applied stage (waiting column only): a small badge, always a word.
 function followLine(f) {
   if (!f) return '';
-  if (f.state === 'overdue') return html`<div class="fu-line fu-due">◇ Overdue: follow-up was due ${formatDay(f.due_on)}</div>`;
-  if (f.state === 'today') return html`<div class="fu-line fu-due">□ Follow-up due today</div>`;
-  return html`<div class="fu-line text-muted">Follow up on ${formatDay(f.due_on)}</div>`;
+  if (f.state === 'overdue') return html`<div class="fu-line"><span class="badge b-overdue">◇ Overdue · due ${formatDay(f.due_on)}</span></div>`;
+  if (f.state === 'today') return html`<div class="fu-line"><span class="badge">□ Due today</span></div>`;
+  return html`<div class="fu-line"><span class="badge b-none">Follow up ${formatDay(f.due_on)}</span></div>`;
 }
 
 function stageRow(s, today) {
@@ -66,7 +66,7 @@ function jobCard(job, colKey, today) {
   const f = job.follow_up;
   const hasReply = job.stages.some((s) => s.kind === 'reply');
   return html`
-    <article class="card compact fu-card">
+    <article class="card compact fu-card row-click">
       <div class="row fu-who">
         <div class="avatar" aria-hidden="true">${initials(job.company || job.title)}</div>
         <div class="row-main">
@@ -82,10 +82,7 @@ function jobCard(job, colKey, today) {
       ${state.openId === job.id ? addForm(job) : ''}
       <div class="fu-foot">
         <button class="link-btn" type="button" data-add="${job.id}">${state.openId === job.id ? '− Close' : '+ Add stage or note'}</button>
-        <div class="row fu-actions">
-          ${f?.due ? html`<button class="btn btn-secondary" type="button" data-today="${job.id}">Followed up today</button>` : ''}
-          <a class="btn btn-secondary" href="#/jobs/${job.id}">Open job</a>
-        </div>
+        ${f?.due ? html`<button class="chip sm" type="button" data-today="${job.id}">Followed up today</button>` : ''}
       </div>
     </article>`;
 }
@@ -99,17 +96,21 @@ const EMPTY = {
 
 function column(col, today) {
   const all = col.jobs.length;
-  const shown = state.expanded[col.key] ? col.jobs : col.jobs.slice(0, SHOW);
   return html`
     <section class="fu-col" aria-label="${col.title}">
       <div class="card compact fu-colhead"><b>${col.symbol} ${col.title}</b><span>${all}</span></div>
-      ${all ? shown.map((j) => jobCard(j, col.key, today)) : html`<p class="text-muted text-sm fu-empty">${EMPTY[col.key]}</p>`}
-      ${all > shown.length ? html`<button class="btn btn-secondary" type="button" data-more="${col.key}">Show ${all - shown.length} more</button>` : ''}
+      <div class="scroll-wrap">
+        <div class="scroller" data-col="${col.key}" tabindex="0" role="region" aria-label="${col.title}, ${all} job${all === 1 ? '' : 's'}">
+          ${all ? col.jobs.map((j) => jobCard(j, col.key, today)) : html`<p class="text-muted text-sm fu-empty">${EMPTY[col.key]}</p>`}
+        </div>
+        <div class="scroll-fade" aria-hidden="true"></div>
+        <button type="button" class="more-pill" data-more hidden aria-label="Show more in ${col.title}"></button>
+      </div>
     </section>`;
 }
 
 export async function render(el, { stale }) {
-  state.openId = null; state.error = ''; state.expanded = {};
+  state.openId = null; state.error = '';
 
   async function load() {
     state.data = await api('/api/followups');
@@ -118,17 +119,22 @@ export async function render(el, { stale }) {
   function draw() {
     const { columns, today, due } = state.data;
     const total = columns.reduce((n, c) => n + c.jobs.length, 0);
+    // A redraw rebuilds the columns, so remember where each one was scrolled.
+    const tops = {};
+    el.querySelectorAll('.fu-col .scroller').forEach((box) => { tops[box.dataset.col] = box.scrollTop; });
     el.innerHTML = html`
-      <div class="page-head">
-        <div>
-          <h1 class="sr-only">Applied jobs</h1>
-          <p class="text-muted">Every job you applied to, and what happened at each stage.${due ? ` ${due} follow-up${due === 1 ? '' : 's'} due.` : ''}</p>
-        </div>
-      </div>
-      ${total === 0
-        ? html`<div class="card empty"><h2>No applications yet</h2><p class="text-muted">Open a job and mark it Applied. It shows up here and waits for your follow-up.</p></div>`
-        : html`<div class="fu-grid">${columns.map((c) => column(c, today))}</div>`}`;
-    el.querySelector('[data-focus]')?.focus();
+      <div class="fu-page">
+        <h1 class="sr-only">Applied jobs</h1>
+        <p class="text-muted fu-intro">Every job you applied to, and what happened at each stage.${due ? ` ${due} follow-up${due === 1 ? '' : 's'} due.` : ''}</p>
+        ${total === 0
+          ? html`<div class="card empty"><h2>No applications yet</h2><p class="text-muted">Open a job and mark it Applied. It shows up here and waits for your follow-up.</p></div>`
+          : html`<div class="fu-grid">${columns.map((c) => column(c, today))}</div>`}
+      </div>`;
+    el.querySelectorAll('.fu-col .scroller').forEach((box) => { box.scrollTop = tops[box.dataset.col] ?? 0; });
+    el.querySelectorAll('.scroll-wrap').forEach((wrap) => bindScroll(wrap, '.fu-card'));
+    // A form that just opened: show all of it inside its column, then focus the first field.
+    el.querySelector('.fu-form')?.scrollIntoView({ block: 'nearest' });
+    el.querySelector('[data-focus]')?.focus({ preventScroll: true });
   }
 
   async function reload() {
@@ -160,16 +166,16 @@ export async function render(el, { stale }) {
   el.onclick = (e) => {
     const t = e.target.closest('button');
     if (!t) return;
-    if (t.dataset.add !== undefined) {
+    if (t.dataset.more !== undefined) {
+      const box = t.closest('.scroll-wrap')?.querySelector('.scroller');
+      box?.scrollBy({ top: box.clientHeight * 0.8, behavior: 'smooth' });
+    } else if (t.dataset.add !== undefined) {
       const id = Number(t.dataset.add);
       state.openId = state.openId === id ? null : id;
       state.error = '';
       draw();
     } else if (t.dataset.cancel !== undefined) {
       state.openId = null; state.error = '';
-      draw();
-    } else if (t.dataset.more !== undefined) {
-      state.expanded[t.dataset.more] = true;
       draw();
     } else if (t.dataset.today !== undefined) {
       addStage(Number(t.dataset.today), { kind: 'follow_up', happened_on: todayISO() });

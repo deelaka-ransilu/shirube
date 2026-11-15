@@ -68,7 +68,7 @@
   /* Layout (desktop, laptop window) */
   --frame-pad: 0;
   --frame-gap: 12px;
-  --sidebar-w: 88px;
+  --sidebar-w: 64px;
   --nav-btn: 52px;
   --nav-icon: 24px;
   --card-pad: 28px 32px;
