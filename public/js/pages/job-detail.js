@@ -6,6 +6,7 @@ import { ICON } from '../lib/icons.js';
 import { bindScroll } from '../lib/scroll.js';
 import { closeBadge } from '../lib/badges.js';
 import { cvPaper, matchLine } from '../lib/cv-paper.js';
+import { printCv } from '../lib/print-cv.js';
 
 const KIND = {
   applied:   { label: 'Applied',   symbol: '●' },
@@ -183,11 +184,16 @@ function cvPane(job, cv, mark) {
       <span>${line.text}</span>
       ${job.description ? html`<a class="link text-sm" href="#/jobs/${job.id}/match">More details</a>` : ''}
     </div>
-    ${line.hasMatch ? html`
-      <div class="cv-strip">
+    <div class="cv-strip cv-actions">
+      ${line.hasMatch ? html`
         <button type="button" class="chip sm" data-act="mark" aria-pressed="${mark}">Mark matches</button>
-        ${mark ? html`<span class="text-muted text-sm">Highlighted skills are the ones this advert asks for.</span>` : ''}
-      </div>` : ''}
+        ${mark ? html`<span class="text-muted text-sm">Highlighted skills are the ones this advert asks for.</span>` : ''}` : ''}
+      <span class="cv-export">
+        <span class="text-muted text-sm">Download clean CV</span>
+        <button type="button" class="chip sm" data-act="cv-pdf" title="Opens the print window: choose Save as PDF">${ICON.download} PDF</button>
+        <a class="chip sm" href="/api/jobs/${job.id}/cv.docx?preset=${cv.preset.id ?? ''}" download title="Word file, no highlight">${ICON.download} Word</a>
+      </span>
+    </div>
     <div class="cv-scroll" tabindex="0" role="region" aria-label="CV preview">${cvPaper(cv, { mark })}</div>`;
 }
 
@@ -317,6 +323,7 @@ export async function render(el, { params, stale }) {
 
     if (t.dataset.tab) { state.tab = t.dataset.tab; redraw(); return; }
     if (t.dataset.act === 'mark') { state.mark = !state.mark; redraw(); return; }
+    if (t.dataset.act === 'cv-pdf') { if (state.cv) printCv(state.cv); return; }
 
     if (t.dataset.stage) { state.form = { id: Number(t.dataset.stage) }; state.editing = false; state.error = ''; draw(); return; }
     if (t.dataset.new !== undefined) { state.form = { id: null, kind: t.dataset.new }; state.editing = false; state.error = ''; draw(); return; }

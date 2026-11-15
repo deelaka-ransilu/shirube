@@ -27,6 +27,18 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+// A file download (the CV as Word). Handlers return { file: { buffer, name, type } }.
+function sendFile(res, { buffer, name, type }) {
+  const plain = name.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '');
+  res.writeHead(200, {
+    'Content-Type': type,
+    'Content-Length': buffer.length,
+    'Content-Disposition': `attachment; filename="${plain}"; filename*=UTF-8''${encodeURIComponent(name)}`,
+    'Cache-Control': 'no-store',
+  });
+  res.end(buffer);
+}
+
 // Blocks other websites from talking to the app through your browser.
 function requestAllowed(req) {
   const host = (req.headers.host || '').toLowerCase();
@@ -93,7 +105,9 @@ export function createServer(db, deps = {}) {
       if (url.pathname.startsWith('/api/')) {
         const body = await readJsonBody(req);
         const query = Object.fromEntries(url.searchParams);
-        return sendJson(res, 200, await route(req.method, url.pathname, { query, body }));
+        const result = await route(req.method, url.pathname, { query, body });
+        if (result?.file) return sendFile(res, result.file);
+        return sendJson(res, 200, result);
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'Method not allowed');
       await serveStatic(url.pathname, res);

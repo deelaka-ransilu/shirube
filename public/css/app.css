@@ -576,3 +576,21 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
   .jd-page .grid-main-side { grid-template-columns: minmax(0, 1fr); }
   .jd-page .jd-scroll .scroller, .cv-scroll { max-height: none; }
 }
+
+/* ---- CV export: PDF (print view) and Word (step 33) ---- */
+.cv-export { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-2); margin-left: auto; }
+.cv-export .icon { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#print-root { display: none; }
+@page { size: A4; margin: 14mm; }
+@media print {
+  /* Only the clean CV is printed: no app, no dark colours, no highlight. */
+  html, body { background: #fff !important; height: auto !important; overflow: visible !important; }
+  body.print-cv > *:not(#print-root) { display: none !important; }
+  body.print-cv #print-root { display: block; }
+  body.print-cv .cv-paper { background: #fff; color: #000; padding: 0; border-radius: 0; font-size: 10.5pt; line-height: 1.4; }
+  body.print-cv .cv-name { font-size: 22pt; }
+  body.print-cv .cv-role { font-size: 12pt; }
+  body.print-cv .cv-contact, body.print-cv .cv-when { font-size: 9pt; }
+  body.print-cv .cv-item { break-inside: avoid; }
+  body.print-cv .cv-sec h3 { break-after: avoid; }
+}
