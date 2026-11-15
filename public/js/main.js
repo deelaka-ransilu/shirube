@@ -1,6 +1,7 @@
 import { startRouter } from './router.js';
 import { api } from './lib/api.js';
 import { initials } from './lib/format.js';
+import { watchDock } from './lib/dock.js';
 
 // The search box in the top bar opens the Jobs list with a search word.
 document.getElementById('search').addEventListener('submit', (e) => {
@@ -37,4 +38,5 @@ window.addEventListener('hashchange', refreshBell);
 window.addEventListener('followups-changed', refreshBell);
 refreshBell();
 
+watchDock(document.getElementById('page'));
 startRouter(document.getElementById('page'));

@@ -3,10 +3,9 @@
 
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* Sidebar */
-.sidebar a, .avatar-link { text-decoration: none; }
-.sidebar svg, .search svg, .avatar-link svg { stroke-linecap: round; stroke-linejoin: round; }
-.sidebar a:hover:not([aria-current="page"]) { color: #212529; }
+/* Search and avatar links */
+.avatar-link { text-decoration: none; }
+.search svg, .avatar-link svg { stroke-linecap: round; stroke-linejoin: round; }
 
 /* Top bar */
 .panel-header { flex-wrap: wrap; }

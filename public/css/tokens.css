@@ -4,7 +4,7 @@
   /* Colors: three layers, dark to light */
   --color-frame: #E9ECEF;        /* outer background (light grey), behind the dark panel */
   --frame-gradient: none;
-  --color-rail: #E9ECEF;         /* the same light grey: the rail that holds the sidebar and the panel */
+  --color-rail: #E9ECEF;         /* the same light grey, the thin edge around the panel */
   --color-panel: #212529;        /* main panel, inputs */
   --color-card: #2B3035;         /* every card */
   --color-raised: #373D43;       /* avatars, selected calendar day, hover */
@@ -73,8 +73,10 @@
   /* Layout (desktop, laptop window) */
   --frame-pad: 0;
   --frame-gap: 12px;
-  --sidebar-w: 64px;
-  --nav-btn: 52px;
+  --dock-btn-w: 68px;      /* floating bottom navigation: one button */
+  --dock-btn-h: 44px;
+  --dock-reserve: 88px;    /* space kept free at the end of a page or list for the dock */
+  --dock-fade: 120px;      /* the soft fade at the bottom of the panel, behind the dock */
   --nav-icon: 24px;
   --card-pad: 28px 32px;
   --card-pad-sm: 18px 24px;

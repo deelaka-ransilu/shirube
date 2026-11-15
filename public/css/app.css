@@ -600,3 +600,8 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
 .notes-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--color-accent); box-shadow: 0 0 0 2px var(--color-panel); }
 .nt-box .jd-saved { margin-left: auto; }
 .nt-box textarea.input.jd-notes-box { width: 100%; min-height: 240px; resize: vertical; }
+
+/* ---- Content behind the floating dock (step 38) ---- */
+#page.dock-flush { padding-bottom: 0; }
+.scroll-wrap.under-dock > .scroller, .found-detail.under-dock { padding-bottom: var(--dock-reserve); }
+.scroll-wrap.under-dock .more-pill { bottom: calc(var(--dock-reserve) - var(--space-4)); }
