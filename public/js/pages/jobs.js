@@ -34,7 +34,7 @@ function row(job, today) {
       <div class="row-badges">
         <span class="badge b-${job.status}">${badgeText(job.status)}</span>
         ${MODE_LABEL[job.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[job.work_mode]}</span>` : ''}
-        ${closeBadge(job.closes_on, today)}
+        ${closeBadge(job.closes_on, today, job.found_on)}
       </div>
       <button type="button" class="btn btn-danger icon-btn" data-delete="${job.id}" data-title="${job.title}" aria-label="Delete ${job.title}" title="Delete">${ICON.trash}</button>
     </div>`;

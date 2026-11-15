@@ -113,10 +113,10 @@ export async function render(el, { stale }) {
 
   const openCard = card(
     'Open to apply',
-    'Closing soonest first',
+    'Closing soonest first, then newest found',
     counts.open > open.length ? { href: '#/jobs?status=open', text: 'See all' } : null,
     open.length
-      ? open.map((j) => jobRow(j, closeBadge(j.closes_on, today)))
+      ? open.map((j) => jobRow(j, closeBadge(j.closes_on, today, j.found_on)))
       : html`<p class="text-muted">Nothing waiting. Jobs you have not applied to yet show here.</p>`,
   );
 
@@ -174,14 +174,14 @@ export async function render(el, { stale }) {
   el.innerHTML = html`
     <div class="dash-page">
       <h1 class="sr-only">Dashboard</h1>
+      <div class="grid-tiles tiles sm dash-tiles" aria-label="Jobs by stage">
+        ${TILES.map((k) => html`<a class="tile" href="#/jobs?status=${k}"><span>${badgeText(k)}</span><strong>${counts[k]}</strong></a>`)}
+      </div>
+
       <div class="dash-grid">
         <div class="dash-col">${openCard}</div>
         <div class="dash-col">${appliedCard}${happenedCard}</div>
         <div class="dash-col">${nextCard}</div>
-      </div>
-
-      <div class="grid-tiles tiles sm dash-tiles" aria-label="Jobs by stage">
-        ${TILES.map((k) => html`<a class="tile" href="#/jobs?status=${k}"><span>${badgeText(k)}</span><strong>${counts[k]}</strong></a>`)}
       </div>
     </div>`;
 

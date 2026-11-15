@@ -3,7 +3,7 @@ import { todayLocal, daysBetween } from '../lib/dates.js';
 import { followUpInfo } from '../lib/followups.js';
 
 const LIMIT = 5;
-const JOB_COLUMNS = 'id, title, company, status, closes_on, applied_on';
+const JOB_COLUMNS = 'id, title, company, status, closes_on, applied_on, found_on';
 
 // Everything the Dashboard shows, in one answer.
 export function getDashboard({ db }) {
@@ -13,10 +13,10 @@ export function getDashboard({ db }) {
   for (const r of db.prepare('SELECT status, COUNT(*) AS n FROM jobs GROUP BY status').all()) counts[r.status] = r.n;
   counts.all = Object.values(counts).reduce((a, b) => a + b, 0);
 
-  // Open to apply: closing soonest first, then no closing date, then already closed.
+  // Open to apply: closing soonest first, then no closing date (newest found first), then already closed.
   const open = db.prepare(
     `SELECT ${JOB_COLUMNS} FROM jobs WHERE status = 'open'
-     ORDER BY CASE WHEN closes_on = '' THEN 1 WHEN closes_on < ? THEN 2 ELSE 0 END, closes_on, id DESC
+     ORDER BY CASE WHEN closes_on = '' THEN 1 WHEN closes_on < ? THEN 2 ELSE 0 END, closes_on, found_on DESC, id DESC
      LIMIT ${LIMIT}`,
   ).all(today);
 

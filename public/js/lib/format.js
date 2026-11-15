@@ -19,6 +19,21 @@ export function closingText(iso, today = todayISO()) {
   return iso < today ? `Closed ${formatDay(iso, today)}` : `Closes ${formatDay(iso, today)}`;
 }
 
+// Whole days from today to a date: 0 today, 1 tomorrow, negative when it has passed.
+export function daysUntil(iso, today = todayISO()) {
+  const at = (s) => { const [y, m, d] = s.slice(0, 10).split('-').map(Number); return Date.UTC(y, m - 1, d); };
+  return Math.round((at(iso) - at(today)) / 86400000);
+}
+
+// "Closes 28 Nov . 12 days", or "Closes 17 Nov . tomorrow" (a date that has passed stays "Closed 28 Oct")
+export function closingWithDays(iso, today = todayISO()) {
+  if (!iso) return 'No closing date';
+  if (iso < today) return closingText(iso, today);
+  const n = daysUntil(iso, today);
+  const left = n === 0 ? 'today' : n === 1 ? 'tomorrow' : `${n} days`;
+  return `Closes ${formatDay(iso, today)} \u00b7 ${left}`;
+}
+
 // "Acme Corp" -> "AC", "Globex" -> "GL"
 export function initials(name) {
   const words = String(name ?? '').trim().split(/\s+/).filter(Boolean);

@@ -14,8 +14,13 @@ export function listJobs({ db, query }) {
   const args = [];
   if (status) { where.push('status = ?'); args.push(status); }
   if (q) { where.push('(instr(lower(title), ?) > 0 OR instr(lower(company), ?) > 0)'); args.push(q, q); }
+  // Jobs you have not applied to: closing soonest first, then no closing date (newest found first), then closed.
+  // Every other view stays newest first.
+  const order = status === 'open'
+    ? "CASE WHEN closes_on = '' THEN 1 WHEN closes_on < date('now', 'localtime') THEN 2 ELSE 0 END, closes_on, found_on DESC, created_at DESC, id DESC"
+    : 'created_at DESC, id DESC';
   const jobs = db.prepare(
-    `SELECT ${LIST_COLUMNS} FROM jobs ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY created_at DESC, id DESC`,
+    `SELECT ${LIST_COLUMNS} FROM jobs ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY ${order}`,
   ).all(...args);
 
   const counts = Object.fromEntries(STATUSES.map((s) => [s, 0]));
