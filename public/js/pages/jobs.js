@@ -1,6 +1,6 @@
 import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
-import { STATUS, STATUS_KEYS, hasStatus, statusText } from '../lib/status.js';
+import { STATUS, STATUS_KEYS, hasStatus, badgeText } from '../lib/status.js';
 import { formatDay, initials, todayISO } from '../lib/format.js';
 import { MODE_LABEL } from '../lib/found-marker.js';
 import { ICON } from '../lib/icons.js';
@@ -32,7 +32,7 @@ function row(job, today) {
         <a class="row-title" href="#/jobs/${job.id}">${job.title}</a>
       </div>
       <div class="row-badges">
-        <span class="badge b-${job.status}">${statusText(job.status)}</span>
+        <span class="badge b-${job.status}">${badgeText(job.status)}</span>
         ${MODE_LABEL[job.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[job.work_mode]}</span>` : ''}
         ${closeBadge(job.closes_on, today)}
       </div>

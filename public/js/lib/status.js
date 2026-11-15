@@ -10,3 +10,5 @@ export const STATUS = {
 export const STATUS_KEYS = Object.keys(STATUS);
 export const hasStatus = (key) => Object.hasOwn(STATUS, key);
 export const statusText = (key) => (hasStatus(key) ? `${STATUS[key].symbol} ${STATUS[key].label}` : key);
+// For badges: "To apply" shows the word only (its ◌ symbol looks like ○ when small). The others keep shape + word.
+export const badgeText = (key) => (key === 'open' && hasStatus(key) ? STATUS[key].label : statusText(key));
