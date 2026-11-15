@@ -5,6 +5,7 @@ export const routes = [
   { pattern: /^\/jobs$/,                nav: 'jobs',      title: 'Jobs',      load: () => import('./pages/jobs.js') },
   { pattern: /^\/jobs\/new$/,           nav: 'jobs',      title: 'Add job',   load: () => import('./pages/job-new.js') },
   { pattern: /^\/jobs\/(?<id>\d+)$/,    nav: 'jobs',      title: 'Job details', load: () => import('./pages/job-detail.js') },
+  { pattern: /^\/jobs\/(?<id>\d+)\/match$/, nav: 'jobs', title: 'Job match', load: () => import('./pages/job-match.js') },
   { pattern: /^\/found$/,               nav: 'found',     title: 'Found',     load: () => import('./pages/found.js') },
   { pattern: /^\/saved$/,               nav: 'found',     title: 'Saved searches', load: () => import('./pages/saved.js') },
   { pattern: /^\/followups$/,           nav: 'followups', title: 'Follow-ups', load: () => import('./pages/followups.js') },

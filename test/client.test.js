@@ -20,6 +20,7 @@ test('matchRoute finds pages and ids, rejects unknown paths', () => {
   assert.deepEqual(matchRoute('/jobs/42').params, { id: '42' });
   assert.equal(matchRoute('/found').route.nav, 'found');
   assert.equal(matchRoute('/saved').route.nav, 'found');
+  assert.deepEqual(matchRoute('/jobs/7/match').params, { id: '7' });
   assert.equal(matchRoute('/jobs/abc'), null);
   assert.equal(matchRoute('/nope'), null);
 });

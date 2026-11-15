@@ -3,6 +3,7 @@
 import { HttpError } from '../lib/errors.js';
 import { health } from './health.js';
 import { listJobs, createJob, findDuplicate, deleteJob, getJob, updateJob } from './jobs.js';
+import { getMatch } from './match.js';
 import { addStage, updateStage, deleteStage } from './stages.js';
 import {
   getProfile, saveProfile, createPreset, deletePreset,
@@ -35,6 +36,7 @@ const list = [
   ['POST', '/api/jobs', createJob],
   ['GET', '/api/jobs/duplicate', findDuplicate],
   ['GET', '/api/jobs/:id', getJob],
+  ['GET', '/api/jobs/:id/match', getMatch],
   ['PATCH', '/api/jobs/:id', updateJob],
   ['DELETE', '/api/jobs/:id', deleteJob],
   ['POST', '/api/jobs/:id/stages', addStage],

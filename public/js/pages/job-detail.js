@@ -209,6 +209,7 @@ export async function render(el, { params, stale }) {
             <span class="badge">${job.source === 'manual' ? 'Added by hand' : job.source}</span>
           </div>
         </div>
+        <a class="btn btn-secondary has-icon jd-match" href="#/jobs/${job.id}/match">${ICON.match}Check my match</a>
         <div class="jd-actions">
           <button type="button" class="btn btn-secondary icon-btn md" data-act="edit-job" aria-label="Edit job" title="Edit job" ${editing ? 'disabled' : ''}>${ICON.edit}</button>
           <button type="button" class="btn btn-danger icon-btn md" data-act="delete-job" aria-label="Delete job" title="Delete job">${ICON.trash}</button>
