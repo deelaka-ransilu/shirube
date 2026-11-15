@@ -12,5 +12,7 @@ export const ICON = {
   edit: icon('<path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/>'),
   back: icon('<path d="M19 12H5M12 19l-7-7 7-7"/>'),
   undo: icon('<path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/>'),
+  download: icon('<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>'),
+  upload: icon('<path d="M12 20V8M7 13l5-5 5 5M5 4h14"/>'),
   trash: icon('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>'),
 };

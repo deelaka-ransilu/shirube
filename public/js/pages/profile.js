@@ -3,7 +3,10 @@
 // Adding or editing an education or experience entry is saved at once (its own small form).
 import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
-import { initials, todayISO } from '../lib/format.js';
+import { todayISO } from '../lib/format.js';
+import { ICON } from '../lib/icons.js';
+import { bindScroll } from '../lib/scroll.js';
+import { setTopAction } from '../lib/shell.js';
 
 const BASICS = [
   ['name', 'Full name', 'Your name'],
@@ -112,113 +115,131 @@ export async function render(el, { stale }) {
       </form>`;
   }
 
+  function dialog() {
+    const f = state.form;
+    if (!f || f.kind === 'skill') return '';
+    const label = f.kind === 'preset' ? 'New preset' : `${f.id ? 'Edit' : 'Add'} ${f.kind === 'edu' ? 'education' : 'experience'}`;
+    return html`<div class="pf-modal"><div class="pf-dialog" role="dialog" aria-modal="true" aria-label="${label}">${entryForm()}</div></div>`;
+  }
+
+  function scrollList(rows) {
+    return html`<div class="scroll-wrap pf-scroll"><div class="scroller">${rows}</div><div class="scroll-fade"></div></div>`;
+  }
+
   function draw() {
+    if (stale()) return;
     const p = active();
     const f = state.form;
+
+    setTopAction(html`<span class="top-status text-muted text-sm" role="status">${state.status}</span><button type="button" class="btn btn-primary" data-act="save" ${state.busy ? 'disabled' : ''}>Save profile</button>`);
+    if (typeof document !== 'undefined') {
+      const saveBtn = document.querySelector('#top-action [data-act="save"]');
+      if (saveBtn) saveBtn.onclick = () => { if (!state.busy) save(); };
+    }
+
     el.innerHTML = html`
-      <div class="page-head">
-        <div>
-          <h1 class="sr-only">My profile</h1>
-          <p class="text-muted" role="status">${state.status}</p>
+      <div class="profile-page">
+        <h1 class="sr-only">My profile</h1>
+        <div class="preset-row">
+          <span class="text-muted text-sm">Role preset</span>
+          <div class="chip-group" role="group" aria-label="Role preset">
+            ${state.presets.map((x) => html`<button type="button" class="chip sm" data-preset="${x.id}" aria-pressed="${x.id === p.id}">${x.name}</button>`)}
+            <button type="button" class="chip sm" data-act="new-preset">+ New preset</button>
+          </div>
+          <span class="text-muted text-sm">The one with ✓ is your main one.</span>
         </div>
-        <button type="button" class="btn btn-primary" data-act="save" ${state.busy ? 'disabled' : ''}>Save profile</button>
-      </div>
 
-      <div class="card compact preset-bar">
-        <b class="text-md">Role preset</b>
-        <div class="chip-group" role="group" aria-label="Role preset">
-          ${state.presets.map((x) => html`<button type="button" class="chip" data-preset="${x.id}" aria-pressed="${x.id === p.id}">${x.name}</button>`)}
-        </div>
-        <button type="button" class="btn btn-dashed" data-act="new-preset">+ New preset</button>
-        <span class="text-muted text-sm preset-hint">Pick a preset to edit it. The one with ✓ is your main one.</span>
-      </div>
-      ${f?.kind === 'preset' ? html`<div class="section">${entryForm()}</div>` : ''}
-
-      <div class="profile-grid section">
-        <div class="col">
-          <div class="card compact">
-            <div class="fields3">
-              ${BASICS.map(([key, label, ph]) => field(label, `p-${key}`, state.profile[key], `data-p="${key}" maxlength="2000"`, ph))}
-              ${field('Preset name', 'pp-name', p.name, 'data-pp="name" maxlength="60"')}
-              ${field('Target role', 'pp-role', p.target_role, 'data-pp="target_role" maxlength="200"', 'SRE / DevOps Engineer')}
+        <div class="profile-grid">
+          <div class="col">
+            <div class="card pf-card">
+              <h2>About you</h2>
+              <div class="pf-grid2">
+                ${BASICS.map(([key, label, ph]) => field(label, `p-${key}`, state.profile[key], `data-p="${key}" maxlength="2000"`, ph))}
+              </div>
             </div>
-            <div class="mt">
-              <label class="label" for="pp-summary">Summary (for this preset)</label>
+
+            <div class="card pf-card">
+              <div class="row pf-head">
+                <h2>Settings and backup</h2>
+                <div class="pf-icons">
+                  <button type="button" class="btn btn-secondary icon-btn md" data-act="download" aria-label="Download backup" title="Download backup">${ICON.download}</button>
+                  <button type="button" class="btn btn-secondary icon-btn md" data-act="restore" aria-label="Restore from a backup" title="Restore from a backup">${ICON.upload}</button>
+                  <input type="file" id="restore-file" accept=".json,application/json" hidden>
+                </div>
+              </div>
+              <div class="pf-grid2">
+                <div><label class="label" for="s-days">Follow up after (days)</label><input class="input" id="s-days" type="number" min="1" max="365" value="${state.profile.follow_up_days}" data-p="follow_up_days"></div>
+                ${field('Time zone', 's-tz', state.profile.time_zone, 'data-p="time_zone"')}
+              </div>
+              ${state.backup ? html`<p class="text-sm pf-note" role="status">${state.backup}</p>` : ''}
+            </div>
+
+            <div class="card pf-card pf-list">
+              <div class="row pf-head">
+                <h2>Education <span class="text-muted text-sm">same for all presets</span></h2>
+                <button type="button" class="chip sm" data-act="add-edu">+ Add</button>
+              </div>
+              ${state.education.length ? scrollList(state.education.map((r) => html`
+                <div class="entry">
+                  <div class="entry-text"><b>${r.qualification || r.school}</b><span class="text-muted text-sm">${sub(r.qualification ? r.school : '', period(r.start_date, r.end_date))}</span></div>
+                  <button type="button" class="btn btn-secondary icon-btn sm" data-edit="edu" data-id="${r.id}" aria-label="Edit ${r.qualification || r.school}" title="Edit">${ICON.edit}</button>
+                </div>`)) : html`<div class="text-muted">Nothing added yet.</div>`}
+            </div>
+          </div>
+
+          <div class="col">
+            <div class="card pf-card">
+              <div class="row pf-head">
+                <h2>This preset</h2>
+                ${state.presets.length > 1 ? html`<button type="button" class="btn btn-danger icon-btn md" data-act="delete-preset" aria-label="Delete this preset" title="Delete this preset">${ICON.trash}</button>` : ''}
+              </div>
+              <div class="pf-grid2">
+                ${field('Preset name', 'pp-name', p.name, 'data-pp="name" maxlength="60"')}
+                ${field('Target role', 'pp-role', p.target_role, 'data-pp="target_role" maxlength="200"', 'SRE / DevOps Engineer')}
+              </div>
+              <label class="label pf-gap" for="pp-summary">Summary (for this preset)</label>
               <textarea class="input" id="pp-summary" rows="3" data-pp="summary" maxlength="2000" placeholder="Two lines about you">${p.summary}</textarea>
             </div>
-            ${state.presets.length > 1 ? html`<div class="mt"><button type="button" class="btn btn-danger" data-act="delete-preset">Delete this preset</button></div>` : ''}
-          </div>
 
-          <div class="card compact">
-            <div class="card-head">
-              <div><h2>Skills</h2><span class="text-muted text-sm">changes with the preset</span></div>
-              <button type="button" class="btn btn-dashed" data-act="add-skill">+ Add skill</button>
+            <div class="card pf-card">
+              <div class="row pf-head">
+                <h2>Skills <span class="text-muted text-sm">changes with the preset</span></h2>
+                <button type="button" class="chip sm" data-act="add-skill">+ Add skill</button>
+              </div>
+              ${f?.kind === 'skill' ? html`
+                <form class="skill-form row" data-form="skill">
+                  <label class="sr-only" for="sk-new">New skill</label>
+                  <input class="input" id="sk-new" name="skill" maxlength="50" placeholder="Type a skill, press Enter" autocomplete="off" data-focus>
+                  <button class="btn btn-secondary" type="submit">Add</button>
+                  <button class="btn btn-secondary" type="button" data-act="close-form">Done</button>
+                </form>` : ''}
+              <div class="scroll-wrap pf-skills"><div class="scroller"><div class="skills">
+                ${p.skills.length ? p.skills.map((s, i) => html`<span class="skill">${s}<button type="button" data-skill-remove="${i}" aria-label="Remove ${s}">×</button></span>`) : html`<span class="text-muted">No skills yet.</span>`}
+              </div></div><div class="scroll-fade"></div></div>
             </div>
-            <div class="skills">
-              ${p.skills.length ? p.skills.map((s, i) => html`<span class="skill">${s}<button type="button" data-skill-remove="${i}" aria-label="Remove ${s}">×</button></span>`) : html`<span class="text-muted">No skills yet.</span>`}
-            </div>
-            ${f?.kind === 'skill' ? html`
-              <form class="skill-form row" data-form="skill">
-                <label class="sr-only" for="sk-new">New skill</label>
-                <input class="input" id="sk-new" name="skill" maxlength="50" placeholder="Type a skill, press Enter" autocomplete="off" data-focus>
-                <button class="btn btn-secondary" type="submit">Add</button>
-                <button class="btn btn-secondary" type="button" data-act="close-form">Done</button>
-              </form>` : ''}
-          </div>
 
-          <div class="card compact">
-            <div class="card-head"><div><h2>Settings</h2></div></div>
-            <div class="fields">
-              <div><label class="label" for="s-days">Follow up after (days)</label><input class="input" id="s-days" type="number" min="1" max="365" value="${state.profile.follow_up_days}" data-p="follow_up_days"></div>
-              ${field('Time zone', 's-tz', state.profile.time_zone, 'data-p="time_zone"')}
+            <div class="card pf-card pf-list">
+              <div class="row pf-head">
+                <h2>Experience <span class="text-muted text-sm">choose what this preset shows</span></h2>
+                <button type="button" class="chip sm" data-act="add-exp">+ Add</button>
+              </div>
+              ${state.experience.length ? scrollList(state.experience.map((r) => {
+                const shown = p.experience_ids.includes(r.id);
+                return html`
+                  <div class="entry">
+                    <div class="entry-text"><b>${r.role || r.company}</b><span class="text-muted text-sm">${sub(r.role ? r.company : '', period(r.start_date, r.end_date))}</span></div>
+                    <button type="button" class="shown" data-shown="${r.id}" aria-pressed="${shown}" aria-label="${r.role || r.company}: ${shown ? 'shown' : 'hidden'} in ${p.name}">${shown ? '✓ Shown' : 'Hidden'}</button>
+                    <button type="button" class="btn btn-secondary icon-btn sm" data-edit="exp" data-id="${r.id}" aria-label="Edit ${r.role || r.company}" title="Edit">${ICON.edit}</button>
+                  </div>`;
+              })) : html`<div class="text-muted">Nothing added yet.</div>`}
             </div>
           </div>
         </div>
-
-        <div class="col">
-          <div class="card compact">
-            <div class="card-head">
-              <div><h2>Education</h2><span class="text-muted text-sm">same for all presets</span></div>
-              <button type="button" class="btn btn-dashed" data-act="add-edu">+ Add education</button>
-            </div>
-            ${f?.kind === 'edu' && !f.id ? entryForm() : ''}
-            ${state.education.length ? state.education.map((r) => (f?.kind === 'edu' && f.id === r.id ? entryForm() : html`
-              <div class="entry">
-                <div class="entry-text"><b>${r.qualification || r.school}</b><span class="text-muted text-sm">${sub(r.qualification ? r.school : '', period(r.start_date, r.end_date))}</span></div>
-                <button type="button" class="link-btn" data-edit="edu" data-id="${r.id}" aria-label="Edit ${r.qualification || r.school}">Edit</button>
-              </div>`)) : (f?.kind === 'edu' ? '' : html`<div class="text-muted">Nothing added yet.</div>`)}
-          </div>
-
-          <div class="card compact">
-            <div class="card-head">
-              <div><h2>Experience</h2><span class="text-muted text-sm">choose what this preset shows</span></div>
-              <button type="button" class="btn btn-dashed" data-act="add-exp">+ Add experience</button>
-            </div>
-            ${f?.kind === 'exp' && !f.id ? entryForm() : ''}
-            ${state.experience.length ? state.experience.map((r) => {
-              if (f?.kind === 'exp' && f.id === r.id) return entryForm();
-              const shown = p.experience_ids.includes(r.id);
-              return html`
-                <div class="entry">
-                  <div class="entry-text"><b>${r.role || r.company}</b><span class="text-muted text-sm">${sub(r.role ? r.company : '', period(r.start_date, r.end_date))}</span></div>
-                  <button type="button" class="link-btn" data-edit="exp" data-id="${r.id}" aria-label="Edit ${r.role || r.company}">Edit</button>
-                  <button type="button" class="shown" data-shown="${r.id}" aria-pressed="${shown}" aria-label="${r.role || r.company}: ${shown ? 'shown' : 'hidden'} in ${p.name}">${shown ? '✓ Shown' : '○ Hidden'}</button>
-                </div>`;
-            }) : (f?.kind === 'exp' ? '' : html`<div class="text-muted">Nothing added yet.</div>`)}
-          </div>
-
-          <div class="card compact">
-            <div class="card-head"><div><h2>Backup</h2><span class="text-muted text-sm">your data stays on this laptop</span></div></div>
-            <p class="text-muted">Save a copy of all your jobs, notes and profile.</p>
-            <div class="row">
-              <button type="button" class="btn btn-secondary" data-act="download">Download backup</button>
-              <button type="button" class="btn btn-secondary" data-act="restore">Restore from a backup</button>
-              <input type="file" id="restore-file" accept=".json,application/json" hidden>
-            </div>
-            <p class="text-sm" role="status">${state.backup}</p>
-          </div>
-        </div>
+        ${dialog()}
       </div>`;
+
+    el.querySelectorAll('.pf-scroll').forEach((w) => bindScroll(w, '.entry'));
+    el.querySelectorAll('.pf-skills').forEach((w) => bindScroll(w, '.skill'));
     el.querySelector('[data-focus]')?.focus();
   }
 

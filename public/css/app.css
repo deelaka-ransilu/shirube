@@ -165,7 +165,7 @@ a.tile:hover { background: var(--color-raised); }
 .found-date-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
 .found-cats { flex: 1 1 100%; }
 
-#page:has(.found-page), #page:has(.jobs-page) { display: flex; flex-direction: column; overflow: hidden; }
+#page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page) { display: flex; flex-direction: column; overflow: hidden; }
 .found-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #found-results { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #found-results > .empty { margin-top: var(--space-3); }
@@ -178,7 +178,7 @@ a.tile:hover { background: var(--color-raised); }
 
 /* Small windows: stack everything and let the page scroll as before */
 @media (max-width: 1100px) {
-  #page:has(.found-page), #page:has(.jobs-page) { display: block; overflow: auto; }
+  #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page) { display: block; overflow: auto; }
   .found-page, #found-results { display: block; }
   .found-layout { display: grid; grid-template-rows: none; }
   #found-list { overflow: visible; }
@@ -369,3 +369,49 @@ a.tile:hover { background: var(--color-raised); }
 .jd-saved { font-size: var(--text-sm); }
 textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
 .back-btn { border-radius: 45px; }
+
+/* ---- My profile: one screen, two columns, small lists that scroll inside their cards ---- */
+.top-action { display: flex; align-items: center; gap: var(--space-3); }
+.profile-page { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.preset-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.profile-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-4); }
+.profile-grid .col { min-height: 0; gap: var(--space-3); }
+.pf-card { padding: var(--space-3) var(--space-4); }
+.pf-card h2 { margin: 0; font-size: var(--text-md); }
+.pf-card h2 .text-sm { margin-left: var(--space-2); font-weight: var(--weight-regular); }
+.pf-head { justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+.pf-card > h2 { margin-bottom: var(--space-2); }
+.pf-icons { display: flex; gap: var(--space-1); }
+.pf-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-3); }
+.pf-gap { margin-top: var(--space-2); }
+.pf-note { margin: var(--space-2) 0 0; }
+.profile-page .input { min-height: 36px; padding: 6px 12px; font-size: var(--text-sm); }
+.profile-page textarea.input { resize: none; }
+.profile-page .label { margin-bottom: 2px; }
+.pf-list { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.pf-list .pf-scroll { flex: 1; min-height: 0; }
+.pf-scroll .scroller { padding-bottom: var(--space-5); }
+.pf-skills .scroller { flex: none; max-height: 96px; padding-bottom: var(--space-3); }
+.skill-form { gap: var(--space-2); margin-bottom: var(--space-2); }
+.skill-form .btn { min-height: 36px; }
+.skills { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.skill { --bt: var(--tint-lilac); display: inline-flex; align-items: center; gap: 2px; padding: 2px 4px 2px 10px; font-size: var(--text-sm); color: var(--bt); background: color-mix(in srgb, var(--bt) 15%, transparent); border: 1px solid color-mix(in srgb, var(--bt) 45%, transparent); border-radius: var(--radius-pill); }
+.skill button { width: 20px; height: 20px; padding: 0; line-height: 1; color: inherit; background: transparent; border: 0; border-radius: 50%; cursor: pointer; }
+.skill button:hover { background: var(--color-raised); }
+.entry { display: flex; align-items: center; gap: var(--space-2); padding: 8px 0; border-bottom: 1px solid var(--color-line); }
+.entry:last-child { border-bottom: 0; }
+.entry-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.entry-text b { font-weight: var(--weight-medium); overflow-wrap: anywhere; }
+.shown { min-height: 26px; padding: 0 10px; font: var(--weight-medium) var(--text-xs) var(--font-sans); color: var(--color-muted); background: transparent; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-pill); cursor: pointer; }
+.shown[aria-pressed="true"] { color: var(--tint-green); border-style: solid; border-color: color-mix(in srgb, var(--tint-green) 45%, transparent); background: color-mix(in srgb, var(--tint-green) 15%, transparent); }
+.pf-modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: var(--space-4); background: rgba(0, 0, 0, 0.6); }
+.pf-dialog { width: min(520px, 100%); max-height: 90vh; overflow: auto; scrollbar-width: none; }
+.pf-dialog::-webkit-scrollbar { display: none; }
+.pf-dialog .inner-box { background: var(--color-card); }
+@media (max-width: 1100px) {
+  .profile-page { display: block; }
+  .preset-row { margin-bottom: var(--space-3); }
+  .profile-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .pf-list { display: block; overflow: visible; }
+  .pf-skills .scroller { max-height: none; }
+}
