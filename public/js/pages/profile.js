@@ -45,9 +45,9 @@ export async function render(el, { stale }) {
   const state = {
     profile: data.profile, presets: data.presets, education: data.education, certifications: data.certifications, experience: data.experience,
     activeId: data.profile.active_preset_id ?? data.presets[0].id,
-    form: null,        // { kind: 'preset' | 'skill' | 'edu' | 'cert' | 'exp', id, draft, error }
+    form: null,        // { kind: 'preset' | 'skill' | 'settings' | 'edu' | 'cert' | 'exp', id, draft, error }
     status: '',        // line next to the Save button
-    backup: '',        // line in the Backup card
+    backup: '',        // line next to the backup icons
     busy: false,
   };
   const active = () => state.presets.find((p) => p.id === state.activeId) ?? state.presets[0];
@@ -93,6 +93,22 @@ export async function render(el, { stale }) {
           <div><label class="label" for="np-name">Preset name</label><input class="input" id="np-name" name="name" maxlength="60" placeholder="UI/UX designer" data-focus></div>
           ${error ? html`<div class="field-error" role="alert">◇ ${error}</div>` : ''}
           <div class="row"><button class="btn btn-primary" type="submit">Create preset</button><button class="btn btn-secondary" type="button" data-act="close-form">Cancel</button></div>
+        </form>`;
+    }
+    if (kind === 'settings') {
+      const sv = (k) => (draft ? draft[k] ?? '' : state.profile[k] ?? '');
+      return html`
+        <form class="inner-box" data-form="settings">
+          <b>Settings</b>
+          <div class="fields">
+            <div><label class="label" for="s-days">Follow up after (days)</label><input class="input" id="s-days" name="follow_up_days" type="number" min="1" max="365" value="${sv('follow_up_days')}" data-focus></div>
+            ${field('Time zone', 's-tz', sv('time_zone'), 'name="time_zone"')}
+          </div>
+          ${error ? html`<div class="field-error" role="alert">◇ ${error}</div>` : ''}
+          <div class="row">
+            <button class="btn btn-primary" type="submit">Save settings</button>
+            <button class="btn btn-secondary" type="button" data-act="close-form">Cancel</button>
+          </div>
         </form>`;
     }
     if (kind === 'cert') {
@@ -146,7 +162,7 @@ export async function render(el, { stale }) {
   function dialog() {
     const f = state.form;
     if (!f || f.kind === 'skill') return '';
-    const label = f.kind === 'preset' ? 'New preset' : `${f.id ? 'Edit' : 'Add'} ${ENTRY[f.kind].noun}`;
+    const label = f.kind === 'preset' ? 'New preset' : f.kind === 'settings' ? 'Settings' : `${f.id ? 'Edit' : 'Add'} ${ENTRY[f.kind].noun}`;
     return html`<div class="pf-modal"><div class="pf-dialog" role="dialog" aria-modal="true" aria-label="${label}">${entryForm()}</div></div>`;
   }
 
@@ -175,6 +191,13 @@ export async function render(el, { stale }) {
             <button type="button" class="chip sm" data-act="new-preset">+ New preset</button>
           </div>
           <span class="text-muted text-sm">The one with ✓ is your main one.</span>
+          <div class="pf-tools">
+            ${state.backup ? html`<span class="text-sm" role="status">${state.backup}</span>` : ''}
+            <button type="button" class="btn btn-secondary icon-btn md" data-act="settings" aria-label="Settings: follow-up days and time zone" title="Settings">${ICON.settings}</button>
+            <button type="button" class="btn btn-secondary icon-btn md" data-act="download" aria-label="Download backup" title="Download backup">${ICON.download}</button>
+            <button type="button" class="btn btn-secondary icon-btn md" data-act="restore" aria-label="Restore from a backup" title="Restore from a backup">${ICON.upload}</button>
+            <input type="file" id="restore-file" accept=".json,application/json" hidden>
+          </div>
         </div>
 
         <div class="profile-grid">
@@ -184,22 +207,6 @@ export async function render(el, { stale }) {
               <div class="pf-grid2">
                 ${BASICS.map(([key, label, ph]) => field(label, `p-${key}`, state.profile[key], `data-p="${key}" maxlength="2000"`, ph))}
               </div>
-            </div>
-
-            <div class="card pf-card">
-              <div class="row pf-head">
-                <h2>Settings and backup</h2>
-                <div class="pf-icons">
-                  <button type="button" class="btn btn-secondary icon-btn md" data-act="download" aria-label="Download backup" title="Download backup">${ICON.download}</button>
-                  <button type="button" class="btn btn-secondary icon-btn md" data-act="restore" aria-label="Restore from a backup" title="Restore from a backup">${ICON.upload}</button>
-                  <input type="file" id="restore-file" accept=".json,application/json" hidden>
-                </div>
-              </div>
-              <div class="pf-grid2">
-                <div><label class="label" for="s-days">Follow up after (days)</label><input class="input" id="s-days" type="number" min="1" max="365" value="${state.profile.follow_up_days}" data-p="follow_up_days"></div>
-                ${field('Time zone', 's-tz', state.profile.time_zone, 'data-p="time_zone"')}
-              </div>
-              ${state.backup ? html`<p class="text-sm pf-note" role="status">${state.backup}</p>` : ''}
             </div>
 
             <div class="card pf-card pf-list">
@@ -387,6 +394,7 @@ export async function render(el, { stale }) {
       case 'save': save(); break;
       case 'new-preset': collect(); state.form = { kind: 'preset' }; draw(); break;
       case 'add-skill': collect(); state.form = { kind: 'skill' }; draw(); break;
+      case 'settings': collect(); state.form = { kind: 'settings' }; draw(); break;
       case 'add-cert': collect(); state.form = { kind: 'cert', id: null }; draw(); break;
       case 'add-edu': collect(); state.form = { kind: 'edu', id: null }; draw(); break;
       case 'add-exp': collect(); state.form = { kind: 'exp', id: null }; draw(); break;
@@ -432,6 +440,13 @@ export async function render(el, { stale }) {
       const p = active();
       if (s && !p.skills.some((x) => x.toLowerCase() === s.toLowerCase())) p.skills.push(s);
       draw();
+      return;
+    }
+    if (kind === 'settings') {
+      entryCall(
+        () => api('/api/profile', { method: 'PATCH', body: { follow_up_days: Number(v.follow_up_days), time_zone: v.time_zone } }),
+        (r) => { state.profile.follow_up_days = r.profile.follow_up_days; state.profile.time_zone = r.profile.time_zone; state.form = null; state.status = '✓ Settings saved'; },
+      );
       return;
     }
     if (kind === 'preset') {
