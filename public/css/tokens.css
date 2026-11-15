@@ -2,30 +2,30 @@
    Only variables here. Components are in base.css. */
 :root {
   /* Colors: three layers, dark to light */
-  --color-frame: #E8DFCB;        /* outer background (soft beige), behind the black rail */
+  --color-frame: #E9ECEF;        /* outer background (light grey), behind the dark panel */
   --frame-gradient: none;
-  --color-rail: #E8DFCB;         /* the same beige: the rail that holds the sidebar and the panel */
-  --color-panel: #211D1E;        /* main panel, inputs */
-  --color-card: #2B2627;         /* every card */
-  --color-raised: #3A3436;       /* avatars, selected calendar day, hover */
+  --color-rail: #E9ECEF;         /* the same light grey: the rail that holds the sidebar and the panel */
+  --color-panel: #212529;        /* main panel, inputs */
+  --color-card: #2B3035;         /* every card */
+  --color-raised: #373D43;       /* avatars, selected calendar day, hover */
 
-  --color-paper: #FBF8F1;        /* the CV preview page */
-  --color-on-paper: #211D1E;
-  --color-paper-muted: #6B625E;
-  --color-paper-line: #D9D0C0;
+  --color-paper: #FFFFFF;        /* the CV preview page */
+  --color-on-paper: #212529;
+  --color-paper-muted: #6C757D;
+  --color-paper-line: #DEE2E6;
 
-  --color-text: #F4F1EF;
-  --color-muted: #C3BBB8;        /* labels, small and secondary text */
+  --color-text: #F1F3F5;
+  --color-muted: #ADB5BD;        /* labels, small and secondary text */
 
-  --color-line: #3F3739;         /* 1px dividers between list rows */
-  --color-border: #4A4143;       /* card outlines */
-  --color-border-strong: #8A8082;/* buttons, inputs, chips, today */
+  --color-line: #3A4046;         /* 1px dividers between list rows */
+  --color-border: #444B52;       /* card outlines */
+  --color-border-strong: #868E96;/* buttons, inputs, chips, today */
 
-  --color-primary: #ff5a36;      /* the one main button per screen */
+  --color-primary: #FB5607;      /* the one main button per screen */
   --color-on-primary: #1a1a1a;   /* text on orange is always dark */
-  --color-accent: #ffd966;       /* active sidebar icon, profile avatar */
-  --color-on-accent: #1a1a1a;
-  --color-link: #ff8a6b;
+  --color-accent: #8338EC;       /* profile avatar, badges */
+  --color-on-accent: #FFFFFF;
+  --color-link: #FF8A55;
   --color-danger: #ff8a80;       /* delete buttons only */
 
   /* Tints for badges and chosen chips. Always paired with a word, never colour alone. */
@@ -33,7 +33,7 @@
   --tint-peach: #FFB38F;
   --tint-yellow: #FFD966;
   --tint-green: #8FDCAB;
-  --tint-lilac: #C9B2FF;
+  --tint-lilac: #B794F6;
 
   /* Type: Outfit, weights 400 / 500 / 600 */
   --font-sans: 'Outfit', system-ui, sans-serif;
