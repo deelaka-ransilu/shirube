@@ -155,7 +155,7 @@ select.input { appearance: auto; }
 .found-date-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
 .found-cats { flex: 1 1 100%; }
 
-#page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.dash-page) { display: flex; flex-direction: column; overflow: hidden; }
+#page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.dash-page), #page:has(.addjob-page) { display: flex; flex-direction: column; overflow: hidden; }
 .found-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #found-results { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #found-results > .empty { margin-top: var(--space-3); }
@@ -168,7 +168,7 @@ select.input { appearance: auto; }
 
 /* Small windows: stack everything and let the page scroll as before */
 @media (max-width: 1100px) {
-  #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.dash-page) { display: block; overflow: auto; }
+  #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.dash-page), #page:has(.addjob-page) { display: block; overflow: auto; }
   .found-page, #found-results { display: block; }
   .found-layout { display: grid; grid-template-rows: none; }
   #found-list { overflow: visible; }
@@ -468,4 +468,52 @@ a.tile:hover { background: var(--color-raised); }
   .dash-card { display: block; overflow: visible; }
   .dash-card .list-row { flex-wrap: wrap; }
   .dash-card .avatar { display: flex; }
+}
+
+/* ---- Add job look (step 26): one screen, small chips, Save in the top bar ---- */
+.addjob-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.aj-intro { margin: 0 0 var(--space-3); }
+.addjob-page .add-job { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; gap: var(--space-4); }
+.addjob-page .col { gap: var(--space-3); min-height: 0; }
+.addjob-page .step { margin-bottom: var(--space-2); }
+.aj-paste { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: var(--space-4); align-items: end; }
+.aj-paste textarea { resize: none; }
+.aj-fill { display: flex; flex-direction: column; gap: var(--space-1); }
+.aj-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-3); }
+.aj-fields .aj-wide { grid-column: 1 / -1; }
+.aj-block { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.aj-block > .label { margin: 0; }
+.aj-block .chip-group { gap: var(--space-1); }
+.aj-source-block { margin-top: var(--space-3); }
+.aj-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--space-4); }
+.aj-dates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--space-4); }
+.aj-h { margin: 0 0 var(--space-2); font-size: var(--text-lg); }
+.aj-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.aj-source .chip-group { flex: 0 1 auto; }
+.input.aj-other { width: 220px; min-height: 32px; padding: 4px 10px; font-size: var(--text-sm); }
+.input.aj-other[hidden] { display: none; }
+.aj-badges { justify-content: flex-start; margin-top: var(--space-3); }
+.aj-notes { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.aj-notes textarea { resize: none; }
+textarea.input.aj-desc { flex: 1; min-height: 72px; }
+.aj-foot { display: flex; flex-direction: column; gap: var(--space-2); }
+.aj-foot .btn { align-self: flex-start; }
+.found-date .chip.sm { white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  .addjob-page { display: block; }
+  .addjob-page .add-job { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .aj-paste { grid-template-columns: minmax(0, 1fr); }
+  .aj-pair, .aj-dates { grid-template-columns: minmax(0, 1fr); }
+  .aj-notes { display: block; }
+  textarea.input.aj-desc { min-height: 120px; }
+}
+
+/* Small or short windows: keep two columns but let the page scroll, so nothing is cut off */
+@media (max-width: 1280px), (max-height: 860px) {
+  #page:has(.addjob-page) { display: block; overflow: auto; }
+  .addjob-page { display: block; }
+  .addjob-page .add-job { grid-template-rows: none; align-items: start; }
+  .aj-notes { display: block; }
+  textarea.input.aj-desc { min-height: 120px; }
 }
