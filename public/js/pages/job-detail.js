@@ -5,6 +5,7 @@ import { formatDay, initials, todayISO } from '../lib/format.js';
 import { ICON } from '../lib/icons.js';
 import { bindScroll } from '../lib/scroll.js';
 import { closeBadge } from '../lib/badges.js';
+import { cvPaper, matchLine } from '../lib/cv-paper.js';
 
 const KIND = {
   applied:   { label: 'Applied',   symbol: '●' },
@@ -158,16 +159,52 @@ function detailBadges(job) {
     ${safeLink ? html`<a class="badge b-linkout" href="${job.url}" target="_blank" rel="noopener noreferrer" title="${job.url}">${linkHost(job.url)}${ICON.open}</a>` : ''}`;
 }
 
-function details(job) {
+function notesPane(job) {
+  return html`
+    <div class="row jd-notes-head"><h2>General notes</h2><span class="jd-saved text-muted" id="notes-state" aria-live="polite"></span></div>
+    <textarea class="input jd-notes-box" id="job-notes" aria-label="General notes" maxlength="20000" placeholder="Add a note…">${job.notes}</textarea>`;
+}
+
+function cvPane(job, cv, mark) {
+  if (!cv) return html`<p class="text-muted">Could not load your CV. Refresh the page to try again.</p>`;
+  const empty = !cv.person.name && !cv.preset.id;
+  if (empty) {
+    return html`<p class="text-muted">Your CV is empty. Fill in <a class="link" href="#/profile">My profile</a> and it shows here, built for each job.</p>`;
+  }
+  const line = matchLine(cv);
+  return html`
+    <div class="jd-aside-head">
+      <h2>CV for this job</h2>
+      ${cv.presets.length > 1
+        ? html`<select class="input cv-select" id="cv-preset" aria-label="CV preset">${cv.presets.map((p) => html`<option value="${p.id}" ${p.id === cv.preset.id ? 'selected' : ''}>${p.name}</option>`)}</select>`
+        : html`<span class="text-muted text-sm">${cv.preset.name}</span>`}
+    </div>
+    <div class="cv-strip">
+      <span>${line.text}</span>
+      ${job.description ? html`<a class="link text-sm" href="#/jobs/${job.id}/match">More details</a>` : ''}
+    </div>
+    ${line.hasMatch ? html`
+      <div class="cv-strip">
+        <button type="button" class="chip sm" data-act="mark" aria-pressed="${mark}">Mark matches</button>
+        ${mark ? html`<span class="text-muted text-sm">Highlighted skills are the ones this advert asks for.</span>` : ''}
+      </div>` : ''}
+    <div class="cv-scroll" tabindex="0" role="region" aria-label="CV preview">${cvPaper(cv, { mark })}</div>`;
+}
+
+function details(state) {
+  const { job, cv, tab, mark } = state;
   return html`
     <div class="card">
       <h2>Description</h2>
       ${job.description ? scrollBox(html`<div class="pre">${job.description}</div>`) : html`<div class="text-muted">Not added yet. Use Edit job to paste the advert here.</div>`}
     </div>
     <div class="side-stack jd-side">
-      <div class="card jd-notes">
-        <div class="row jd-notes-head"><h2>General notes</h2><span class="jd-saved text-muted" id="notes-state" aria-live="polite"></span></div>
-        <textarea class="input jd-notes-box" id="job-notes" aria-label="General notes" maxlength="20000" placeholder="Add a note…">${job.notes}</textarea>
+      <div class="card jd-aside">
+        <div class="chip-group jd-tabs" role="group" aria-label="Show in this panel">
+          <button type="button" class="chip sm" data-tab="cv" aria-pressed="${tab === 'cv'}">CV</button>
+          <button type="button" class="chip sm" data-tab="notes" aria-pressed="${tab === 'notes'}">Notes</button>
+        </div>
+        ${tab === 'cv' ? cvPane(job, cv, mark) : notesPane(job)}
       </div>
     </div>`;
 }
@@ -175,6 +212,7 @@ function details(job) {
 export async function render(el, { params, stale }) {
   const id = Number(params.id);
   let data;
+  const cvRequest = api(`/api/jobs/${id}/match`).catch(() => null); // the CV panel must never stop the page from opening
   try {
     data = await api(`/api/jobs/${id}`);
   } catch (err) {
@@ -184,9 +222,10 @@ export async function render(el, { params, stale }) {
       <div class="card"><h2>Could not open this job</h2><p class="text-muted">${err.message}</p></div>`;
     return;
   }
+  const cv = await cvRequest;
   if (stale()) return;
 
-  const state = { job: data.job, stages: data.stages, editing: false, form: null, error: '', busy: false, draft: null };
+  const state = { job: data.job, stages: data.stages, editing: false, form: null, error: '', busy: false, draft: null, cv, tab: 'cv', mark: true, presetId: null };
   document.title = `${state.job.title} · Shirube`;
 
   function draw() {
@@ -209,7 +248,6 @@ export async function render(el, { params, stale }) {
             <span class="badge">${job.source === 'manual' ? 'Added by hand' : job.source}</span>
           </div>
         </div>
-        <a class="btn btn-secondary has-icon jd-match" href="#/jobs/${job.id}/match">${ICON.match}Check my match</a>
         <div class="jd-actions">
           <button type="button" class="btn btn-secondary icon-btn md" data-act="edit-job" aria-label="Edit job" title="Edit job" ${editing ? 'disabled' : ''}>${ICON.edit}</button>
           <button type="button" class="btn btn-danger icon-btn md" data-act="delete-job" aria-label="Delete job" title="Delete job">${ICON.trash}</button>
@@ -233,11 +271,27 @@ export async function render(el, { params, stale }) {
 
       ${editing
         ? editForm(state.draft ? { ...job, ...state.draft } : job, error)
-        : html`<div class="grid-main-side section">${details(job)}</div>`}
+        : html`<div class="grid-main-side section">${details(state)}</div>`}
       </div>`;
 
     el.querySelectorAll('.scroll-wrap').forEach((w) => bindScroll(w, '.pre'));
     el.querySelector('[data-focus]')?.focus();
+  }
+
+  // Draw again but stay where the person was on the page (tabs and the preset menu).
+  function redraw() {
+    const top = el.scrollTop;
+    draw();
+    el.scrollTop = top;
+  }
+
+  // Read the CV again, for the preset the person picked (or the main one).
+  async function loadCv() {
+    try {
+      state.cv = await api(`/api/jobs/${id}/match` + (state.presetId ? `?preset=${state.presetId}` : ''));
+    } catch {
+      state.cv = null;
+    }
   }
 
   async function run(fn) {
@@ -260,6 +314,9 @@ export async function render(el, { params, stale }) {
   el.onclick = (e) => {
     const t = e.target.closest('button');
     if (!t) return;
+
+    if (t.dataset.tab) { state.tab = t.dataset.tab; redraw(); return; }
+    if (t.dataset.act === 'mark') { state.mark = !state.mark; redraw(); return; }
 
     if (t.dataset.stage) { state.form = { id: Number(t.dataset.stage) }; state.editing = false; state.error = ''; draw(); return; }
     if (t.dataset.new !== undefined) { state.form = { id: null, kind: t.dataset.new }; state.editing = false; state.error = ''; draw(); return; }
@@ -301,6 +358,12 @@ export async function render(el, { params, stale }) {
   };
 
   el.onchange = async (e) => {
+    if (e.target.id === 'cv-preset') {
+      state.presetId = Number(e.target.value);
+      await loadCv();
+      if (!stale()) redraw();
+      return;
+    }
     if (e.target.id !== 'job-notes') return;
     const box = e.target;
     const tag = el.querySelector('#notes-state');
@@ -351,7 +414,9 @@ export async function render(el, { params, stale }) {
         return result;
       }).then(() => {
         // A failed save keeps the form open with the server's message.
-        if (state.error && !stale()) { state.editing = true; state.draft = values; draw(); }
+        if (state.error && !stale()) { state.editing = true; state.draft = values; draw(); return; }
+        // The advert may have changed, so read the match again.
+        if (!stale()) loadCv().then(() => { if (!stale()) redraw(); });
       });
     }
   };

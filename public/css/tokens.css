@@ -9,6 +9,11 @@
   --color-card: #2B2627;         /* every card */
   --color-raised: #3A3436;       /* avatars, selected calendar day, hover */
 
+  --color-paper: #FBF8F1;        /* the CV preview page */
+  --color-on-paper: #211D1E;
+  --color-paper-muted: #6B625E;
+  --color-paper-line: #D9D0C0;
+
   --color-text: #F4F1EF;
   --color-muted: #C3BBB8;        /* labels, small and secondary text */
 

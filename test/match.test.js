@@ -115,4 +115,25 @@ test('GET /api/jobs/:id/match uses the main preset and only the shown experience
   assert.equal((await call('/api/jobs/9999/match')).status, 404);
 });
 
+test('GET /api/jobs/:id/match lists the presets and can use another one with ?preset=', async () => {
+  const { data: prof } = await call('/api/profile');
+  const mainId = prof.presets[0].id;
+  const other = (await call('/api/presets', { method: 'POST', body: { name: 'Support' } })).data;
+  const otherId = other.preset?.id ?? other.id;
+  await call('/api/profile', { method: 'PATCH', body: { presets: [{ id: otherId, skills: ['Linux', 'Zendesk'] }] } });
+  const job = (await call('/api/jobs', { method: 'POST', body: { title: 'Helpdesk', description: 'Requirements\nLinux' } })).data.job;
+
+  const main = (await call(`/api/jobs/${job.id}/match`)).data;
+  assert.equal(main.preset.id, mainId);
+  assert.deepEqual(main.presets.map((p) => p.id), [mainId, otherId]);
+
+  const second = (await call(`/api/jobs/${job.id}/match?preset=${otherId}`)).data;
+  assert.equal(second.preset.id, otherId);
+  assert.deepEqual(second.best_skills.map((s) => s.name), ['Linux', 'Zendesk']);
+
+  // An unknown or silly value falls back to the main preset.
+  assert.equal((await call(`/api/jobs/${job.id}/match?preset=99999`)).data.preset.id, mainId);
+  assert.equal((await call(`/api/jobs/${job.id}/match?preset=abc`)).data.preset.id, mainId);
+});
+
 test.after(() => server.close());
