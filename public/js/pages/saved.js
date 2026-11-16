@@ -5,7 +5,7 @@ import { watchLeavingFound, MODE_LABEL, POSTED_LABEL, suggestName } from '../lib
 
 const WORK_MODES = [['any', 'Any'], ['onsite', 'On-site'], ['hybrid', 'Hybrid'], ['remote', 'Remote']];
 const POSTED = [['today', 'Today'], ['3d', '3 days'], ['week', 'Week'], ['any', 'Any']];
-const NOTIFY = [['open', 'When I open Found'], ['never', 'Never']];
+const NOTIFY = [['open', 'When I open New jobs'], ['never', 'Never']];
 
 export async function render(el, { stale }) {
   watchLeavingFound();
@@ -61,7 +61,7 @@ export async function render(el, { stale }) {
         ${chips('Work mode', 'mode', WORK_MODES, f.work_mode)}
         ${chips('Posted', 'posted', POSTED, f.posted)}
         <div class="found-group" role="group" aria-label="Sites"><span class="label">Sites</span>
-          <div class="chip-group"><button type="button" class="chip" aria-pressed="true" disabled>ITPro</button><button type="button" class="chip" disabled>TopJobs (later)</button></div>
+          <div class="chip-group"><button type="button" class="chip" aria-pressed="true" disabled>ITPro</button><button type="button" class="chip" disabled>TopJobs</button></div>
         </div>
         ${chips('Tell me about new jobs', 'notify', NOTIFY, f.notify)}
         ${f.error ? html`<p class="field-error" role="alert">◇ ${f.error}</p>` : ''}
@@ -82,7 +82,7 @@ export async function render(el, { stale }) {
         ${form ? '' : html`<button type="button" class="btn btn-secondary" data-new>+ New saved search</button>`}
       </div>
       <p class="text-sm found-status" role="status">${status}</p>
-      ${searches.length || form ? '' : html`<div class="card empty"><h2>No saved searches yet</h2><p class="text-muted">On Found, type some words and press “Save this search”, or use the button above.</p></div>`}
+      ${searches.length || form ? '' : html`<div class="card empty"><h2>No saved searches yet</h2><p class="text-muted">On New jobs, type some words, open More filters and press “Save this search”, or use the button above.</p></div>`}
       <div class="saved-layout">
         <div class="saved-grid">${searches.map(cardHtml)}</div>
         ${form ? formHtml() : ''}

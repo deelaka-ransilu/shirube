@@ -64,13 +64,27 @@ export function searchFound(db, query, today) {
   ).all(...args).map(({ first_seen_at, hidden, ...j }) => ({ ...j, hidden: !!hidden, is_new: !hidden && first_seen_at > left }));
 }
 
+// The places in a result list, most jobs first. Only the places that are there right now.
+export function placesOf(jobs) {
+  const counts = new Map();
+  for (const j of jobs) {
+    const name = j.location.trim();
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
 export function listFound({ db, query, deps = {} }) {
   const today = todayLocal(nowOf(deps));
-  const jobs = searchFound(db, query, today);
+  const matching = searchFound(db, query, today);
+  // The Location filter is applied last, so the list of places still shows every place in the other results.
+  const place = String(query.location ?? '').trim().toLowerCase();
+  const jobs = place ? matching.filter((j) => j.location.trim().toLowerCase() === place) : matching;
   const profile = db.prepare('SELECT found_last_fetch_at FROM profile WHERE id = 1').get();
 
   return {
     jobs,
+    locations: placesOf(matching),
     new_count: jobs.filter((j) => j.is_new).length,
     hidden_count: db.prepare('SELECT COUNT(*) AS n FROM found_jobs WHERE hidden = 1').get().n,
     stored_count: db.prepare('SELECT COUNT(*) AS n FROM found_jobs').get().n,

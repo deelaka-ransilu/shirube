@@ -24,6 +24,8 @@ export function startRouter(el) {
     markNav(hit?.route.nav);
     setPageTitle(hit ? hit.route.title : 'Not found');
     setTopAction('');
+    // On New jobs the page has its own search, so the top-bar one is hidden.
+    document.getElementById('search')?.toggleAttribute('hidden', Boolean(hit?.route.hideSearch));
 
     if (!hit) {
       document.title = 'Not found · Shirube';
@@ -37,7 +39,7 @@ export function startRouter(el) {
       document.title = `${hit.route.title} · Shirube`;
       el.scrollTop = 0;
       // Pages attach events with el.onclick = ..., so clear the last page's events first.
-      el.onclick = el.oninput = el.onchange = el.onsubmit = null;
+      el.onclick = el.oninput = el.onchange = el.onsubmit = el.onkeydown = null;
       await page.render(el, { params: hit.params, query, stale });
     } catch (err) {
       if (stale()) return;

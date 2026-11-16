@@ -1,11 +1,9 @@
-/* Shell pieces that base.css does not cover: top bar, search, avatar, page header.
+/* Shell pieces that base.css does not cover: top bar, search, page header.
    Load after base.css. */
 
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* Search and avatar links */
-.avatar-link { text-decoration: none; }
-.search svg, .avatar-link svg { stroke-linecap: round; stroke-linejoin: round; }
+.search svg { stroke-linecap: round; stroke-linejoin: round; }
 
 /* Top bar */
 .panel-header { flex-wrap: wrap; }
@@ -18,15 +16,11 @@
 .search button { width: 48px; display: flex; align-items: center; justify-content: center; background: var(--color-raised); color: var(--color-text); border: 0; border-left: var(--border-width) solid var(--color-border-strong); cursor: pointer; }
 .search svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 
-.avatar-link { width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--color-accent); color: var(--color-on-accent); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-pill); }
-.avatar-link svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; }
-.avatar-link[aria-current="page"] { box-shadow: 0 0 0 2px var(--color-panel), 0 0 0 4px var(--color-accent); }
 
 /* Page title row */
 .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
 .page-head p { margin: var(--space-2) 0 0; }
 
-.avatar-link .initials { font-size: var(--text-md); font-weight: var(--weight-semibold); }
 
 /* Bell with the number of follow-ups due */
 .bell { position: relative; width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--color-text); text-decoration: none; border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-pill); }
@@ -38,3 +32,4 @@
 
 /* Page name at the top left (the router fills it in) */
 .page-title { margin-left: 6px; font-size: 28px; font-weight: var(--weight-medium); line-height: var(--leading-tight); color: var(--color-text); }
+.search[hidden] { display: none; }

@@ -75,19 +75,11 @@ select.input { appearance: auto; }
 /* Found */
 .chip:disabled { opacity: 0.6; cursor: default; }
 .chip[aria-pressed="true"]:disabled { opacity: 1; }
-.found-controls { display: flex; flex-direction: column; gap: var(--space-3); }
-.found-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); align-items: end; }
 .found-status { min-height: 1.4em; margin: 0; color: var(--color-muted); }
-.found-filters { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-5); }
 .found-group { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .found-group .chip-group { flex-wrap: nowrap; }
 @media (max-width: 1400px) { .found-group .chip-group { flex-wrap: wrap; } }
 .found-group .label { margin: 0; }
-.found-link, .found-cats { flex: 1 1 100%; }
-.found-cats .chip-group { flex-wrap: wrap; }
-.found-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--space-4); align-items: start; margin-top: var(--space-4); }
-@media (max-width: 1100px) { .found-layout { grid-template-columns: minmax(0, 1fr); } }
-.found-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-2); padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-line); }
 .found-row { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: var(--hit-min); padding: var(--space-3) var(--space-2); text-align: left; font: inherit; color: inherit; background: transparent; border: 1.5px solid transparent; border-bottom: 1px solid var(--color-line); border-radius: 0; cursor: pointer; }
 .found-row:hover { background: var(--color-raised); }
 .found-row[aria-current="true"] { background: var(--color-raised); border: 1.5px solid var(--color-border-strong); border-radius: var(--radius-control); corner-shape: squircle; }
@@ -95,19 +87,12 @@ select.input { appearance: auto; }
 .found-row-main b { display: block; font-size: var(--text-md); font-weight: var(--weight-medium); overflow-wrap: anywhere; }
 .found-row-main small { display: block; font-size: var(--text-sm); overflow-wrap: anywhere; }
 .tag-new { font-weight: var(--weight-semibold); background: var(--color-text); color: var(--color-panel); border-color: var(--color-text); }
-.found-detail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-4); max-height: calc(100vh - 150px); overflow: auto; }
-.found-detail h2 { margin: 0; font-size: var(--text-xl); }
 .found-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .found-msg { margin: 0; min-height: 1.4em; }
 .found-msg:empty { display: none; }
-.found-about { margin: 0; font-size: var(--text-md); font-weight: var(--weight-medium); }
 .found-advert { white-space: pre-wrap; overflow-wrap: anywhere; line-height: var(--leading-body); }
 
 /* Saved searches */
-.found-saved { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
-.found-saved .label { margin: 0 var(--space-1) 0 0; }
-.found-manage { margin-left: auto; font-size: var(--text-sm); color: var(--color-link); }
-.found-buttons { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .saved-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
 .saved-layout:not(:has(.saved-form)) { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 1100px) { .saved-layout { grid-template-columns: minmax(0, 1fr); } }
@@ -122,39 +107,17 @@ select.input { appearance: auto; }
 
 /* Found: one screen, no page scrolling. The list and the advert scroll inside their own boxes. */
 .chip.sm { height: 28px; min-height: 28px; padding: 0 10px; font-size: var(--text-sm); display: inline-flex; align-items: center; gap: var(--space-1); text-decoration: none; white-space: nowrap; }
-.found-saved { margin-bottom: var(--space-2); }
-.found-controls { gap: var(--space-2); }
-.found-controls .label { font-size: var(--text-xs); }
 .found-status { min-height: 0; }
 .found-status:empty { display: none; }
-.found-row2 { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }
-.found-row2 .found-group { flex-direction: row; align-items: center; gap: var(--space-2); }
-.found-row2 .found-group .chip-group { flex-wrap: wrap; gap: var(--space-1); }
-.found-row3 { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-.found-manage { margin-left: 0; color: var(--color-text); }
 .found-date { position: relative; display: inline-flex; }
 .found-date-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
-.found-cats { flex: 1 1 100%; }
 
 #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.dash-page), #page:has(.addjob-page), #page:has(.fu-page) { display: flex; flex-direction: column; overflow: hidden; }
 .found-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-#found-results { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-#found-results > .empty { margin-top: var(--space-3); }
-.found-layout { flex: 1; min-height: 0; margin-top: var(--space-3); grid-template-rows: minmax(0, 1fr); align-items: stretch; }
-.found-list { display: flex; flex-direction: column; min-height: 0; }
-#found-list { flex: 1; min-height: 0; overflow: auto; }
-#found-detail { min-height: 0; overflow: hidden; }
-.found-detail { position: static; height: 100%; max-height: none; overflow: auto; }
-.found-top { padding-bottom: var(--space-2); }
 
 /* Small windows: stack everything and let the page scroll as before */
 @media (max-width: 1100px) {
   #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.dash-page), #page:has(.addjob-page), #page:has(.fu-page) { display: block; overflow: auto; }
-  .found-page, #found-results { display: block; }
-  .found-layout { display: grid; grid-template-rows: none; }
-  #found-list { overflow: visible; }
-  #found-detail { overflow: visible; }
-  .found-detail { height: auto; overflow: visible; }
 }
 
 /* ---- Badges, tints, icon buttons, hidden scrollbars (Found look; reused on other screens) ---- */
@@ -187,37 +150,19 @@ select.input { appearance: auto; }
 .more-pill { position: absolute; left: 50%; bottom: var(--space-2); transform: translateX(-50%); z-index: 1; min-height: 28px; padding: 0 var(--space-3); font: var(--weight-medium) var(--text-sm) var(--font-sans); color: var(--color-text); background: var(--color-raised); border: 1px solid var(--color-border-strong); border-radius: var(--radius-pill); cursor: pointer; }
 .more-pill[hidden] { display: none; }
 
-.found-inputwrap { position: relative; }
-.found-inputwrap .input { padding-right: 56px; }
-.star-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; padding: 0; font-size: 22px; line-height: 1; color: var(--color-accent); background: transparent; border: 0; border-radius: var(--radius-control); cursor: pointer; }
-.star-btn:hover:not(:disabled) { background: var(--color-raised); }
-.star-btn:disabled { opacity: 1; cursor: default; }
 
-.found-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2) var(--space-5); align-items: start; }
-.found-left, .found-right { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
-.found-right { align-items: flex-end; }
-.found-right .found-group { flex-direction: row; align-items: center; justify-content: flex-end; gap: var(--space-2); }
-.found-left .found-group { flex-direction: row; align-items: center; gap: var(--space-2); }
-.found-left .chip-group, .found-right .chip-group { flex-wrap: wrap; gap: var(--space-1); }
 
-.found-dhead { align-items: center; gap: var(--space-3); }
-.found-dhead h2 { font-size: var(--text-lg); overflow-wrap: anywhere; }
 .found-actions { flex-wrap: nowrap; margin-left: auto; flex-shrink: 0; }
 .found-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.found-detail { overflow: hidden; gap: var(--space-3); }
 .found-advert-wrap { flex: 1; min-height: 0; }
 .found-advert { padding-bottom: var(--space-5); }
 .found-list-wrap { flex: 1; min-height: 0; }
 .found-row-badges, .row-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }
 
 @media (max-width: 1100px) {
-  .found-grid { grid-template-columns: minmax(0, 1fr); }
-  .found-right { align-items: flex-start; }
-  .found-right .found-group { justify-content: flex-start; }
   .scroll-wrap { display: block; }
   .scroller { overflow: visible; }
   .scroll-fade, .more-pill { display: none; }
-  .found-detail { overflow: visible; }
 }
 
 /* ---- Jobs: one screen, the list scrolls inside its card ---- */
@@ -251,7 +196,6 @@ select.input { appearance: auto; }
 /* ---- Header: page name instead of the logo text, and an optional main action ---- */
 .top-action:empty { display: none; }
 .page-head > .btn { margin-left: auto; }
-.found-saved { margin-top: 0; }
 
 /* ---- Found list rows: three small buttons stacked on the right ---- */
 .found-item { position: relative; border-bottom: 1px solid var(--color-line); }
@@ -265,11 +209,7 @@ select.input { appearance: auto; }
 .icon-btn.sm .icon { width: 15px; height: 15px; }
 .found-row-actions .btn:hover:not(:disabled) { background: var(--color-raised); }
 
-/* Job detail (Found): avatar, title block, and the three buttons stacked on the right */
-.found-dhead { display: flex; align-items: flex-start; gap: var(--space-3); }
-.found-dhead .row-main { min-width: 0; }
-.found-dhead .found-badges { margin-top: var(--space-2); }
-.found-dhead .found-actions { flex-direction: column; gap: var(--space-1); align-self: flex-start; margin-left: auto; }
+/* Small icon buttons (md) */
 .icon-btn.md { width: 34px; min-height: 34px; height: 34px; border-radius: 10px; }
 .icon-btn.md .icon { width: 18px; height: 18px; }
 
@@ -605,3 +545,70 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
 #page.dock-flush { padding-bottom: 0; }
 .scroll-wrap.under-dock > .scroller, .found-detail.under-dock { padding-bottom: var(--dock-reserve); }
 .scroll-wrap.under-dock .more-pill { bottom: calc(var(--dock-reserve) - var(--space-4)); }
+
+/* ---- New jobs (step 40): one search, one filter row; list on the left, the whole advert on the right ---- */
+.found-layout { flex: 1; min-height: 0; margin-top: var(--space-3); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-4); }
+.found-list { display: flex; flex-direction: column; min-height: 0; }
+.nj-controls { position: relative; display: flex; flex-direction: column; gap: var(--space-2); flex-shrink: 0; }
+.nj-searchrow { display: flex; align-items: center; gap: var(--space-2); }
+.nj-search { flex: 1; min-width: 0; }
+.nj-morebtn { position: relative; width: var(--hit-min); height: var(--hit-min); flex-shrink: 0; }
+.nj-dot { position: absolute; top: 6px; right: 6px; width: 11px; height: 11px; background: var(--color-accent); border: 2px solid var(--color-card); border-radius: var(--radius-pill); }
+.nj-dot[hidden] { display: none; }
+
+.nj-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+.nj-sel-wrap { position: relative; display: flex; min-width: 0; }
+.nj-sel { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 4px 0 12px; background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); corner-shape: squircle; }
+.nj-sel:focus-within { outline: 2px solid var(--color-text); outline-offset: 2px; }
+.nj-sel span { flex-shrink: 0; font-size: var(--text-xs); color: var(--color-muted); }
+.nj-sel select { flex: 1; min-width: 0; height: 100%; padding: 0; background: transparent; color: var(--color-text); font: var(--text-base) var(--font-sans); border: 0; outline: none; cursor: pointer; text-overflow: ellipsis; color-scheme: dark; }
+.nj-sel option { background: var(--color-card); color: var(--color-text); }
+
+.nj-count { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); min-height: 30px; }
+.nj-count-right { display: flex; align-items: center; gap: var(--space-3); flex-shrink: 0; }
+.nj-count .link-btn { min-height: 28px; }
+.icon-btn.busy .icon { animation: nj-spin 0.9s linear infinite; }
+@keyframes nj-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .icon-btn.busy .icon { animation: none; } }
+.nj-listarea { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: var(--space-1); border-top: 1px solid var(--color-line); }
+.nj-empty { margin: auto; padding: var(--space-5) var(--space-3); text-align: center; }
+
+/* More filters: a panel over the list, so nothing below it moves */
+#found-more-slot { display: contents; }
+.nj-more { position: absolute; left: 0; right: 0; top: calc(var(--hit-min) + var(--space-1)); z-index: 6; max-height: min(70vh, 540px); overflow: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-inner); corner-shape: squircle; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); scrollbar-width: thin; }
+.nj-more-block { display: flex; flex-direction: column; gap: var(--space-2); }
+.nj-more-block .label { margin: 0; }
+.found-manage { color: var(--color-text); }
+.found-save { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--color-card); border-radius: var(--radius-control); corner-shape: squircle; }
+.found-save .label { margin: 0; }
+.found-save p { margin: 0; }
+.nj-inline { display: flex; gap: var(--space-2); }
+.nj-inline .input { flex: 1; min-width: 0; }
+.badge.b-off { background: transparent; color: var(--color-muted); opacity: 0.6; }
+
+/* The job: head, badges, three labelled buttons, then the whole advert (it scrolls inside its own box) */
+#found-detail { min-height: 0; overflow: hidden; }
+.found-detail { height: 100%; display: flex; flex-direction: column; gap: var(--space-3); overflow: hidden; }
+.found-detail.under-dock { padding-bottom: 18px; }   /* the advert box keeps the dock space itself */
+.nj-dhead { display: flex; align-items: center; gap: var(--space-3); }
+.nj-dhead .row-main { flex: 1; min-width: 0; }
+.nj-dhead h2 { margin: 0; font-size: var(--text-lg); overflow-wrap: anywhere; }
+.nj-back { display: none; flex-shrink: 0; }
+.nj-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.nj-btn { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 40px; padding: 8px 16px; text-decoration: none; }
+.nj-btn .icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Under 1100px wide: one half at a time. Tap a job to read it, the arrow goes back to the list. */
+@media (max-width: 1100px) {
+  .found-page { display: block; }
+  .found-layout { display: block; }
+  .found-layout[data-view="list"] #found-detail { display: none; }
+  .found-layout[data-view="detail"] .found-list { display: none; }
+  .found-list { display: block; }
+  .nj-listarea { display: block; }
+  .nj-filters { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  #found-detail { overflow: visible; }
+  .found-detail { height: auto; overflow: visible; }
+  .nj-back { display: inline-flex; }
+}
+
