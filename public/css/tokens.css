@@ -64,6 +64,7 @@
   --radius-inner: 24px;    /* a box inside a card */
   --radius-control: 12px;  /* buttons, inputs, chips */
   --radius-small: 8px;     /* tags */
+  --radius-dock-btn: 16px; /* active blob inside the dock: dock 24px minus its 8px padding */
   --radius-pill: 999px;    /* avatars, round buttons */
 
   /* Lines and sizes */

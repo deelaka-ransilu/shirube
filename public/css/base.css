@@ -9,8 +9,8 @@ body { background: var(--color-frame); color: var(--color-text); font: var(--wei
 /* Shell: one light surface edge to edge, dark panel inset, floating navigation at the bottom */
 .app { display: flex; padding: var(--frame-pad); height: 100vh; background: var(--color-frame); background-image: var(--frame-gradient); }
 .shell { flex: 1; min-width: 0; display: flex; padding: 8px; background: var(--color-rail); }
-.dock { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; display: flex; gap: var(--space-2); padding: var(--space-2); background: color-mix(in srgb, var(--color-card) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-pill); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
-.dock a { width: var(--dock-btn-w); height: var(--dock-btn-h); display: flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); color: var(--color-muted); text-decoration: none; }
+.dock { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; display: flex; gap: var(--space-2); padding: var(--space-2); background: color-mix(in srgb, var(--color-card) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-inner); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
+.dock a { width: var(--dock-btn-w); height: var(--dock-btn-h); display: flex; align-items: center; justify-content: center; border-radius: var(--radius-dock-btn); color: var(--color-muted); text-decoration: none; }
 .dock a:hover:not([aria-current="page"]) { color: var(--color-text); background: color-mix(in srgb, var(--color-raised) 60%, transparent); }
 .dock a[aria-current="page"] { color: var(--color-text); background: var(--color-raised); }
 .dock a[aria-current="page"] svg { stroke-width: 2.3; }
