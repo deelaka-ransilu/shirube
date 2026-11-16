@@ -3,7 +3,7 @@ import { STATUSES, cleanJob } from '../lib/validate-job.js';
 import { loadJobPage } from './stages.js';
 
 // Everything the list needs, but not the long advert text.
-const LIST_COLUMNS = 'id, title, company, status, source, work_mode, job_type, found_on, closes_on, created_at';
+const LIST_COLUMNS = 'id, title, company, status, source, location, work_mode, job_type, found_on, closes_on, created_at';
 
 export function listJobs({ db, query }) {
   const status = query.status ?? '';

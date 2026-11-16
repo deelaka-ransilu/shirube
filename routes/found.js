@@ -7,6 +7,7 @@ import { parseAdvert } from '../public/js/lib/parse-advert.js';
 import { tx } from './profile.js';
 import { isRealDate } from '../lib/validate-job.js';
 import { createJob, findDuplicateJob } from './jobs.js';
+import { loadPresets, matchJobs } from '../lib/found-match.js';
 
 const FRESH_MINUTES = 30;   // ITPro's feed says ttl 30
 const KEEP_DAYS = 60;
@@ -78,13 +79,41 @@ export function listFound({ db, query, deps = {} }) {
   const today = todayLocal(nowOf(deps));
   const matching = searchFound(db, query, today);
   // The Location filter is applied last, so the list of places still shows every place in the other results.
+  // "location" is one exact place (picked from the list); "location_has" is words typed in the box.
   const place = String(query.location ?? '').trim().toLowerCase();
-  const jobs = place ? matching.filter((j) => j.location.trim().toLowerCase() === place) : matching;
+  const typed = String(query.location_has ?? '').trim().toLowerCase();
+  let jobs = matching;
+  if (place) jobs = jobs.filter((j) => j.location.trim().toLowerCase() === place);
+  else if (typed) jobs = jobs.filter((j) => j.location.toLowerCase().includes(typed));
   const profile = db.prepare('SELECT found_last_fetch_at FROM profile WHERE id = 1').get();
+
+  // Match badges: worked out here from the role presets, never stored, so they follow the latest preset edits.
+  const presets = loadPresets(db);
+  const adverts = new Map();
+  if (jobs.length) {
+    const ids = jobs.map((j) => j.id);
+    for (let i = 0; i < ids.length; i += 500) {
+      const part = ids.slice(i, i + 500);
+      for (const r of db.prepare(`SELECT id, description FROM found_jobs WHERE id IN (${part.map(() => '?').join(',')})`).all(...part)) adverts.set(r.id, r.description);
+    }
+  }
+  const matches = matchJobs(jobs.map((j) => ({ id: j.id, title: j.title, description: adverts.get(j.id) ?? '' })), presets);
+  jobs = jobs.map((j) => {
+    const { score, ...match } = matches.get(j.id);
+    return { ...j, match, _score: score };
+  });
+  if (query.sort === 'match') {
+    // Skills first, then entry level, then role fit; newest first inside a tie (the list is already newest first).
+    const rank = (j) => j._score * 100 + (j.match.entry ? 10 : 0) + (j.match.role ? 1 : 0);
+    jobs = jobs.map((j, i) => [j, i]).sort((a, b) => rank(b[0]) - rank(a[0]) || a[1] - b[1]).map(([j]) => j);
+  }
+  jobs = jobs.map(({ _score, ...j }) => j);
 
   return {
     jobs,
     locations: placesOf(matching),
+    has_presets: presets.length > 0,
+    preset_count: presets.length,
     new_count: jobs.filter((j) => j.is_new).length,
     hidden_count: db.prepare('SELECT COUNT(*) AS n FROM found_jobs WHERE hidden = 1').get().n,
     stored_count: db.prepare('SELECT COUNT(*) AS n FROM found_jobs').get().n,

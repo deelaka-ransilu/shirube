@@ -5,6 +5,7 @@ export const icon = (paths) => raw(`<svg class="icon" viewBox="0 0 24 24" aria-h
 
 export const ICON = {
   save: icon('<path d="M6 4h12v17l-6-4-6 4z"/>'),
+  savedFill: icon('<path d="M6 4h12v17l-6-4-6 4z" fill="currentColor"/>'),
   saved: icon('<path d="M5 12l5 5 9-10"/>'),
   open: icon('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/>'),
   hide: icon('<path d="M3 3l18 18M10.6 6.2A9 9 0 0121 12a13 13 0 01-3.2 3.9M6.4 7.7A13 13 0 003 12s3.5 6 9 6a9 9 0 003.4-.7M9.9 9.9a3 3 0 004.2 4.2"/>'),
@@ -18,5 +19,6 @@ export const ICON = {
   match: icon('<path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 4.8M3.5 12l1.2 1.2L7 10.8M3.5 18l1.2 1.2L7 16.8"/>'),
   note: icon('<path d="M5 4h14v11l-5 5H5zM14 20v-5h5M8.5 9h7M8.5 13h4"/>'),
   refresh: icon('<path d="M20 12a8 8 0 11-2.3-5.6M20 4v5h-5"/>'),
+  dots: icon('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
   trash: icon('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>'),
 };

@@ -40,7 +40,7 @@ test.after(() => server.close());
 test('Found starts empty with the default categories', async () => {
   const { data } = await call('/api/found');
   assert.deepEqual(data.jobs, []);
-  assert.deepEqual(data.categories, ['devops-cloud', 'information-technology', 'web-development']);
+  assert.deepEqual(data.categories, ['devops-cloud', 'information-technology', 'web-development', 'software-engineering', 'quality-assurance']);
   assert.equal(data.available_categories.length, 5);
   assert.equal(data.last_fetch_at, '');
 });
@@ -52,13 +52,15 @@ test('Refresh reads the all feed and each followed category, and stores a job on
   feeds[DEVOPS] = feed(SRE);          // the same job in two feeds
   feeds['https://itpro.lk/rss/information-technology/'] = feed();
   feeds['https://itpro.lk/rss/web-development/'] = feed(qa);
+  feeds['https://itpro.lk/rss/software-engineering/'] = feed();
+  feeds['https://itpro.lk/rss/quality-assurance/'] = feed(qa);
 
   const r = await call('/api/found/refresh', 'POST');
   assert.equal(r.status, 200);
   assert.equal(r.data.fetched, true);
   assert.equal(r.data.added, 3);
   assert.equal(r.data.failed, 0);
-  assert.deepEqual(calls, [ALL, DEVOPS, 'https://itpro.lk/rss/information-technology/', 'https://itpro.lk/rss/web-development/']);
+  assert.deepEqual(calls, [ALL, DEVOPS, 'https://itpro.lk/rss/information-technology/', 'https://itpro.lk/rss/web-development/', 'https://itpro.lk/rss/software-engineering/', 'https://itpro.lk/rss/quality-assurance/']);
 
   const all = (await call('/api/found?posted=any')).data;
   assert.equal(all.jobs.length, 3);

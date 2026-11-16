@@ -1,6 +1,7 @@
 // Job match: the saved advert against the main preset (or the preset named in ?preset=). Reads only; nothing is stored.
 import { HttpError } from '../lib/errors.js';
 import { matchJob, orderSkills } from '../lib/match.js';
+import { loadPresets, bestPresetId } from '../lib/found-match.js';
 
 export function getMatch({ db, params, query = {} }) {
   const id = Number(params.id);
@@ -9,7 +10,11 @@ export function getMatch({ db, params, query = {} }) {
 
   const person = db.prepare('SELECT name, email, phone, location, portfolio, social, active_preset_id FROM profile WHERE id = 1').get();
   const wanted = Number(query.preset);
-  const row = (Number.isInteger(wanted) && wanted > 0 ? db.prepare('SELECT * FROM presets WHERE id = ?').get(wanted) : null)
+  const asked = Number.isInteger(wanted) && wanted > 0 ? db.prepare('SELECT * FROM presets WHERE id = ?').get(wanted) : null;
+  // With no preset asked for, open on the one that fits this advert best (the main preset wins a tie).
+  const bestId = asked ? null : bestPresetId(loadPresets(db), job.description, person.active_preset_id);
+  const row = asked
+    ?? (bestId ? db.prepare('SELECT * FROM presets WHERE id = ?').get(bestId) : null)
     ?? db.prepare('SELECT * FROM presets WHERE id = ?').get(person.active_preset_id)
     ?? db.prepare('SELECT * FROM presets ORDER BY position, id LIMIT 1').get();
   const preset = row ? { ...row, skills: JSON.parse(row.skills || '[]') } : { id: null, name: '', target_role: '', summary: '', skills: [] };
@@ -31,6 +36,7 @@ export function getMatch({ db, params, query = {} }) {
     person,
     preset,
     presets,
+    best_preset_id: bestId,
     experience,
     education,
     certifications,

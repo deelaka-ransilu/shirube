@@ -11,12 +11,12 @@ import { bindScroll } from '../lib/scroll.js';
 
 const WORK_MODES = [['any', 'Any'], ['onsite', 'On-site'], ['hybrid', 'Hybrid'], ['remote', 'Remote']];
 const MODE_LABEL = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
-const POSTED = [['today', 'Today'], ['3d', 'Last 3 days'], ['week', 'Last week'], ['any', 'Any time']];
+const POSTED = [['today', 'Today'], ['3d', '3 days'], ['week', 'Week'], ['any', 'Any time']];
 const OTHER_SITES = ['TopJobs', 'LinkedIn', 'Rooster', 'Xpress Jobs'];   // not connected: shown grayed out, nothing more
 
 // Kept while the app stays open, so coming back to this page finds the same filters.
 const state = {
-  q: '', posted: '3d', since: '', mode: 'any', place: '', showHidden: false, selectedId: null,
+  q: '', posted: '3d', since: '', mode: 'any', place: '', placeExact: false, sort: 'new', showHidden: false, selectedId: null,
   view: 'list',                       // under 1100px wide only one half shows: 'list' or 'detail'
   moreOpen: false, saveOpen: false, saveName: '', saveError: '', linkOpen: false, linkValue: '', linkError: '',
 };
@@ -50,7 +50,8 @@ export async function render(el, { stale, query = {} }) {
     if (state.posted === 'date' && state.since) p.set('since', state.since);
     else p.set('posted', state.posted === 'date' ? '3d' : state.posted);
     if (state.q.trim()) p.set('q', state.q.trim());
-    if (state.place) p.set('location', state.place);
+    if (state.place.trim()) p.set(state.placeExact ? 'location' : 'location_has', state.place.trim());
+    if (state.sort === 'match') p.set('sort', 'match');
     if (state.showHidden) p.set('hidden', '1');
     const [d, s] = await Promise.all([api('/api/found?' + p), api('/api/saved-searches')]);
     if (mine !== seq) return false;
@@ -71,31 +72,22 @@ export async function render(el, { stale, query = {} }) {
 
   // ---- drawing ----
 
-  function selectHtml(id, label, options, current) {
-    return html`
-      <label class="nj-sel">
-        <span>${label}</span>
-        <select id="${id}" aria-label="${label}">
-          ${options.map(([value, text]) => html`<option value="${value}" ${value === current ? 'selected' : ''}>${text}</option>`)}
-        </select>
-      </label>`;
+  function chipsHtml(attr, options, current) {
+    return options.map(([value, text]) => html`<button type="button" class="chip sm" data-${attr}="${value}" aria-pressed="${value === current}">${text}</button>`);
   }
 
-  function filtersHtml() {
-    const posted = state.posted === 'date' && state.since
-      ? [...POSTED, ['date', `From ${formatDay(state.since, data.today)}`]]
-      : POSTED;
-    const current = state.posted === 'date' && state.since ? 'date' : state.posted === 'date' ? '3d' : state.posted;
-    const places = data.locations.map((l) => [l.name, `${l.name} (${l.count})`]);
-    if (state.place && !data.locations.some((l) => l.name.toLowerCase() === state.place.toLowerCase())) places.push([state.place, `${state.place} (0)`]);
-    const placeCurrent = places.find(([v]) => v.toLowerCase() === state.place.toLowerCase())?.[0] ?? '';
-    return html`
-      <div class="nj-sel-wrap">
-        ${selectHtml('found-posted', 'Posted', [...posted, ['pick', 'Pick a date…']], current)}
-        <input type="date" id="found-date" class="found-date-input" tabindex="-1" aria-hidden="true" value="${state.since}">
-      </div>
-      ${selectHtml('found-mode', 'Work mode', WORK_MODES, state.mode)}
-      ${selectHtml('found-place', 'Location', [['', 'Any'], ...places], placeCurrent)}`;
+  function postedHtml() {
+    const picked = state.posted === 'date' && state.since;
+    const current = picked ? 'pick' : state.posted === 'date' ? '3d' : state.posted;
+    return html`<span class="nj-rowlabel">Posted</span><div class="chip-group">${chipsHtml('posted', POSTED, current)}<button type="button" class="chip sm" data-posted="pick" aria-pressed="${Boolean(picked)}">${picked ? `From ${formatDay(state.since, data.today)}` : 'Pick a date…'}</button></div>`;
+  }
+
+  function modeHtml() {
+    return html`<span class="nj-rowlabel">Work mode</span><div class="chip-group">${chipsHtml('mode', WORK_MODES, state.mode)}</div>`;
+  }
+
+  function placesHtml() {
+    return data.locations.map((l) => html`<option value="${l.name}" label="${l.count} job${l.count === 1 ? '' : 's'}"></option>`);
   }
 
   function countHtml() {
@@ -111,8 +103,10 @@ export async function render(el, { stale, query = {} }) {
       <div class="nj-count-text"><b>${first}</b>${last_fetch_at ? html`<span class="text-muted"> · updated ${stamp(last_fetch_at)}</span>` : ''}</div>
       <div class="nj-count-right">
         ${hiddenLink}
-        <button type="button" class="btn btn-secondary icon-btn sm${busy ? ' busy' : ''}" id="found-refresh" aria-label="${busy ? 'Refreshing' : 'Refresh from ITPro'}" title="Refresh from ITPro" ${busy ? 'disabled' : ''}>${ICON.refresh}</button>
-      </div>`;
+        ${data.has_presets ? html`<button type="button" class="chip sm" data-sort aria-pressed="${state.sort === 'match'}" title="Jobs that match your role presets first. Nothing is hidden.">Best match first</button>` : ''}
+        <button type="button" class="btn btn-secondary nj-refresh${busy ? ' busy' : ''}" id="found-refresh" title="Read the latest jobs from ITPro" ${busy ? 'disabled' : ''}>${ICON.refresh}<span>${busy ? 'Refreshing…' : 'Refresh'}</span></button>
+      </div>
+      ${data.has_presets ? '' : html`<p class="nj-hint text-sm text-muted">Add skills to a role preset in <a href="#/profile">Profile</a> to see which jobs match you.</p>`}`;
   }
 
   const sameSearch = (x) => x.q.toLowerCase() === state.q.trim().replace(/\s+/g, ' ').toLowerCase() && x.work_mode === state.mode && x.posted === state.posted;
@@ -123,6 +117,13 @@ export async function render(el, { stale, query = {} }) {
     const match = saved.find(sameSearch);
     return html`
       <div class="nj-more" role="region" aria-label="More filters">
+        <section class="nj-more-block" aria-label="Categories to follow" data-tint="green">
+          <span class="label">Categories to follow (read on the next refresh)</span>
+          <div class="chip-group">
+            <button type="button" class="chip sm" data-cat-all aria-pressed="${cats.length === data.available_categories.length}">All</button>
+            ${data.available_categories.map((c) => html`<button type="button" class="chip sm" data-cat="${c.slug}" aria-pressed="${cats.includes(c.slug)}">${c.label}</button>`)}
+          </div>
+        </section>
         <section class="nj-more-block" aria-label="Sites">
           <span class="label">Sites</span>
           <div class="chip-group">
@@ -151,12 +152,6 @@ export async function render(el, { stale, query = {} }) {
               ${state.saveError ? html`<p class="field-error" role="alert">◇ ${state.saveError}</p>` : ''}
             </form>` : ''}
         </section>
-        <section class="nj-more-block" aria-label="Categories to follow" data-tint="green">
-          <span class="label">Categories to follow (used on the next refresh; all jobs are always read)</span>
-          <div class="chip-group">
-            ${data.available_categories.map((c) => html`<button type="button" class="chip sm" data-cat="${c.slug}" aria-pressed="${cats.includes(c.slug)}">${c.label}</button>`)}
-          </div>
-        </section>
         <section class="nj-more-block" aria-label="Paste a job link">
           <div class="chip-group">
             <button type="button" class="chip sm" data-paste aria-expanded="${state.linkOpen}">+ Paste a job link</button>
@@ -174,6 +169,17 @@ export async function render(el, { stale, query = {} }) {
       </div>`;
   }
 
+  // Honest signals, worked out from the role presets. A missing badge means no evidence, never "bad job".
+  function matchBadges(j) {
+    const m = j.match;
+    if (!m) return '';
+    const many = (data.preset_count ?? 0) > 1;
+    return html`
+      ${m.skills ? html`<span class="badge b-skills" title="${m.skills.matched} of the ${m.skills.total} skills this advert asks for are in your “${m.skills.preset}” preset: ${m.skills.names.join(', ')}">${m.skills.matched} of ${m.skills.total} skills${many ? ` · ${m.skills.preset}` : ''}</span>` : ''}
+      ${m.role ? html`<span class="badge b-role" title="The job title shares a word with the target role of your “${m.role}” preset">Role fits</span>` : ''}
+      ${m.entry ? html`<span class="badge b-entry" title="The advert uses entry-level words such as intern, junior or 1 year. A guide only.">Entry level</span>` : ''}`;
+  }
+
   // Each row has one small Save icon. It sits beside the row button (not inside it),
   // so a click on it never selects the row. Open advert and Hide live in the detail panel.
   function rowHtml(j) {
@@ -186,16 +192,16 @@ export async function render(el, { stale, query = {} }) {
             <small class="text-muted">${j.company}</small>
             <span class="found-row-meta">
               ${j.is_new ? html`<span class="tag tag-new">New</span>` : ''}
-              ${j.job_id ? html`<span class="badge b-saved">✓ Saved</span>` : ''}
               ${j.location ? html`<span class="badge b-loc">${j.location}</span>` : ''}
               ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : ''}
+              ${matchBadges(j)}
               <span class="text-sm text-muted">ITPro · ${formatDay(j.published_on, data.today)}</span>
             </span>
           </span>
         </button>
         <div class="found-row-actions">
           ${j.job_id
-            ? html`<a class="btn btn-secondary icon-btn sm" href="#/jobs/${j.job_id}" aria-label="Saved. Open job" title="Saved · Open job">${ICON.saved}</a>`
+            ? html`<a class="btn btn-secondary icon-btn sm is-saved" href="#/jobs/${j.job_id}" aria-label="Saved. Open job" title="Saved · Open job">${ICON.savedFill}</a>`
             : html`<button type="button" class="btn btn-secondary icon-btn sm" data-save="${j.id}" aria-label="Save to Jobs" title="Save to Jobs">${ICON.save}</button>`}
         </div>
       </div>`;
@@ -222,6 +228,8 @@ export async function render(el, { stale, query = {} }) {
     if (!detail) return html`<div class="card compact found-detail" id="found-detail-card"><p class="text-muted">${data?.jobs.length ? 'Pick a job to read it here.' : 'No job to show.'}</p></div>`;
     const j = detail;
     const link = itproLink(j.url);
+    const mine = data.jobs.find((x) => x.id === j.id)?.match?.skills;
+    const hasSkills = mine ? mine.names.join(', ') : '';
     return html`
       <article class="card compact found-detail" id="found-detail-card" aria-label="${j.title}">
         <div class="nj-dhead">
@@ -239,7 +247,9 @@ export async function render(el, { stale, query = {} }) {
           ${j.location ? html`<span class="badge b-loc">${j.location}</span>` : ''}
           ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : html`<span class="badge b-none">Work mode not stated</span>`}
           ${j.closes_on ? html`<span class="badge b-close">${closingText(j.closes_on, data.today)}</span>` : ''}
+          ${matchBadges(data.jobs.find((x) => x.id === j.id))}
         </div>
+        ${hasSkills ? html`<p class="text-sm text-muted nj-have">Skills in this advert that you have: ${hasSkills}</p>` : ''}
         <div class="nj-actions" role="group" aria-label="Job actions">
           ${j.job_id
             ? html`<a class="btn btn-secondary nj-btn" href="#/jobs/${j.job_id}">${ICON.saved} Saved · Open job</a>`
@@ -256,7 +266,14 @@ export async function render(el, { stale, query = {} }) {
   }
 
   const $ = (sel) => el.querySelector(sel);
-  function drawFilters() { $('#found-filters').innerHTML = filtersHtml(); }
+  function drawFilters() {
+    $('#found-posted-row').innerHTML = postedHtml();
+    $('#found-mode-row').innerHTML = modeHtml();
+    $('#found-places').innerHTML = placesHtml();
+    const box = $('#found-place');
+    if (document.activeElement !== box) box.value = state.place;   // never rewrite the box while someone types in it
+    $('[data-clear-place]').hidden = !state.place;
+  }
   function drawCount() { $('#found-count').innerHTML = countHtml(); }
   function drawStatus() { $('#found-status').textContent = status; }
   function drawMore() {
@@ -372,6 +389,21 @@ export async function render(el, { stale, query = {} }) {
     if (!stale()) { drawMore(); $(`[data-cat="${slug}"]`)?.focus(); }
   }
 
+  async function toggleAllCategories() {
+    const all = data.available_categories.map((c) => c.slug);
+    const cats = data.categories;
+    data.categories = all;
+    drawMore();
+    try {
+      data.categories = (await api('/api/found/settings', { method: 'PATCH', body: { categories: all } })).categories;
+    } catch (err) {
+      data.categories = cats;
+      status = err.message;
+      drawStatus();
+    }
+    if (!stale()) { drawMore(); $('[data-cat-all]')?.focus(); }
+  }
+
   function closeMore(focusButton = false) {
     if (!state.moreOpen) return;
     state.moreOpen = false; state.saveOpen = false; state.linkOpen = false;
@@ -409,7 +441,19 @@ export async function render(el, { stale, query = {} }) {
               <button type="button" class="btn btn-secondary icon-btn nj-morebtn" id="found-more" aria-expanded="false" aria-controls="found-more-slot" aria-label="More filters" title="More filters">${ICON.settings}<span class="nj-dot" aria-hidden="true" hidden></span></button>
             </div>
             <div id="found-more-slot"></div>
-            <div class="nj-filters" id="found-filters"></div>
+            <div class="nj-filters" id="found-filters">
+              <div class="nj-frow" id="found-posted-row"></div>
+              <div class="nj-frow">
+                <div class="nj-fgroup" id="found-mode-row"></div>
+                <label class="nj-place">
+                  <span>Location</span>
+                  <input id="found-place" type="text" list="found-places" autocomplete="off" placeholder="Type or pick a place" aria-label="Location" value="${state.place}">
+                  <button type="button" class="nj-clear" data-clear-place aria-label="Clear location" title="Clear location" ${state.place ? '' : 'hidden'}>×</button>
+                  <datalist id="found-places"></datalist>
+                </label>
+              </div>
+              <input type="date" id="found-date" class="found-date-input" tabindex="-1" aria-hidden="true" value="${state.since}">
+            </div>
             <div class="nj-count" id="found-count"></div>
             <p class="text-sm found-status" id="found-status" role="status"></p>
           </div>
@@ -427,6 +471,16 @@ export async function render(el, { stale, query = {} }) {
     if (!t || t.disabled) return;
     if (t.dataset.more !== undefined) { const box = t.closest('.scroll-wrap')?.querySelector('.scroller'); box?.scrollBy({ top: box.clientHeight * 0.8, behavior: 'smooth' }); }
     else if (t.id === 'found-refresh') refresh();
+    else if (t.dataset.posted !== undefined) {
+      if (t.dataset.posted === 'pick') {
+        const input = $('#found-date');
+        try { input.showPicker(); } catch { input.focus(); input.click(); }
+      } else { state.posted = t.dataset.posted; reload(`[data-posted="${t.dataset.posted}"]`); }
+    }
+    else if (t.dataset.mode !== undefined) { state.mode = t.dataset.mode; reload(`[data-mode="${t.dataset.mode}"]`); }
+    else if (t.dataset.sort !== undefined) { state.sort = state.sort === 'match' ? 'new' : 'match'; reload('[data-sort]'); }
+    else if (t.dataset.clearPlace !== undefined) { state.place = ''; state.placeExact = false; reload('#found-place'); }
+    else if (t.dataset.catAll !== undefined) toggleAllCategories();
     else if (t.id === 'found-more') { state.moreOpen = !state.moreOpen; if (!state.moreOpen) { state.saveOpen = false; state.linkOpen = false; } drawMore(); }
     else if (t.id === 'found-star') {
       state.saveOpen = true; state.saveError = ''; state.saveName = suggestName(state.q, state.mode);
@@ -452,26 +506,9 @@ export async function render(el, { stale, query = {} }) {
   el.onkeydown = (e) => { if (e.key === 'Escape' && state.moreOpen) { e.preventDefault(); closeMore(true); } };
 
   el.onchange = (e) => {
-    const id = e.target.id;
-    if (id === 'found-posted') {
-      const v = e.target.value;
-      if (v === 'pick') {
-        drawFilters();                       // show the real choice again while the date picker is open
-        const input = $('#found-date');
-        try { input.showPicker(); } catch { input.focus(); input.click(); }
-        return;
-      }
-      state.posted = v;
-      reload('#found-posted');
-    } else if (id === 'found-date') {
+    if (e.target.id === 'found-date') {
       if (e.target.value) { state.since = e.target.value; state.posted = 'date'; } else { state.posted = '3d'; }
-      reload('#found-posted');
-    } else if (id === 'found-mode') {
-      state.mode = e.target.value;
-      reload('#found-mode');
-    } else if (id === 'found-place') {
-      state.place = e.target.value;
-      reload('#found-place');
+      reload('[data-posted="pick"]');
     }
   };
 
@@ -480,6 +517,12 @@ export async function render(el, { stale, query = {} }) {
       state.q = e.target.value;
       clearTimeout(timer);
       timer = setTimeout(() => reload(), 150);
+    } else if (e.target.id === 'found-place') {
+      state.place = e.target.value;
+      state.placeExact = data.locations.some((l) => l.name.toLowerCase() === state.place.trim().toLowerCase());
+      $('[data-clear-place]').hidden = !state.place;
+      clearTimeout(timer);
+      timer = setTimeout(() => reload(), 250);
     } else if (e.target.id === 'found-link') {
       state.linkValue = e.target.value;
     } else if (e.target.id === 'found-save-name') {

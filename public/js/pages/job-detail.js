@@ -7,6 +7,7 @@ import { bindScroll } from '../lib/scroll.js';
 import { closeBadge } from '../lib/badges.js';
 import { cvPaper, matchLine } from '../lib/cv-paper.js';
 import { printCv } from '../lib/print-cv.js';
+import { setTopAction } from '../lib/shell.js';
 
 const KIND = {
   applied:   { label: 'Applied',   symbol: '●' },
@@ -17,8 +18,7 @@ const KIND = {
   rejected:  { label: 'Rejected',  symbol: '▲' },
   other:     { label: 'Other',     symbol: '•' },
 };
-const SLOTS = ['applied', 'follow_up', 'reply', 'interview', 'offer'];
-const OUTCOMES = ['applied', 'reply', 'interview', 'offer', 'rejected'];
+const SLOTS = ['applied', 'reply', 'interview', 'offer'];   // the slim row; follow-ups, Rejected and Other are added after it
 const WORK_MODE = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
 
 // Each stage has its own colour. Always paired with its word; stages not reached yet stay grey.
@@ -26,40 +26,34 @@ const TINT = { applied: 'blue', reply: 'green', interview: 'lilac', offer: 'yell
 const tintAttr = (key) => (TINT[key] ? raw(`data-tint="${TINT[key]}"`) : '');
 const kindBadge = (kind) => html`<span class="badge s-${kind}">${KIND[kind].label}</span>`;
 
-function stageCard(s, today) {
-  let state = 'Done';
-  if (s.kind === 'follow_up' && s.happened_on > today) state = 'Due';
+// The slim stage row. A reached stage is filled and shows its date (click to change the date or add a note).
+// A stage not reached yet is dashed: one click marks it for today.
+function stagePill(s, today) {
+  const due = s.kind === 'follow_up' && s.happened_on > today;
   return html`
-    <button type="button" class="stage" data-stage="${s.id}">
-      ${kindBadge(s.kind)}
-      <small>${s.happened_on ? formatDay(s.happened_on) : 'No date'} · ${state}</small>
-      ${s.note ? html`<small class="stage-note">${s.note}</small>` : ''}
+    <button type="button" class="stage-pill" ${tintAttr(s.kind)} data-stage="${s.id}" title="${s.note || 'Change the date or add a note'}">
+      <span class="sp-name"><span aria-hidden="true">${KIND[s.kind].symbol}</span> ${KIND[s.kind].label}</span>
+      <small>${s.happened_on ? formatDay(s.happened_on) : 'No date'}${due ? ' · Due' : ''}</small>
     </button>`;
 }
 
-function pendingCard(kind) {
+function pendingPill(kind) {
   return html`
-    <button type="button" class="stage pending" data-new="${kind}">
-      <span class="badge">${KIND[kind].label}</span>
+    <button type="button" class="stage-pill pending" data-new="${kind}" title="Mark ${KIND[kind].label} for today">
+      <span class="sp-name"><span aria-hidden="true">${KIND[kind].symbol}</span> ${KIND[kind].label}</span>
       <small>Not yet</small>
-      <small class="stage-note">+ Add note</small>
     </button>`;
 }
 
 function stageRow(stages, today) {
-  const cards = [];
+  const pills = [];
   for (const kind of SLOTS) {
     const mine = stages.filter((s) => s.kind === kind);
-    if (mine.length) mine.forEach((s) => cards.push(stageCard(s, today)));
-    else cards.push(pendingCard(kind));
+    if (mine.length) mine.forEach((s) => pills.push(stagePill(s, today)));
+    else pills.push(pendingPill(kind));
   }
-  stages.filter((s) => s.kind === 'rejected' || s.kind === 'other').forEach((s) => cards.push(stageCard(s, today)));
-  cards.push(html`
-    <button type="button" class="stage pending" data-new="">
-      <span class="badge">+ Add stage</span>
-      <small>HR call, test…</small>
-    </button>`);
-  return cards;
+  stages.filter((s) => !SLOTS.includes(s.kind)).forEach((s) => pills.push(stagePill(s, today)));
+  return pills;
 }
 
 function stageForm(form, stages) {
@@ -143,21 +137,15 @@ function editForm(job, error) {
     </form>`;
 }
 
-function linkHost(url) {
-  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
-}
-
 function scrollBox(content) {
   return html`<div class="scroll-wrap jd-scroll"><div class="scroller">${content}</div><div class="scroll-fade"></div></div>`;
 }
 
 function detailBadges(job) {
-  const safeLink = /^https?:\/\//i.test(job.url);
   return html`
     ${job.job_type ? html`<span class="badge b-type">${job.job_type}</span>` : ''}
     ${job.location ? html`<span class="badge b-loc">${job.location}</span>` : ''}
-    ${job.found_on ? html`<span class="badge b-date">Found ${formatDay(job.found_on)}</span>` : ''}
-    ${safeLink ? html`<a class="badge b-linkout" href="${job.url}" target="_blank" rel="noopener noreferrer" title="${job.url}">${linkHost(job.url)}${ICON.open}</a>` : ''}`;
+    ${job.found_on ? html`<span class="badge b-date">Found ${formatDay(job.found_on)}</span>` : ''}`;
 }
 
 // The notes box opens in a small dialog (the Notes button beside Edit and Delete). It saves by itself.
@@ -182,7 +170,7 @@ function cvPane(job, cv, mark) {
     <div class="jd-aside-head">
       <h2>CV for this job</h2>
       ${cv.presets.length > 1
-        ? html`<select class="input cv-select" id="cv-preset" aria-label="CV preset">${cv.presets.map((p) => html`<option value="${p.id}" ${p.id === cv.preset.id ? 'selected' : ''}>${p.name}</option>`)}</select>`
+        ? html`<select class="input cv-select" id="cv-preset" aria-label="CV preset">${cv.presets.map((p) => html`<option value="${p.id}" ${p.id === cv.preset.id ? 'selected' : ''}>${p.name}${p.id === cv.best_preset_id ? ' · best match' : ''}</option>`)}</select>`
         : html`<span class="text-muted text-sm">${cv.preset.name}</span>`}
     </div>
     <div class="cv-strip">
@@ -240,9 +228,10 @@ export async function render(el, { params, stale }) {
     const today = todayISO();
     const last = stages.length ? Math.max(...stages.map((s) => s.id)) : null;
     const hasNote = job.notes.trim() !== '';
+    const safeLink = /^https?:\/\//i.test(job.url);
 
     el.innerHTML = html`
-      <div class="jd-page">
+      <div class="jd-page${editing ? ' is-editing' : ''}">
       <div class="jd-head">
         <a class="btn btn-secondary icon-btn md back-btn" href="#/jobs" aria-label="Back to Jobs" title="Back to Jobs">${ICON.back}</a>
         <div class="avatar big" aria-hidden="true">${initials(job.company || job.title)}</div>
@@ -253,29 +242,31 @@ export async function render(el, { params, stale }) {
             <span class="badge s-${job.status}">${hasStatus(job.status) ? STATUS[job.status].label : job.status}</span>
             ${closeBadge(job.closes_on)}
             ${WORK_MODE[job.work_mode] ? html`<span class="badge b-mode">${WORK_MODE[job.work_mode]}</span>` : ''}
+            ${detailBadges(job)}
             <span class="badge">${job.source === 'manual' ? 'Added by hand' : job.source}</span>
           </div>
         </div>
         <div class="jd-actions">
+          ${safeLink ? html`<a class="btn btn-secondary jd-advert" href="${job.url}" target="_blank" rel="noopener noreferrer" title="${job.url}">${ICON.open}<span>Open advert</span></a>` : ''}
           <button type="button" class="btn btn-secondary icon-btn md notes-btn" data-act="open-notes" aria-label="${hasNote ? 'Notes (this job has a note)' : 'Notes'}" title="${hasNote ? 'Notes (this job has a note)' : 'Notes'}" ${editing ? 'disabled' : ''}>${ICON.note}${hasNote ? html`<span class="notes-dot" aria-hidden="true"></span>` : ''}</button>
           <button type="button" class="btn btn-secondary icon-btn md" data-act="edit-job" aria-label="Edit job" title="Edit job" ${editing ? 'disabled' : ''}>${ICON.edit}</button>
-          <button type="button" class="btn btn-danger icon-btn md" data-act="delete-job" aria-label="Delete job" title="Delete job">${ICON.trash}</button>
+          <div class="row-menu-wrap">
+            <button type="button" class="btn btn-secondary icon-btn md" data-act="menu" aria-haspopup="menu" aria-expanded="false" aria-label="More" title="More" ${editing ? 'disabled' : ''}>${ICON.dots}</button>
+            <div class="row-menu" role="menu" hidden>
+              <button type="button" role="menuitem" class="menu-del" data-act="delete-job">${ICON.trash} Delete job</button>
+            </div>
+          </div>
         </div>
       </div>
 
       ${error && !editing ? html`<div class="card compact" role="alert">◇ ${error}</div>` : ''}
 
-      <div class="card section">
-        <div class="row jd-stage-head"><h2>Stages and notes</h2><div class="jd-badges">${detailBadges(job)}</div></div>
+      <div class="card jd-stages">
+        <span class="jd-stages-label text-muted">Stages</span>
         <div class="stage-row">${stageRow(stages, today)}</div>
-        ${form ? stageForm(form, stages) : ''}
-        <div class="row outcome">
-          <span class="text-muted">Outcome</span>
-          <div class="chip-group" role="group" aria-label="Set the outcome">
-            ${OUTCOMES.map((k) => html`<button type="button" class="chip sm" ${tintAttr(k)} data-outcome="${k}" aria-pressed="${job.status === k}">${KIND[k].label}</button>`)}
-          </div>
-          <button type="button" class="btn btn-secondary icon-btn md undo" data-act="undo" aria-label="Undo last step" title="Undo last step" ${last === null ? 'disabled' : ''}>${ICON.undo}</button>
-        </div>
+        <button type="button" class="btn btn-secondary jd-addstage" data-new="">+ Add stage</button>
+        <button type="button" class="btn btn-secondary icon-btn md undo" data-act="undo" aria-label="Undo last step" title="Undo last step" ${last === null ? 'disabled' : ''}>${ICON.undo}</button>
+        ${form ? html`<div class="jd-stage-form">${stageForm(form, stages)}</div>` : ''}
       </div>
 
       ${editing
@@ -285,6 +276,15 @@ export async function render(el, { params, stale }) {
       </div>`;
 
     el.querySelectorAll('.scroll-wrap').forEach((w) => bindScroll(w, '.pre'));
+
+    // The one orange button of this screen: mark the job applied (today), until it is.
+    if (job.status === 'open' && !editing) {
+      setTopAction(html`<button type="button" class="btn btn-primary" id="mark-applied">Mark applied</button>`);
+      const btn = document.getElementById('mark-applied');
+      if (btn) btn.onclick = markApplied;
+    } else {
+      setTopAction('');
+    }
     el.querySelector('[data-focus]')?.focus();
   }
 
@@ -312,6 +312,7 @@ export async function render(el, { params, stale }) {
       const result = await fn();
       if (stale()) return;
       if (result) { state.job = result.job; state.stages = result.stages; }
+      window.dispatchEvent(new Event('followups-changed'));   // the bell may have a different count now
     } catch (err) {
       if (stale()) return;
       state.error = err.message;
@@ -352,15 +353,36 @@ export async function render(el, { params, stale }) {
     draw();
   }
 
+  function markApplied() {
+    if (state.job.status !== 'open') return;
+    run(() => api(`/api/jobs/${id}/stages`, { method: 'POST', body: { kind: 'applied', happened_on: todayISO() } }));
+  }
+
+  const closeMenu = () => el.querySelectorAll('.row-menu:not([hidden])').forEach((m) => {
+    m.hidden = true;
+    m.parentElement.querySelector('[data-act="menu"]')?.setAttribute('aria-expanded', 'false');
+  });
+
   el.onkeydown = (e) => {
-    if (e.key === 'Escape' && state.notesOpen) closeNotes();
+    if (e.key !== 'Escape') return;
+    if (state.notesOpen) { closeNotes(); return; }
+    const open = el.querySelector('.row-menu:not([hidden])');
+    if (open) { const btn = open.parentElement.querySelector('[data-act="menu"]'); closeMenu(); btn?.focus(); }
   };
 
   el.onclick = (e) => {
     if (e.target.classList?.contains('pf-modal') && state.notesOpen) { closeNotes(); return; }
+    if (!e.target.closest('.row-menu-wrap')) closeMenu();
     const t = e.target.closest('button');
     if (!t) return;
 
+    if (t.dataset.act === 'menu') {
+      const menu = t.parentElement.querySelector('.row-menu');
+      const wasOpen = !menu.hidden;
+      closeMenu();
+      if (!wasOpen) { menu.hidden = false; t.setAttribute('aria-expanded', 'true'); menu.querySelector('button')?.focus(); }
+      return;
+    }
     if (t.dataset.act === 'open-notes') { openNotes(); return; }
     if (t.dataset.act === 'close-notes') { closeNotes(); return; }
 
@@ -368,20 +390,20 @@ export async function render(el, { params, stale }) {
     if (t.dataset.act === 'cv-pdf') { if (state.cv) printCv(state.cv); return; }
 
     if (t.dataset.stage) { state.form = { id: Number(t.dataset.stage) }; state.editing = false; state.error = ''; draw(); return; }
-    if (t.dataset.new !== undefined) { state.form = { id: null, kind: t.dataset.new }; state.editing = false; state.error = ''; draw(); return; }
-
-    if (t.dataset.outcome) {
-      const kind = t.dataset.outcome;
-      if (state.job.status === kind) return;
-      const have = state.stages.find((s) => s.kind === kind);
-      if (have) { state.form = { id: have.id }; state.editing = false; draw(); return; }
-      run(() => api(`/api/jobs/${id}/stages`, { method: 'POST', body: { kind, happened_on: todayISO() } }));
+    if (t.dataset.new !== undefined) {
+      if (t.dataset.new) {
+        // A step not reached yet: one click marks it for today. The date and a note can be changed after.
+        run(() => api(`/api/jobs/${id}/stages`, { method: 'POST', body: { kind: t.dataset.new, happened_on: todayISO() } }));
+      } else {
+        state.form = { id: null, kind: '' }; state.editing = false; state.error = ''; draw();
+      }
       return;
     }
 
     switch (t.dataset.act) {
       case 'edit-job': state.editing = true; state.draft = null; state.form = null; state.error = ''; draw(); break;
       case 'delete-job':
+        closeMenu();
         if (!confirm(`Delete “${state.job.title}”? This cannot be undone.`)) return;
         run(async () => {
           await api(`/api/jobs/${id}`, { method: 'DELETE' });

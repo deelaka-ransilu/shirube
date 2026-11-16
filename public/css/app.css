@@ -172,8 +172,8 @@ select.input { appearance: auto; }
 .tiles.sm .tile strong { font-size: 24px; }
 .jobs-page .filters { gap: var(--space-1); margin-bottom: var(--space-3); }
 .jobs-note { margin: 0 0 var(--space-3); }
-.jobs-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-4); margin-top: 0; align-items: stretch; }
-.jobs-card { min-height: 0; max-height: 100%; align-self: start; display: flex; flex-direction: column; overflow: hidden; }
+.jobs-layout { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); margin-top: 0; }
+.jobs-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .jobs-card > .empty { margin: auto; }
 .jobs-list-wrap { flex: 1; min-height: 0; }
 .jobs-list-wrap .scroller { padding-bottom: var(--space-5); }
@@ -181,11 +181,10 @@ select.input { appearance: auto; }
 .jobs-card .row-main { min-width: 0; }
 .jobs-card .row-title { overflow-wrap: anywhere; }
 .jobs-card .avatar { width: 40px; height: 40px; }
-.jobs-layout .side-stack { align-self: start; }
 
 @media (max-width: 1100px) {
   .jobs-page { display: block; }
-  .jobs-layout { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .jobs-layout { display: flex; }
   .jobs-card { display: block; overflow: visible; }
   .jobs-card .list-row { flex-wrap: wrap; }
   .tiles.sm { margin-top: var(--space-3); }
@@ -556,20 +555,33 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
 .nj-dot { position: absolute; top: 6px; right: 6px; width: 11px; height: 11px; background: var(--color-accent); border: 2px solid var(--color-card); border-radius: var(--radius-pill); }
 .nj-dot[hidden] { display: none; }
 
-.nj-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
-.nj-sel-wrap { position: relative; display: flex; min-width: 0; }
-.nj-sel { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 4px 0 12px; background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); corner-shape: squircle; }
-.nj-sel:focus-within { outline: 2px solid var(--color-text); outline-offset: 2px; }
-.nj-sel span { flex-shrink: 0; font-size: var(--text-xs); color: var(--color-muted); }
-.nj-sel select { flex: 1; min-width: 0; height: 100%; padding: 0; background: transparent; color: var(--color-text); font: var(--text-base) var(--font-sans); border: 0; outline: none; cursor: pointer; text-overflow: ellipsis; color-scheme: dark; }
-.nj-sel option { background: var(--color-card); color: var(--color-text); }
+.nj-filters { position: relative; display: flex; flex-direction: column; gap: var(--space-2); }
+.nj-frow { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); min-width: 0; }
+.nj-fgroup { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.nj-rowlabel { flex-shrink: 0; min-width: 62px; font-size: var(--text-xs); color: var(--color-muted); }
+.nj-place { flex: 1 1 190px; min-width: 0; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 6px 0 12px; background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); corner-shape: squircle; }
+.nj-place:focus-within { outline: 2px solid var(--color-text); outline-offset: 2px; }
+.nj-place > span { flex-shrink: 0; font-size: var(--text-xs); color: var(--color-muted); }
+.nj-place input { flex: 1; min-width: 0; height: 100%; padding: 0; background: transparent; color: var(--color-text); font: var(--text-sm) var(--font-sans); border: 0; outline: none; color-scheme: dark; }
+.nj-clear { flex-shrink: 0; width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--color-raised); color: var(--color-text); border: 0; border-radius: var(--radius-pill); font-size: 15px; line-height: 1; cursor: pointer; }
+.nj-clear[hidden] { display: none; }
 
-.nj-count { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); min-height: 30px; }
+.nj-count { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-2); min-height: 30px; }
 .nj-count-right { display: flex; align-items: center; gap: var(--space-3); flex-shrink: 0; }
 .nj-count .link-btn { min-height: 28px; }
-.icon-btn.busy .icon { animation: nj-spin 0.9s linear infinite; }
+.nj-refresh { height: 30px; min-height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); }
+.nj-refresh .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nj-hint { flex-basis: 100%; margin: 0; }
+.nj-hint a { color: var(--color-text); }
+.nj-have { margin: 0; }
+.badge.b-skills, .badge.b-role, .badge.b-entry { background: color-mix(in srgb, var(--bt) 15%, transparent); border-color: color-mix(in srgb, var(--bt) 45%, transparent); color: var(--bt); }
+.badge.b-skills { --bt: var(--tint-green); }
+.badge.b-role { --bt: var(--tint-lilac); }
+.badge.b-entry { --bt: var(--tint-yellow); }
+.icon-btn.is-saved { color: var(--tint-lilac); border-color: var(--color-accent); }
+.icon-btn.busy .icon, .nj-refresh.busy .icon { animation: nj-spin 0.9s linear infinite; }
 @keyframes nj-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .icon-btn.busy .icon { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .icon-btn.busy .icon, .nj-refresh.busy .icon { animation: none; } }
 .nj-listarea { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: var(--space-1); border-top: 1px solid var(--color-line); }
 .nj-empty { margin: auto; padding: var(--space-5) var(--space-3); text-align: center; }
 
@@ -606,9 +618,75 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
   .found-layout[data-view="detail"] .found-list { display: none; }
   .found-list { display: block; }
   .nj-listarea { display: block; }
-  .nj-filters { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
   #found-detail { overflow: visible; }
   .found-detail { height: auto; overflow: visible; }
   .nj-back { display: inline-flex; }
 }
 
+
+/* Jobs (step 42): tiles are the stage filters, a stage dropdown and a "..." menu on each row, a slim Next closing strip */
+.tile-btn { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
+.tile-btn:hover { border-color: var(--color-border-strong); }
+.tile-btn[aria-pressed="true"] { background: var(--color-raised); border-color: var(--color-text); }
+.tile-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.jobs-views { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); margin: 0 var(--space-2) var(--space-3); font-size: var(--text-sm); }
+.jobs-views b { font-weight: var(--weight-medium); }
+.jobs-views .link-btn { min-height: 28px; }
+.jobs-card .row-badges { flex-shrink: 0; }
+.status-select { position: relative; z-index: 1; flex-shrink: 0; display: inline-flex; }
+.status-select select { height: 30px; padding: 0 8px; background: var(--color-panel); color: var(--color-text); font: var(--text-sm) var(--font-sans); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); cursor: pointer; color-scheme: dark; }
+.status-select select:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.status-select option { background: var(--color-card); color: var(--color-text); }
+.row-menu-wrap { position: relative; z-index: 2; flex-shrink: 0; }
+.row-menu { position: absolute; right: 0; top: calc(100% + 4px); min-width: 150px; padding: 4px; background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
+.row-menu.up { top: auto; bottom: calc(100% + 4px); }
+.row-menu[hidden] { display: none; }
+.row-menu button { width: 100%; display: flex; align-items: center; gap: var(--space-2); padding: 8px 10px; background: transparent; color: var(--color-text); font: var(--text-sm) var(--font-sans); border: 0; border-radius: 8px; cursor: pointer; text-align: left; }
+.row-menu button:hover, .row-menu button:focus-visible { background: var(--color-raised); outline: none; }
+.row-menu .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.row-menu .menu-del { color: var(--color-danger); }
+.jobs-closing { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); padding: 10px var(--space-4); border-radius: 16px; font-size: var(--text-sm); }
+.jobs-views .link-btn { color: var(--color-text); text-decoration: underline; text-underline-offset: 3px; }
+.jobs-views .link-btn:hover { color: var(--color-muted); }
+.status-select select { min-width: 116px; }
+
+/* ---- Job details (step 43): slim stage row, advert and CV side by side, each scrolling in its own box ---- */
+#page:has(.jd-page:not(.is-editing)) { display: flex; flex-direction: column; overflow: hidden; }
+.jd-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.jd-head { flex-shrink: 0; align-items: center; }
+.jd-head .found-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.jd-actions { align-items: center; }
+.jd-advert { gap: 8px; height: 40px; padding: 0 14px; display: inline-flex; align-items: center; font-size: var(--text-sm); text-decoration: none; }
+.jd-advert .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.jd-stages { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: 0; padding: 10px var(--space-4); border-radius: 22px; }
+.jd-stages-label { font-size: var(--text-sm); }
+.jd-stages .stage-row { flex: 1; min-width: 300px; display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: var(--space-2); }
+.jd-addstage { height: 36px; padding: 0 14px; font-size: var(--text-sm); white-space: nowrap; }
+.jd-stages .undo { flex-shrink: 0; }
+.jd-stage-form { flex-basis: 100%; }
+.stage-pill { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 12px; text-align: left; font: var(--text-sm) var(--font-sans); color: var(--color-text); background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: 14px; corner-shape: squircle; cursor: pointer; }
+.stage-pill small { font-size: var(--text-xs); color: var(--color-muted); }
+.stage-pill:hover { background: var(--color-raised); }
+.stage-pill:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.stage-pill.pending { border-style: dashed; border-color: var(--color-border); }
+.stage-pill[data-tint] { border-color: color-mix(in srgb, var(--tt) 55%, transparent); background: color-mix(in srgb, var(--tt) 12%, var(--color-panel)); }
+.jd-page .grid-main-side { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-3); margin-top: var(--space-3); align-items: stretch; }
+.jd-page .grid-main-side > .card, .jd-page .jd-side { min-height: 0; }
+.jd-page .grid-main-side > .card { display: flex; flex-direction: column; overflow: hidden; }
+.jd-page .jd-side { display: grid; grid-template-rows: minmax(0, 1fr); }
+.jd-page .jd-scroll { flex: 1; min-height: 0; }
+.jd-page .jd-scroll .scroller { flex: 1; max-height: none; }
+.jd-page .jd-aside { min-height: 0; overflow: hidden; }
+.jd-page .cv-scroll { flex: 1; min-height: 0; max-height: none; }
+.dock-flush .jd-page .cv-scroll { padding-bottom: var(--dock-reserve); }
+.jd-page .row-menu { z-index: 20; }
+@media (max-width: 1100px) {
+  #page:has(.jd-page) { display: block; overflow: auto; }
+  .jd-page { display: block; }
+  .jd-page .grid-main-side { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .jd-page .grid-main-side > .card { overflow: visible; }
+  .jd-page .jd-scroll .scroller, .jd-page .cv-scroll { max-height: none; overflow: visible; }
+  .jd-page .jd-head { flex-wrap: wrap; }
+  .jd-page .grid-main-side, .jd-page .jd-stages { margin-top: var(--space-3); }
+}
+.jd-page .link { color: var(--color-text); text-decoration: underline; text-underline-offset: 3px; }

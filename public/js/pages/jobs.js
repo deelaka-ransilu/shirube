@@ -1,18 +1,15 @@
 import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
-import { STATUS, STATUS_KEYS, hasStatus, badgeText } from '../lib/status.js';
-import { formatDay, initials, todayISO } from '../lib/format.js';
+import { STATUS, hasStatus, badgeText, nextStatuses } from '../lib/status.js';
+import { closingWithDays, initials, todayISO } from '../lib/format.js';
 import { MODE_LABEL } from '../lib/found-marker.js';
 import { ICON } from '../lib/icons.js';
 import { closeBadge } from '../lib/badges.js';
 import { bindScroll } from '../lib/scroll.js';
 import { setTopAction } from '../lib/shell.js';
 
-const TILES = ['open', 'applied', 'interview', 'offer'];
-
-// A calm look: only the two stages worth noticing get a colour. Every status also keeps its shape and word.
-const TINT = { interview: 'lilac', offer: 'yellow' };
-const tintAttr = (key) => (TINT[key] ? raw(`data-tint="${TINT[key]}"`) : '');
+const TILES = ['open', 'applied', 'interview', 'offer'];   // the four tiles are the stage filters
+const OTHER_VIEWS = ['', 'reply', 'rejected'];             // All, Reply and Rejected sit in a line under the tiles
 
 function jobsHash(status, q) {
   const p = new URLSearchParams();
@@ -20,6 +17,20 @@ function jobsHash(status, q) {
   if (q) p.set('q', q);
   const text = p.toString();
   return '#/jobs' + (text ? '?' + text : '');
+}
+
+// The stage: a small dropdown that moves the job forward (it adds a dated stage for today), or a plain badge at the end.
+function stageCell(job) {
+  const next = nextStatuses(job.status);
+  if (!next.length) return html`<span class="badge b-${job.status}">${badgeText(job.status)}</span>`;
+  return html`
+    <label class="status-select">
+      <span class="sr-only">Stage of ${job.title}</span>
+      <select data-stage="${job.id}" data-current="${job.status}" data-title="${job.title}">
+        <option value="${job.status}" selected>${badgeText(job.status)}</option>
+        ${next.map((k) => html`<option value="${k}">→ ${badgeText(k)}</option>`)}
+      </select>
+    </label>`;
 }
 
 function row(job, today) {
@@ -32,11 +43,17 @@ function row(job, today) {
         <a class="row-title" href="#/jobs/${job.id}">${job.title}</a>
       </div>
       <div class="row-badges">
-        <span class="badge b-${job.status}">${badgeText(job.status)}</span>
+        ${job.location ? html`<span class="badge b-loc">${job.location}</span>` : ''}
         ${MODE_LABEL[job.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[job.work_mode]}</span>` : ''}
         ${closeBadge(job.closes_on, today, job.found_on)}
       </div>
-      <button type="button" class="btn btn-danger icon-btn" data-delete="${job.id}" data-title="${job.title}" aria-label="Delete ${job.title}" title="Delete">${ICON.trash}</button>
+      ${stageCell(job)}
+      <div class="row-menu-wrap">
+        <button type="button" class="btn btn-secondary icon-btn sm" data-menu aria-haspopup="menu" aria-expanded="false" aria-label="More for ${job.title}" title="More">${ICON.dots}</button>
+        <div class="row-menu" role="menu" hidden>
+          <button type="button" role="menuitem" class="menu-del" data-delete="${job.id}" data-title="${job.title}">${ICON.trash} Delete job</button>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -61,7 +78,8 @@ export async function render(el, ctx) {
 
   const { jobs, counts, next_closing } = data;
   const today = todayISO();
-  const chips = [['', 'All'], ...STATUS_KEYS.map((k) => [k, STATUS[k].label])];
+  const countOf = (k) => (k ? counts[k] : counts.all);
+  const viewName = status ? STATUS[status].label : 'All';
 
   let list;
   if (counts.all === 0) {
@@ -81,25 +99,24 @@ export async function render(el, ctx) {
     <div class="jobs-page">
       <h1 class="sr-only">Jobs</h1>
 
-      <div class="grid-tiles tiles sm">
-        ${TILES.map((k) => html`<div class="tile"><span>${STATUS[k].label}</span><strong>${counts[k]}</strong></div>`)}
+      <div class="grid-tiles tiles sm" role="group" aria-label="Filter jobs by stage">
+        ${TILES.map((k) => html`<button type="button" class="tile tile-btn" data-status="${k}" aria-pressed="${k === status}"><span>${STATUS[k].label}</span><strong>${counts[k]}</strong></button>`)}
       </div>
 
-      <div class="chip-group filters" role="group" aria-label="Filter jobs by stage">
-        ${chips.map(([key, label]) => html`<button type="button" class="chip sm" ${tintAttr(key)} data-status="${key}" aria-pressed="${key === status}">${label} (${key ? counts[key] : counts.all})</button>`)}
+      <div class="jobs-views" role="group" aria-label="Other views">
+        <b>Showing: ${viewName} (${countOf(status)})</b>
+        ${OTHER_VIEWS.filter((k) => k !== status).map((k) => html`<button type="button" class="link-btn" data-status="${k}">${k ? STATUS[k].label : 'All'} (${countOf(k)})</button>`)}
       </div>
       ${q ? html`<p class="text-muted jobs-note">Results for “${q}”. <a class="link" href="${jobsHash(status, '')}">Clear search</a></p>` : ''}
 
       <div class="jobs-layout">
         <div class="card compact jobs-card">${list}</div>
-        <div class="side-stack">
-          <div class="card compact">
-            <h2>Next closing</h2>
-            ${next_closing
-              ? html`<div><a class="row-title" href="#/jobs/${next_closing.id}">${next_closing.title}</a></div><div class="text-muted">${next_closing.company ? next_closing.company + ' · ' : ''}${formatDay(next_closing.closes_on)}</div>`
-              : html`<p class="text-muted">No closing dates yet for jobs you have not applied to.</p>`}
-          </div>
-        </div>
+        ${next_closing ? html`
+          <div class="card compact jobs-closing">
+            <span class="text-muted">Next closing</span>
+            <a class="row-title" href="#/jobs/${next_closing.id}">${next_closing.title}</a>
+            <span class="text-muted">${next_closing.company ? next_closing.company + ' · ' : ''}${closingWithDays(next_closing.closes_on, today)}</span>
+          </div>` : ''}
       </div>
     </div>`;
 
@@ -107,9 +124,27 @@ export async function render(el, ctx) {
   bindScroll(el.querySelector('.jobs-list-wrap'), '.list-row');
   if (ctx.keepTop) { const box = el.querySelector('.jobs-list-wrap .scroller'); if (box) box.scrollTop = ctx.keepTop; }
 
+  const closeMenus = () => el.querySelectorAll('.row-menu:not([hidden])').forEach((m) => {
+    m.hidden = true;
+    m.parentElement.querySelector('[data-menu]')?.setAttribute('aria-expanded', 'false');
+  });
+  const redraw = () => {
+    // Draw again but stay where the person was in the list.
+    const keepTop = el.querySelector('.jobs-list-wrap .scroller')?.scrollTop ?? 0;
+    if (!stale()) render(el, { ...ctx, keepTop });
+  };
+
   el.onclick = async (e) => {
+    const menuBtn = e.target.closest('[data-menu]');
+    if (!menuBtn) closeMenus();
+
     const chip = e.target.closest('[data-status]');
-    if (chip) { location.hash = jobsHash(chip.dataset.status, q); return; }
+    if (chip) {
+      // Pressing the stage that is already showing goes back to All.
+      const next = chip.dataset.status === status ? '' : chip.dataset.status;
+      location.hash = jobsHash(next, q);
+      return;
+    }
 
     if (e.target.closest('[data-more]')) {
       const box = el.querySelector('.jobs-list-wrap .scroller');
@@ -117,18 +152,55 @@ export async function render(el, ctx) {
       return;
     }
 
+    if (menuBtn) {
+      const menu = menuBtn.parentElement.querySelector('.row-menu');
+      const wasOpen = !menu.hidden;
+      closeMenus();
+      if (wasOpen) return;
+      menu.hidden = false;
+      menuBtn.setAttribute('aria-expanded', 'true');
+      // Open upwards when there is no room below inside the list.
+      const box = el.querySelector('.jobs-list-wrap .scroller');
+      const room = box ? box.getBoundingClientRect().bottom - menuBtn.getBoundingClientRect().bottom : 999;
+      menu.classList.toggle('up', room < menu.offsetHeight + 12);
+      menu.querySelector('button')?.focus();
+      return;
+    }
+
     const del = e.target.closest('[data-delete]');
     if (del) {
+      closeMenus();
       if (!confirm(`Delete “${del.dataset.title}”? This cannot be undone.`)) return;
       del.disabled = true;
       try {
         await api(`/api/jobs/${del.dataset.delete}`, { method: 'DELETE' });
+        window.dispatchEvent(new Event('followups-changed'));
       } catch (err) {
         alert(err.message);
       }
-      // Draw again but stay where the person was in the list.
-      const keepTop = el.querySelector('.jobs-list-wrap .scroller')?.scrollTop ?? 0;
-      if (!stale()) render(el, { ...ctx, keepTop });
+      redraw();
     }
+  };
+
+  el.onkeydown = (e) => {
+    if (e.key === 'Escape' && el.querySelector('.row-menu:not([hidden])')) {
+      const btn = el.querySelector('.row-menu:not([hidden])').parentElement.querySelector('[data-menu]');
+      closeMenus();
+      btn?.focus();
+    }
+  };
+
+  // Move a job forward from the list: the same dated stage as in Job detail, dated today.
+  el.onchange = async (e) => {
+    const sel = e.target.closest('[data-stage]');
+    if (!sel || sel.value === sel.dataset.current) return;
+    sel.disabled = true;
+    try {
+      await api(`/api/jobs/${sel.dataset.stage}/stages`, { method: 'POST', body: { kind: sel.value, happened_on: todayISO() } });
+      window.dispatchEvent(new Event('followups-changed'));
+    } catch (err) {
+      alert(err.message);
+    }
+    redraw();
   };
 }
