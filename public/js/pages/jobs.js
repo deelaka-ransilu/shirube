@@ -1,7 +1,7 @@
 import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
 import { STATUS, hasStatus, badgeText, nextStatuses } from '../lib/status.js';
-import { closingWithDays, initials, todayISO } from '../lib/format.js';
+import { closingWithDays, formatDay, initials, todayISO } from '../lib/format.js';
 import { MODE_LABEL } from '../lib/found-marker.js';
 import { ICON } from '../lib/icons.js';
 import { closeBadge } from '../lib/badges.js';
@@ -45,7 +45,9 @@ function row(job, today) {
       <div class="row-badges">
         ${job.location ? html`<span class="badge b-loc">${job.location}</span>` : ''}
         ${MODE_LABEL[job.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[job.work_mode]}</span>` : ''}
-        ${closeBadge(job.closes_on, today, job.found_on)}
+        ${job.status !== 'open' && job.applied_on
+          ? html`<span class="badge">Applied ${formatDay(job.applied_on, today)}</span>`
+          : closeBadge(job.closes_on, today, job.found_on)}
       </div>
       ${stageCell(job)}
       <div class="row-menu-wrap">
@@ -87,9 +89,19 @@ export async function render(el, ctx) {
   } else if (jobs.length === 0) {
     list = html`<div class="empty"><h2>Nothing matches</h2><p class="text-muted">Try another filter or search word.</p><a class="btn btn-secondary" href="#/jobs">Show all jobs</a></div>`;
   } else {
+    // All view: two blocks, what you can still apply to and what you already applied to.
+    // The server sends the jobs in that order, so this only cuts the list in two.
+    const block = (title, rows, empty) => html`
+      <div class="jobs-block-head" role="heading" aria-level="2">${title} <strong>${rows.length}</strong></div>
+      ${rows.length ? rows.map((j) => row(j, today)) : html`<div class="text-muted jobs-block-empty">${empty}</div>`}`;
+    const canApply = jobs.filter((j) => j.status === 'open');
+    const applied = jobs.filter((j) => j.status !== 'open');
+    const body = status === ''
+      ? html`${block('Can apply', canApply, 'Nothing to apply to right now.')}${block('Applied', applied, 'You have not applied to anything yet.')}`
+      : jobs.map((j) => row(j, today));
     list = html`
       <div class="scroll-wrap jobs-list-wrap">
-        <div class="scroller" tabindex="0" role="region" aria-label="Your jobs">${jobs.map((j) => row(j, today))}</div>
+        <div class="scroller" tabindex="0" role="region" aria-label="Your jobs">${body}</div>
         <div class="scroll-fade" aria-hidden="true"></div>
         <button type="button" class="more-pill" data-more hidden aria-label="Show more jobs"></button>
       </div>`;

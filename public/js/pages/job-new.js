@@ -3,8 +3,8 @@ import { api } from '../lib/api.js';
 import { todayISO, formatDay, initials } from '../lib/format.js';
 import { badgeText } from '../lib/status.js';
 import { closeBadge } from '../lib/badges.js';
-import { parseAdvert } from '../lib/parse-advert.js';
-import { foundChips, closeChips } from '../lib/quick-dates.js';
+import { parseAdvert, parseJobTypes } from '../lib/parse-advert.js';
+import { foundChips, closeChips, postedChips, appliedChips } from '../lib/quick-dates.js';
 import { setTopAction } from '../lib/shell.js';
 
 const WORK_MODES = [['onsite', 'On-site'], ['hybrid', 'Hybrid'], ['remote', 'Remote']];
@@ -18,9 +18,14 @@ function chips(name, labelId, options) {
   </div>`;
 }
 
-// Quick date chips plus "+ Pick a date". kind = 'found' or 'closes'. A picked date that is not one of the chips shows on the last chip.
+// Which state field each kind of date chip writes to.
+const DATE_KEY = { found: 'found_on', posted: 'posted_on', closes: 'closes_on', applied: 'applied_on' };
+const DATE_LIST = { found: foundChips, posted: postedChips, closes: closeChips, applied: appliedChips };
+
+// Quick date chips plus "+ Pick a date". kind = 'found', 'posted', 'closes' or 'applied'.
+// A picked date that is not one of the chips shows on the last chip.
 function dateChips(kind, current) {
-  const list = kind === 'found' ? foundChips() : closeChips();
+  const list = DATE_LIST[kind]();
   const custom = current !== '' && !list.some(([, v]) => v === current);
   return html`
     ${list.map(([label, value]) => {
@@ -34,7 +39,8 @@ function dateChips(kind, current) {
 }
 
 export function render(el, { query = {} } = {}) {
-  const state = { work_mode: '', source: '', job_type: '', found_on: todayISO(), closes_on: '' };
+  const state = { work_mode: '', source: '', job_type: [], found_on: todayISO(), posted_on: '', closes_on: '', applied_on: '' };
+  const filled = {};   // what the last "Fill the fields" wrote, so a second paste can replace it but never your own edits
   let timer;
 
   el.innerHTML = html`
@@ -73,9 +79,15 @@ export function render(el, { query = {} } = {}) {
                 <input class="input" id="title" autocomplete="off" placeholder="e.g. Junior DevOps Engineer" aria-describedby="title-error">
                 <div class="field-error" id="title-error" hidden>◇ Title is required.</div>
               </div>
+            </div>
+            <div class="aj-fields aj-fields3">
               <div>
                 <label class="label" for="company">Company</label>
                 <input class="input" id="company" autocomplete="off" placeholder="e.g. Northwind Ltd">
+              </div>
+              <div>
+                <label class="label" for="location">Location</label>
+                <input class="input" id="location" autocomplete="off" placeholder="e.g. Colombo">
               </div>
               <div>
                 <label class="label" for="url">Job link</label>
@@ -84,7 +96,7 @@ export function render(el, { query = {} } = {}) {
             </div>
             <div class="aj-pair">
               <div class="aj-block"><span class="label" id="lbl-mode">Work mode</span>${chips('work_mode', 'lbl-mode', WORK_MODES)}</div>
-              <div class="aj-block"><span class="label" id="lbl-type">Job type</span>${chips('job_type', 'lbl-type', JOB_TYPES)}</div>
+              <div class="aj-block"><span class="label" id="lbl-type">Job type (pick any that fit)</span>${chips('job_type', 'lbl-type', JOB_TYPES)}</div>
             </div>
           </section>
 
@@ -93,6 +105,8 @@ export function render(el, { query = {} } = {}) {
             <div class="aj-dates">
               <div class="aj-block"><span class="label" id="lbl-found">Date found</span><div class="chip-group" role="group" aria-labelledby="lbl-found" id="found-chips"></div></div>
               <div class="aj-block"><span class="label" id="lbl-closes">Closing date</span><div class="chip-group" role="group" aria-labelledby="lbl-closes" id="closes-chips"></div></div>
+              <div class="aj-block"><span class="label" id="lbl-posted">Posted (when the company put it up)</span><div class="chip-group" role="group" aria-labelledby="lbl-posted" id="posted-chips"></div></div>
+              <div class="aj-block"><span class="label" id="lbl-applied">Already applied? Pick the day</span><div class="chip-group" role="group" aria-labelledby="lbl-applied" id="applied-chips"></div></div>
             </div>
           </section>
         </div>
@@ -133,12 +147,15 @@ export function render(el, { query = {} } = {}) {
     return {
       title: $('title').value.trim(),
       company: $('company').value.trim(),
+      location: $('location').value.trim(),
       url: $('url').value.trim(),
       work_mode: state.work_mode,
       source: state.source === '__other' ? $('source-other').value.trim() : state.source,
-      job_type: state.job_type,
+      job_type: state.job_type.join(', '),
       found_on: state.found_on,
+      posted_on: state.posted_on,
       closes_on: state.closes_on,
+      applied_on: state.applied_on,
       description: $('description').value,
       notes: $('notes').value,
     };
@@ -147,6 +164,8 @@ export function render(el, { query = {} } = {}) {
   function drawDates() {
     $('found-chips').innerHTML = dateChips('found', state.found_on);
     $('closes-chips').innerHTML = dateChips('closes', state.closes_on);
+    $('posted-chips').innerHTML = dateChips('posted', state.posted_on);
+    $('applied-chips').innerHTML = dateChips('applied', state.applied_on);
   }
 
   function updatePreview() {
@@ -160,17 +179,22 @@ export function render(el, { query = {} } = {}) {
         </div>
       </div>
       <div class="row-badges aj-badges">
-        <span class="badge b-open">${badgeText('open')}</span>
+        ${f.applied_on
+          ? html`<span class="badge s-applied">${badgeText('applied')} ${formatDay(f.applied_on)}</span>`
+          : html`<span class="badge b-open">${badgeText('open')}</span>`}
         ${f.work_mode ? html`<span class="badge b-mode">${MODE_LABEL[f.work_mode]}</span>` : ''}
-        ${f.job_type ? html`<span class="badge b-type">${f.job_type}</span>` : ''}
-        ${closeBadge(f.closes_on)}
+        ${state.job_type.map((t) => html`<span class="badge b-type">${t}</span>`)}
+        ${f.location ? html`<span class="badge b-loc">${f.location}</span>` : ''}
+        ${f.posted_on ? html`<span class="badge b-date">Posted ${formatDay(f.posted_on)}</span>` : ''}
+        ${f.applied_on ? '' : closeBadge(f.closes_on)}
       </div>`;
   }
 
+  // Job type takes a list (a full-time internship is both); the other groups take one value.
   function selectChip(name, value) {
     state[name] = value;
     const group = el.querySelector(`[data-group="${name}"]`);
-    group.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.value === value)));
+    group.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(Array.isArray(value) ? value.includes(c.dataset.value) : c.dataset.value === value)));
     if (name === 'source') $('source-other').hidden = value !== '__other';
   }
 
@@ -191,21 +215,38 @@ export function render(el, { query = {} } = {}) {
     } catch { /* the warning is only a hint, so ignore errors */ }
   }
 
+  // Fill never overwrites what you typed: a field is replaced only when it is empty or still holds
+  // what the last Fill wrote. A field the advert does not mention is cleared the same way.
+  function put(key, next, current, write) {
+    const mine = JSON.stringify(current) === JSON.stringify(filled[key]);
+    const empty = Array.isArray(current) ? current.length === 0 : current === '';
+    if (empty || mine) { write(next); filled[key] = next; }
+  }
+
   function fill() {
-    const found = parseAdvert($('paste').value);
+    const pasted = $('paste').value.trim();
+    const found = parseAdvert(pasted);
     const msg = $('fill-msg');
-    const setText = (id, value) => { if (value) $(id).value = value; };
-    setText('title', found.title);
-    setText('company', found.company);
-    setText('url', found.url);
-    if (found.closes_on) { state.closes_on = found.closes_on; drawDates(); }
-    if (found.work_mode) selectChip('work_mode', found.work_mode);
-    if (found.job_type) selectChip('job_type', found.job_type);
+    const text = (id) => (value) => { $(id).value = value; };
+    const date = (key) => (value) => { state[DATE_KEY[key]] = value; };
+    const types = pasted && !found.onlyLink ? parseJobTypes(pasted) : [];
+
     if (found.onlyLink) {
+      put('url', found.url ?? '', $('url').value, text('url'));
       msg.textContent = 'I saved the link only. Reading a link comes later: paste the advert text to fill more.';
-    } else if ($('paste').value.trim()) {
-      if (!$('description').value.trim()) $('description').value = $('paste').value.trim();
-      const count = Object.keys(found).length;
+    } else if (pasted) {
+      put('title', found.title ?? '', $('title').value, text('title'));
+      put('company', found.company ?? '', $('company').value, text('company'));
+      put('location', found.location ?? '', $('location').value, text('location'));
+      put('url', found.url ?? '', $('url').value, text('url'));
+      put('work_mode', found.work_mode ?? '', state.work_mode, (v) => selectChip('work_mode', v));
+      put('job_type', types, state.job_type, (v) => selectChip('job_type', v));
+      put('closes_on', found.closes_on ?? '', state.closes_on, date('closes'));
+      put('posted_on', found.posted_on ?? '', state.posted_on, date('posted'));
+      put('applied_on', found.applied_on ?? '', state.applied_on, date('applied'));
+      put('description', pasted, $('description').value.trim(), text('description'));
+      drawDates();
+      const count = ['title', 'company', 'location', 'url', 'work_mode', 'closes_on', 'posted_on', 'applied_on'].filter((k) => found[k]).length + (types.length ? 1 : 0);
       msg.textContent = count ? `Filled ${count} field${count === 1 ? '' : 's'}. Check each one.` : 'I could not find anything to fill. The text went into Description.';
     } else {
       msg.textContent = 'Paste the advert first.';
@@ -239,13 +280,18 @@ export function render(el, { query = {} } = {}) {
     const chip = e.target.closest('.chip[data-value]');
     if (chip) {
       const name = chip.closest('[data-group]').dataset.group;
-      selectChip(name, state[name] === chip.dataset.value ? '' : chip.dataset.value);
+      const value = chip.dataset.value;
+      if (name === 'job_type') selectChip(name, state.job_type.includes(value) ? state.job_type.filter((t) => t !== value) : JOB_TYPES.map(([t]) => t).filter((t) => t === value || state.job_type.includes(t)));
+      else selectChip(name, state[name] === value ? '' : value);
       updatePreview();
       return;
     }
     const day = e.target.closest('[data-dk]');
     if (day) {
-      state[day.dataset.dk === 'found' ? 'found_on' : 'closes_on'] = day.dataset.dv;
+      const key = DATE_KEY[day.dataset.dk];
+      // Posted and Applied have no "none" chip: pressing the picked day again clears it.
+      const again = state[key] === day.dataset.dv && ['posted', 'applied'].includes(day.dataset.dk);
+      state[key] = again ? '' : day.dataset.dv;
       drawDates();
       updatePreview();
       return;
@@ -263,7 +309,7 @@ export function render(el, { query = {} } = {}) {
     const pick = e.target.closest?.('[data-pick]');
     if (pick) {
       if (pick.value) {
-        state[pick.dataset.pick === 'found' ? 'found_on' : 'closes_on'] = pick.value;
+        state[DATE_KEY[pick.dataset.pick]] = pick.value;
         drawDates();
         updatePreview();
       }

@@ -18,3 +18,13 @@ export function closeChips(now = new Date()) {
   list.push(['None', '']);
   return list;
 }
+
+// "Posted": when the company put the advert up. No chip picked = not stated.
+export function postedChips(now = new Date()) {
+  return [['Today', shift(now, 0)], ['Yesterday', shift(now, -1)], ['2 days ago', shift(now, -2)], ['Last week', shift(now, -7)]];
+}
+
+// "Applied on": pick a day if you already applied. No chip picked = not applied yet.
+export function appliedChips(now = new Date()) {
+  return [['Today', shift(now, 0)], ['Yesterday', shift(now, -1)], ['2 days ago', shift(now, -2)]];
+}

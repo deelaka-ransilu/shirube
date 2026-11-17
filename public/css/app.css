@@ -177,6 +177,10 @@ select.input { appearance: auto; }
 .jobs-card > .empty { margin: auto; }
 .jobs-list-wrap { flex: 1; min-height: 0; }
 .jobs-list-wrap .scroller { padding-bottom: var(--space-5); }
+.jobs-block-head { display: flex; align-items: baseline; gap: var(--space-2); margin: var(--space-3) 0 var(--space-1); padding: 0 var(--space-1); font-size: var(--text-sm); font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--muted); }
+.jobs-block-head:first-child { margin-top: 0; }
+.jobs-block-head strong { color: var(--text); font-weight: 600; }
+.jobs-block-empty { padding: var(--space-2) var(--space-1) var(--space-3); }
 .jobs-card .list-row { flex-wrap: nowrap; gap: var(--space-3); padding: 10px 0; }
 .jobs-card .row-main { min-width: 0; }
 .jobs-card .row-title { overflow-wrap: anywhere; }
@@ -410,7 +414,10 @@ a.tile:hover { background: var(--color-raised); }
 .aj-block .chip-group { gap: var(--space-1); }
 .aj-source-block { margin-top: var(--space-3); }
 .aj-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--space-4); }
-.aj-dates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--space-4); }
+.aj-dates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--space-3) var(--space-4); }
+.aj-fields.aj-fields3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.aj-fields:not(.aj-fields3) { margin-bottom: var(--space-3); }
+.aj-fields3 { margin-top: 0; }
 .aj-h { margin: 0 0 var(--space-2); font-size: var(--text-lg); }
 .aj-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .aj-source .chip-group { flex: 0 1 auto; }
@@ -428,13 +435,13 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
   .addjob-page { display: block; }
   .addjob-page .add-job { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
   .aj-paste { grid-template-columns: minmax(0, 1fr); }
-  .aj-pair, .aj-dates { grid-template-columns: minmax(0, 1fr); }
+  .aj-pair, .aj-dates, .aj-fields.aj-fields3 { grid-template-columns: minmax(0, 1fr); }
   .aj-notes { display: block; }
   textarea.input.aj-desc { min-height: 120px; }
 }
 
 /* Small or short windows: keep two columns but let the page scroll, so nothing is cut off */
-@media (max-width: 1280px), (max-height: 860px) {
+@media (max-width: 1280px), (max-height: 940px) {
   #page:has(.addjob-page) { display: block; overflow: auto; }
   .addjob-page { display: block; }
   .addjob-page .add-job { grid-template-rows: none; align-items: start; }

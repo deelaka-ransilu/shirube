@@ -16,7 +16,7 @@ export function loadJobPage(db, id) {
 }
 
 // After a stage that decides status changes, bring status and applied date in line.
-function syncJob(db, jobId, kind) {
+export function syncJob(db, jobId, kind) {
   if (!STATUS_KINDS.includes(kind)) return;
   const stages = loadStages(db, jobId);
   db.prepare("UPDATE jobs SET status = ?, applied_on = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")

@@ -7,7 +7,8 @@ Built for job seekers, starting with Sri Lanka.
 ## What it does
 
 - **Dashboard**: jobs to apply to (closing soonest first), your applications, what happened lately, and what to do next.
-- **Jobs**: add a job, filter by stage, search by title or company.
+- **Jobs**: two blocks, "Can apply" (closing soonest first) and "Applied" (newest first, with the day you applied). Filter by stage, search by title or company.
+- **Add job**: paste an advert and press **Fill the fields**. It reads the title, company, location, work mode, job types (more than one is fine), the posted day, the closing day and, when the page says "You applied for this job on…", the day you applied. Pick **Already applied** with a day to save the job straight as Applied. A second Fill replaces what the last Fill wrote, but never what you typed.
 - **Job detail**: record each stage (Applied, Reply, Interview, Offer, Rejected, Follow-up). The job status follows your stages.
 - **Follow-ups** (the clock icon, "Applied jobs"): a board of every job you applied to, in four columns (waiting, calls and interviews, offer, closed), with the stages of each. A bell in the top bar shows how many follow-ups are due. The number of days to wait is set in My profile.
 - **New jobs** (the magnifier icon): reads ITPro's job feeds when you press the refresh button. One search box, then three filters: Posted, Work mode and Location (one place at a time). The list is on the left and the whole advert on the right, with **Save**, **Open advert** and **Hide**. Jobs first seen since you last left the page are tagged New. Shirube only ever contacts `itpro.lk`, only when you press refresh, and at most every 30 minutes.

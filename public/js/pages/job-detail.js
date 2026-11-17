@@ -118,6 +118,7 @@ function editForm(job, error) {
         </div>
         ${field('Source', 'source', job.source, { max: 100 })}
         ${field('Date found', 'found_on', job.found_on, { type: 'date' })}
+        ${field('Posted date', 'posted_on', job.posted_on, { type: 'date' })}
         ${field('Closing date', 'closes_on', job.closes_on, { type: 'date' })}
         ${field('Job link', 'url', job.url, { wide: true, max: 2000 })}
         <div class="wide">
@@ -143,8 +144,9 @@ function scrollBox(content) {
 
 function detailBadges(job) {
   return html`
-    ${job.job_type ? html`<span class="badge b-type">${job.job_type}</span>` : ''}
+    ${String(job.job_type ?? '').split(',').map((t) => t.trim()).filter(Boolean).map((t) => html`<span class="badge b-type">${t}</span>`)}
     ${job.location ? html`<span class="badge b-loc">${job.location}</span>` : ''}
+    ${job.posted_on ? html`<span class="badge b-date">Posted ${formatDay(job.posted_on)}</span>` : ''}
     ${job.found_on ? html`<span class="badge b-date">Found ${formatDay(job.found_on)}</span>` : ''}`;
 }
 

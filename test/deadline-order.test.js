@@ -38,8 +38,9 @@ test('Dashboard open list: nearest closing first, then no date with the newest f
 test('Jobs list with the open filter uses the same order, other views stay newest first', async () => {
   const open = await get('/api/jobs?status=open');
   assert.deepEqual(open.jobs.map((j) => j.title), ORDER);
+  // All: the jobs you can still apply to come first, in that same order (they are all open here)
   const all = await get('/api/jobs');
-  assert.equal(all.jobs[0].title, 'Already closed'); // created last
+  assert.deepEqual(all.jobs.map((j) => j.title), ORDER);
 });
 
 test('closing text with days left', () => {

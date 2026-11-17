@@ -1,9 +1,9 @@
 import { HttpError } from '../lib/errors.js';
 import { STATUSES, cleanJob } from '../lib/validate-job.js';
-import { loadJobPage } from './stages.js';
+import { loadJobPage, syncJob } from './stages.js';
 
 // Everything the list needs, but not the long advert text.
-const LIST_COLUMNS = 'id, title, company, status, source, location, work_mode, job_type, found_on, closes_on, created_at';
+const LIST_COLUMNS = 'id, title, company, status, source, location, work_mode, job_type, found_on, posted_on, closes_on, applied_on, created_at';
 
 export function listJobs({ db, query }) {
   const status = query.status ?? '';
@@ -14,11 +14,13 @@ export function listJobs({ db, query }) {
   const args = [];
   if (status) { where.push('status = ?'); args.push(status); }
   if (q) { where.push('(instr(lower(title), ?) > 0 OR instr(lower(company), ?) > 0)'); args.push(q, q); }
-  // Jobs you have not applied to: closing soonest first, then no closing date (newest found first), then closed.
-  // Every other view stays newest first.
-  const order = status === 'open'
-    ? "CASE WHEN closes_on = '' THEN 1 WHEN closes_on < date('now', 'localtime') THEN 2 ELSE 0 END, closes_on, found_on DESC, created_at DESC, id DESC"
-    : 'created_at DESC, id DESC';
+  // Jobs you can still apply to come first: closing soonest, then no closing date (newest found first), then closed.
+  // After them, the jobs you applied to: newest application first, rejected ones last.
+  const order = `CASE WHEN status = 'open' THEN 0 WHEN status = 'rejected' THEN 2 ELSE 1 END,
+    CASE WHEN status != 'open' THEN 0 WHEN closes_on = '' THEN 1 WHEN closes_on < date('now', 'localtime') THEN 2 ELSE 0 END,
+    CASE WHEN status = 'open' THEN closes_on ELSE '' END,
+    CASE WHEN status = 'open' THEN found_on ELSE applied_on END DESC,
+    created_at DESC, id DESC`;
   const jobs = db.prepare(
     `SELECT ${LIST_COLUMNS} FROM jobs ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY ${order}`,
   ).all(...args);
@@ -39,11 +41,29 @@ export function listJobs({ db, query }) {
 
 export function createJob({ db, body }) {
   const data = cleanJob(body);
+  // "Already applied": the date becomes a dated Applied stage, so the status and the date stay right
+  // when stages change later.
+  const appliedOn = data.applied_on ?? '';
+  if (appliedOn) { delete data.applied_on; delete data.status; }
   const cols = Object.keys(data);
-  const { lastInsertRowid } = db
-    .prepare(`INSERT INTO jobs (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`)
-    .run(...cols.map((c) => data[c]));
-  return { job: db.prepare('SELECT * FROM jobs WHERE id = ?').get(lastInsertRowid) };
+  // A savepoint keeps the job and its stage together, and it also works inside a bigger transaction (Save to Jobs).
+  db.exec('SAVEPOINT create_job');
+  let id;
+  try {
+    const { lastInsertRowid } = db
+      .prepare(`INSERT INTO jobs (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`)
+      .run(...cols.map((c) => data[c]));
+    id = lastInsertRowid;
+    if (appliedOn) {
+      db.prepare("INSERT INTO stages (job_id, kind, happened_on) VALUES (?, 'applied', ?)").run(id, appliedOn);
+      syncJob(db, id, 'applied');
+    }
+    db.exec('RELEASE create_job');
+  } catch (err) {
+    db.exec('ROLLBACK TO create_job; RELEASE create_job');
+    throw err;
+  }
+  return { job: db.prepare('SELECT * FROM jobs WHERE id = ?').get(id) };
 }
 
 // The same title + company already in Jobs (case and spaces ignored). Used by Add job and by Found.
