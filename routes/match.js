@@ -8,7 +8,7 @@ export function getMatch({ db, params, query = {} }) {
   const job = db.prepare('SELECT id, title, company, description FROM jobs WHERE id = ?').get(id);
   if (!job) throw new HttpError(404, 'Job not found');
 
-  const person = db.prepare('SELECT name, email, phone, location, portfolio, social, active_preset_id FROM profile WHERE id = 1').get();
+  const person = db.prepare('SELECT name, email, phone, location, country, portfolio, linkedin, github, other_link, active_preset_id FROM profile WHERE id = 1').get();
   const wanted = Number(query.preset);
   const asked = Number.isInteger(wanted) && wanted > 0 ? db.prepare('SELECT * FROM presets WHERE id = ?').get(wanted) : null;
   // With no preset asked for, open on the one that fits this advert best (the main preset wins a tie).
@@ -27,6 +27,7 @@ export function getMatch({ db, params, query = {} }) {
     : [];
   const education = db.prepare('SELECT * FROM education ORDER BY position, id').all();
   const certifications = db.prepare('SELECT * FROM certifications ORDER BY position, id').all();
+  const languages = db.prepare('SELECT * FROM languages ORDER BY position, id').all();
 
   const presets = db.prepare('SELECT id, name FROM presets ORDER BY position, id').all();
   const hasAdvert = job.description.trim().length > 0;
@@ -40,6 +41,7 @@ export function getMatch({ db, params, query = {} }) {
     experience,
     education,
     certifications,
+    languages,
     match,
     best_skills: orderSkills(preset.skills, match),
     to_add: match.skills.filter((s) => !s.matched),

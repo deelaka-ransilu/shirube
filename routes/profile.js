@@ -1,6 +1,6 @@
-// My profile: basics, settings, presets, education, certifications, experience.
+// My profile: basics, settings, presets, education, certifications, languages, experience.
 import { HttpError } from '../lib/errors.js';
-import { cleanBasics, cleanPreset, cleanEducation, cleanExperience, cleanCertification } from '../lib/validate-profile.js';
+import { cleanBasics, cleanPreset, cleanEducation, cleanExperience, cleanCertification, cleanLanguage } from '../lib/validate-profile.js';
 
 // Runs fn inside one transaction: all of it happens, or none of it.
 export function tx(db, fn) {
@@ -39,6 +39,7 @@ function loadProfile(db) {
     presets,
     education: db.prepare('SELECT * FROM education ORDER BY position, id').all(),
     certifications: db.prepare('SELECT * FROM certifications ORDER BY position, id').all(),
+    languages: db.prepare('SELECT * FROM languages ORDER BY position, id').all(),
     experience: db.prepare('SELECT * FROM experience ORDER BY position, id').all(),
   };
 }
@@ -161,6 +162,8 @@ function entryRoutes(table, clean, requiredNoun) {
 const edu = entryRoutes('education', cleanEducation, 'Education');
 const exp = entryRoutes('experience', cleanExperience, 'Experience');
 const cert = entryRoutes('certifications', cleanCertification, 'Certification');
+const lang = entryRoutes('languages', cleanLanguage, 'Language');
 export const createEducation = edu.create, updateEducation = edu.update, deleteEducation = edu.remove;
 export const createExperience = exp.create, updateExperience = exp.update, deleteExperience = exp.remove;
 export const createCertification = cert.create, updateCertification = cert.update, deleteCertification = cert.remove;
+export const createLanguage = lang.create, updateLanguage = lang.update, deleteLanguage = lang.remove;

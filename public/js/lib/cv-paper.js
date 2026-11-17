@@ -1,9 +1,9 @@
 // The CV as a paper page, built from a /api/jobs/:id/match answer.
 // Same facts as My profile, nothing rewritten. With mark = true the skills the advert names are highlighted.
 import { html } from './html.js';
+import { contactParts, languageLine } from './contact.js';
 
 const period = (start, end) => (start && end ? `${start} to ${end}` : start ? `${start} to now` : end || '');
-const bare = (url) => String(url ?? '').replace(/^https?:\/\//i, '').replace(/\/$/, '');
 
 function part(title, body) {
   return html`<section class="cv-sec"><h3>${title}</h3>${body}</section>`;
@@ -13,7 +13,8 @@ export function cvPaper(d, { mark = true } = {}) {
   const { person, preset, experience, education } = d;
   const certs = d.certifications ?? [];
   const skills = d.best_skills;
-  const contact = [person.email, person.phone, person.location, bare(person.portfolio), bare(person.social)].filter(Boolean);
+  const langs = d.languages ?? [];
+  const contact = contactParts(person);
   return html`
     <article class="cv-paper" aria-label="CV preview">
       <header class="cv-top">
@@ -40,6 +41,7 @@ export function cvPaper(d, { mark = true } = {}) {
           <div class="cv-item-head"><b>${c.name}</b><span class="cv-when">${c.issued_on}</span></div>
           ${c.issuer ? html`<div class="cv-sub">${c.issuer}</div>` : ''}
         </div>`)) : ''}
+      ${langs.length ? part('Languages', html`<p class="cv-pre">${languageLine(langs)}</p>`) : ''}
     </article>`;
 }
 

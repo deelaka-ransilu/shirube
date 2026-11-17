@@ -3,13 +3,23 @@
 import { HttpError } from '../lib/errors.js';
 import { tx, ensurePreset } from './profile.js';
 
-const TABLES = ['profile', 'presets', 'education', 'experience', 'jobs', 'preset_experience', 'stages', 'found_jobs', 'saved_searches', 'certifications'];
+const TABLES = ['profile', 'presets', 'education', 'experience', 'jobs', 'preset_experience', 'stages', 'found_jobs', 'saved_searches', 'certifications', 'languages'];
 const FORMAT = { app: 'shirube', version: 1 };
 
 export function exportBackup({ db }) {
   const tables = {};
   for (const t of TABLES) tables[t] = db.prepare(`SELECT * FROM ${t}`).all();
   return { ...FORMAT, exported_at: new Date().toISOString(), tables };
+}
+
+// Backups made before step 45 have one "GitHub or LinkedIn" value (profile.social). Put it in the field it belongs to.
+function splitSocial(value) {
+  const v = String(value ?? '').trim();
+  if (!v) return {};
+  const low = v.toLowerCase();
+  if (low.includes('linkedin.')) return { linkedin: v };
+  if (low.includes('github.')) return { github: v };
+  return { other_link: v };
 }
 
 const columnsOf = (db, table) => db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
@@ -32,8 +42,10 @@ export function restoreBackup({ db, body }) {
       if (body.tables.saved_searches !== undefined) db.exec('DELETE FROM saved_searches');
       // Same for certifications (older backups have none).
       if (body.tables.certifications !== undefined) db.exec('DELETE FROM certifications');
+      // And languages.
+      if (body.tables.languages !== undefined) db.exec('DELETE FROM languages');
 
-      for (const t of ['presets', 'education', 'experience', 'jobs', 'preset_experience', 'stages', 'found_jobs', 'saved_searches', 'certifications']) {
+      for (const t of ['presets', 'education', 'experience', 'jobs', 'preset_experience', 'stages', 'found_jobs', 'saved_searches', 'certifications', 'languages']) {
         const known = columnsOf(db, t);
         for (const row of rows(t)) {
           if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error(`a row in "${t}" is not an object`);
@@ -43,8 +55,9 @@ export function restoreBackup({ db, body }) {
         }
       }
 
-      const p = rows('profile')[0];
+      let p = rows('profile')[0];
       if (p && typeof p === 'object') {
+        if ('social' in p && !('linkedin' in p) && !('github' in p) && !('other_link' in p)) p = { ...splitSocial(p.social), ...p };
         const cols = Object.keys(p).filter((c) => c !== 'id' && columnsOf(db, 'profile').includes(c));
         if (cols.length) db.prepare(`UPDATE profile SET ${cols.map((c) => `${c} = ?`).join(', ')} WHERE id = 1`).run(...cols.map((c) => p[c]));
       }

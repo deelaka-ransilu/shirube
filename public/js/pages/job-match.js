@@ -4,6 +4,7 @@ import { api } from '../lib/api.js';
 import { initials } from '../lib/format.js';
 import { ICON } from '../lib/icons.js';
 import { bindScroll } from '../lib/scroll.js';
+import { placeLine } from '../lib/contact.js';
 
 const sub = (...parts) => parts.filter(Boolean).join(' · ');
 const period = (start, end) => (start && end ? `${start} to ${end}` : start ? `${start} to now` : end || '');
@@ -20,7 +21,7 @@ function cv(d, { best }) {
   const toAdd = d.to_add.filter((s) => s.where === null);
   return html`
     <div class="mt-name">${person.name || 'Your name'}</div>
-    <div class="text-muted mt-line">${sub(preset.target_role, person.location, person.email, person.portfolio)}</div>
+    <div class="text-muted mt-line">${sub(preset.target_role, placeLine(person), person.email, person.portfolio)}</div>
     ${preset.summary ? section('SUMMARY', html`<div class="pre">${preset.summary}</div>`) : ''}
     ${section('SKILLS', skills.length
       ? html`<div class="mt-skills">${skills.map((s) => html`<span class="mt-skill ${s.hit ? 'hit' : ''}">${s.hit ? '✓ ' : ''}${s.name}</span>`)}</div>`

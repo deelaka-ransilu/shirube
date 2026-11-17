@@ -1,4 +1,4 @@
-// My profile: basics, settings, presets (skills, shown experience), education, certifications, experience, backup.
+// My profile: basics, settings, presets (skills, shown experience), education, certifications, languages, experience, backup.
 // Text typed into the main fields lives in the page until Save profile is pressed.
 // Adding or editing an education or experience entry is saved at once (its own small form).
 import { html, raw } from '../lib/html.js';
@@ -13,15 +13,23 @@ const ENTRY = {
   edu: { path: 'education', noun: 'education' },
   exp: { path: 'experience', noun: 'experience' },
   cert: { path: 'certifications', noun: 'certification' },
+  lang: { path: 'languages', noun: 'language' },
 };
 
+// The levels LinkedIn uses; offered as suggestions, anything can be typed.
+const LANG_LEVELS = ['Elementary', 'Limited Working', 'Professional Working', 'Full Professional', 'Native or Bilingual'];
+
+// [key, label, placeholder, max length, wide?]
 const BASICS = [
-  ['name', 'Full name', 'Your name'],
-  ['email', 'Email', 'name@example.com'],
-  ['phone', 'Phone', '+94 ...'],
-  ['location', 'Location', 'Colombo'],
-  ['portfolio', 'Portfolio', 'https://...'],
-  ['social', 'GitHub or LinkedIn', 'https://...'],
+  ['name', 'Full name', 'Your name', 200, true],
+  ['email', 'Email', 'name@example.com', 200],
+  ['phone', 'Phone', '+94 ...', 50],
+  ['location', 'Location', 'Colombo', 200],
+  ['country', 'Country', 'Sri Lanka', 100],
+  ['portfolio', 'Portfolio', 'https://...', 2000],
+  ['linkedin', 'LinkedIn', 'https://www.linkedin.com/in/...', 2000],
+  ['github', 'GitHub', 'https://github.com/...', 2000],
+  ['other_link', 'Other link', 'https://...', 2000],
 ];
 
 function period(start, end) {
@@ -43,7 +51,7 @@ export async function render(el, { stale }) {
   if (stale()) return;
 
   const state = {
-    profile: data.profile, presets: data.presets, education: data.education, certifications: data.certifications, experience: data.experience,
+    profile: data.profile, presets: data.presets, education: data.education, certifications: data.certifications, languages: data.languages, experience: data.experience,
     activeId: data.profile.active_preset_id ?? data.presets[0].id,
     form: null,        // { kind: 'preset' | 'skill' | 'settings' | 'edu' | 'cert' | 'exp', id, draft, error }
     status: '',        // line next to the Save button
@@ -53,7 +61,7 @@ export async function render(el, { stale }) {
   const active = () => state.presets.find((p) => p.id === state.activeId) ?? state.presets[0];
 
   function load(r) {
-    state.profile = r.profile; state.presets = r.presets; state.education = r.education; state.certifications = r.certifications; state.experience = r.experience;
+    state.profile = r.profile; state.presets = r.presets; state.education = r.education; state.certifications = r.certifications; state.languages = r.languages; state.experience = r.experience;
     state.activeId = r.profile.active_preset_id ?? r.presets[0].id;
   }
 
@@ -72,6 +80,7 @@ export async function render(el, { stale }) {
     state.presets = r.presets.map((p) => old.get(p.id) ?? p);
     state.education = r.education;
     state.certifications = r.certifications;
+    state.languages = r.languages;
     state.experience = r.experience;
     const ids = new Set(r.experience.map((x) => x.id));
     state.presets.forEach((p) => { p.experience_ids = p.experience_ids.filter((i) => ids.has(i)); });
@@ -128,6 +137,25 @@ export async function render(el, { stale }) {
             <button class="btn btn-primary" type="submit">Save certification</button>
             <button class="btn btn-secondary" type="button" data-act="close-form">Cancel</button>
             ${id ? html`<button class="btn btn-danger" type="button" data-act="delete-entry" data-kind="cert" data-id="${id}">Remove</button>` : ''}
+          </div>
+        </form>`;
+    }
+    if (kind === 'lang') {
+      const row = state.languages.find((r) => r.id === id) ?? {};
+      const lv = (k) => (draft ? draft[k] ?? '' : row[k] ?? '');
+      return html`
+        <form class="inner-box" data-form="lang">
+          <b>${id ? 'Edit' : 'Add'} language</b>
+          <div class="fields">
+            ${field('Language', 'f-lname', lv('name'), 'name="name" maxlength="100" data-focus', 'English')}
+            ${field('Level', 'f-llevel', lv('level'), 'name="level" maxlength="60" list="lang-levels"', 'Professional Working')}
+            <datalist id="lang-levels">${LANG_LEVELS.map((l) => html`<option value="${l}"></option>`)}</datalist>
+          </div>
+          ${error ? html`<div class="field-error" role="alert">◇ ${error}</div>` : ''}
+          <div class="row">
+            <button class="btn btn-primary" type="submit">Save language</button>
+            <button class="btn btn-secondary" type="button" data-act="close-form">Cancel</button>
+            ${id ? html`<button class="btn btn-danger" type="button" data-act="delete-entry" data-kind="lang" data-id="${id}">Remove</button>` : ''}
           </div>
         </form>`;
     }
@@ -205,11 +233,11 @@ export async function render(el, { stale }) {
             <div class="card pf-card">
               <h2>About you</h2>
               <div class="pf-grid2">
-                ${BASICS.map(([key, label, ph]) => field(label, `p-${key}`, state.profile[key], `data-p="${key}" maxlength="2000"`, ph))}
+                ${BASICS.map(([key, label, ph, max, wide]) => html`<div class="${wide ? 'wide' : ''}">${field(label, `p-${key}`, state.profile[key], `data-p="${key}" maxlength="${max}"`, ph)}</div>`)}
               </div>
             </div>
 
-            <div class="card pf-card pf-list">
+            <div class="card pf-card pf-list pf-fit">
               <div class="row pf-head">
                 <h2>Education <span class="text-muted text-sm">same for all presets</span></h2>
                 <button type="button" class="chip sm" data-act="add-edu">+ Add</button>
@@ -265,6 +293,18 @@ export async function render(el, { stale }) {
               </div></div><div class="scroll-fade"></div></div>
             </div>
 
+            <div class="card pf-card pf-list pf-fit">
+              <div class="row pf-head">
+                <h2>Languages <span class="text-muted text-sm">same for all presets</span></h2>
+                <button type="button" class="chip sm" data-act="add-lang">+ Add</button>
+              </div>
+              ${state.languages.length ? scrollList(state.languages.map((r) => html`
+                <div class="entry">
+                  <div class="entry-text"><b>${r.name}</b><span class="text-muted text-sm">${r.level}</span></div>
+                  <button type="button" class="btn btn-secondary icon-btn sm" data-edit="lang" data-id="${r.id}" aria-label="Edit ${r.name}" title="Edit">${ICON.edit}</button>
+                </div>`)) : html`<div class="text-muted">Nothing added yet.</div>`}
+            </div>
+
             <div class="card pf-card pf-list">
               <div class="row pf-head">
                 <h2>Experience <span class="text-muted text-sm">choose what this preset shows</span></h2>
@@ -317,7 +357,7 @@ export async function render(el, { stale }) {
     collect();
     state.status = '';
     const body = {
-      ...Object.fromEntries(['name', 'email', 'phone', 'location', 'portfolio', 'social', 'follow_up_days', 'time_zone'].map((k) => [k, state.profile[k]])),
+      ...Object.fromEntries(['name', 'email', 'phone', 'location', 'country', 'portfolio', 'linkedin', 'github', 'other_link', 'follow_up_days', 'time_zone'].map((k) => [k, state.profile[k]])),
       active_preset_id: state.activeId,
       presets: state.presets.map(({ id, name, target_role, summary, skills, experience_ids }) => ({ id, name, target_role, summary, skills, experience_ids })),
     };
@@ -395,6 +435,7 @@ export async function render(el, { stale }) {
       case 'new-preset': collect(); state.form = { kind: 'preset' }; draw(); break;
       case 'add-skill': collect(); state.form = { kind: 'skill' }; draw(); break;
       case 'settings': collect(); state.form = { kind: 'settings' }; draw(); break;
+      case 'add-lang': collect(); state.form = { kind: 'lang', id: null }; draw(); break;
       case 'add-cert': collect(); state.form = { kind: 'cert', id: null }; draw(); break;
       case 'add-edu': collect(); state.form = { kind: 'edu', id: null }; draw(); break;
       case 'add-exp': collect(); state.form = { kind: 'exp', id: null }; draw(); break;

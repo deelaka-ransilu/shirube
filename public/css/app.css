@@ -292,6 +292,7 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
 .pf-card > h2 { margin-bottom: var(--space-2); }
 .pf-icons { display: flex; gap: var(--space-1); }
 .pf-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-3); }
+.pf-grid2 .wide { grid-column: 1 / -1; }
 .pf-gap { margin-top: var(--space-2); }
 .pf-note { margin: var(--space-2) 0 0; }
 .profile-page .input { min-height: 36px; padding: 6px 12px; font-size: var(--text-sm); }
@@ -299,6 +300,7 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
 .profile-page .label { margin-bottom: 2px; }
 .pf-list { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .pf-list .pf-scroll { flex: 1; min-height: 0; }
+.pf-list.pf-fit { flex: 0 1 auto; }
 .pf-scroll .scroller { padding-bottom: var(--space-5); }
 .pf-skills .scroller { flex: none; max-height: 96px; padding-bottom: var(--space-3); }
 .skill-form { gap: var(--space-2); margin-bottom: var(--space-2); }

@@ -35,7 +35,7 @@ function readZip(buf) {
 
 const sample = () => ({
   job: { company: 'Globex & Sons' },
-  person: { name: 'Dee <Sample>', email: 'a@b.c', phone: '', location: '', portfolio: 'https://x.dev/', social: '' },
+  person: { name: 'Dee <Sample>', email: 'a@b.c', phone: '', location: '', portfolio: 'https://x.dev/', linkedin: '' },
   preset: { target_role: 'SRE', summary: 'Line one\nLine two' },
   best_skills: [{ name: 'Docker', hit: true }, { name: 'Git', hit: false }],
   experience: [{ company: 'Acme', role: 'Support', start_date: '2025', end_date: '', details: 'Did things\n- Fixed it' }],

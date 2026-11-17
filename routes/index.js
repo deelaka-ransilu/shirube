@@ -10,6 +10,7 @@ import {
   getProfile, saveProfile, createPreset, deletePreset,
   createEducation, updateEducation, deleteEducation,
   createCertification, updateCertification, deleteCertification,
+  createLanguage, updateLanguage, deleteLanguage,
   createExperience, updateExperience, deleteExperience,
 } from './profile.js';
 import { exportBackup, restoreBackup } from './backup.js';
@@ -55,6 +56,9 @@ const list = [
   ['POST', '/api/certifications', createCertification],
   ['PATCH', '/api/certifications/:id', updateCertification],
   ['DELETE', '/api/certifications/:id', deleteCertification],
+  ['POST', '/api/languages', createLanguage],
+  ['PATCH', '/api/languages/:id', updateLanguage],
+  ['DELETE', '/api/languages/:id', deleteLanguage],
   ['POST', '/api/experience', createExperience],
   ['PATCH', '/api/experience/:id', updateExperience],
   ['DELETE', '/api/experience/:id', deleteExperience],
