@@ -834,3 +834,32 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
 
 /* ---- Jobs page (step 54): skills badge on rows you can still apply to ---- */
 .row-badges .b-match.has { background: var(--color-frame); color: #FFFFFF; }
+
+/* ---- Found page (v3, step 55): orange count tile left, filters head tile, list tile and advert tile ---- */
+.bento-found { grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+.bento-found .found-count { grid-column: 1; grid-row: 1 / span 2; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); overflow: auto; background: var(--color-primary); color: var(--color-on-primary); }
+.bento-found .found-head { grid-column: 2 / 4; grid-row: 1; padding: 14px 18px; }
+.bento-found .found-listtile { grid-column: 2; grid-row: 2; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.bento-found .found-listtile .nj-listarea { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.bento-found .found-dtile { grid-column: 3; grid-row: 2; min-height: 0; overflow: hidden; }
+.found-count .fc-label { font-size: var(--text-xs); }
+.found-count .fc-mid { margin-top: auto; }
+.found-count .fc-num { display: block; font-size: 112px; font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: .9; }
+.found-count .fc-cap { margin: var(--space-2) 0 0; font-size: 12px; }
+.found-count .fc-cap:empty { display: none; }
+.found-count .nj-count { display: flex; flex-direction: column; gap: var(--space-2); }
+.found-count .nj-count-right { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.found-count .text-muted, .found-count .found-status, .found-count .nj-hint { color: inherit; opacity: .85; }
+.found-count .nj-hint { margin: 0; }
+.found-count .nj-hint a, .found-count .link-btn { color: inherit; }
+.found-count .found-status { margin: 0; }
+@media (max-width: 1100px), (max-height: 720px) {
+  .bento-found { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .bento-found > .bento-tile { grid-column: 1; grid-row: auto; }
+  .bento-found .found-count { flex-direction: row; flex-wrap: wrap; align-items: flex-end; overflow: visible; }
+  .bento-found .found-count .fc-mid { margin-top: 0; }
+  .found-count .fc-num { font-size: 56px; }
+  .bento-found .found-listtile { display: block; overflow: visible; }
+  .bento-found[data-view="list"] > .found-dtile { display: none; }
+  .bento-found[data-view="detail"] > :not(.found-dtile) { display: none; }
+}

@@ -91,22 +91,24 @@ export async function render(el, { stale, query = {} }) {
   }
 
   function countHtml() {
-    const { jobs, new_count, hidden_count, last_fetch_at } = data;
-    const n = jobs.length;
-    const first = state.showHidden
-      ? `${n} hidden`
-      : `${n} job${n === 1 ? '' : 's'}${new_count ? ` · ${new_count} new` : ''}`;
+    const { hidden_count } = data;
     const hiddenLink = state.showHidden
       ? html`<button type="button" class="link-btn" data-toggle-hidden>← Back to jobs</button>`
       : hidden_count ? html`<button type="button" class="link-btn" data-toggle-hidden>Show hidden (${hidden_count})</button>` : '';
     return html`
-      <div class="nj-count-text"><b>${first}</b>${last_fetch_at ? html`<span class="text-muted"> · updated ${stamp(last_fetch_at)}</span>` : ''}</div>
+      
       <div class="nj-count-right">
         ${hiddenLink}
         ${data.has_presets ? html`<button type="button" class="chip sm" data-sort aria-pressed="${state.sort === 'match'}" title="Jobs that match your role presets first. Nothing is hidden.">Best match first</button>` : ''}
         <button type="button" class="btn btn-secondary nj-refresh${busy ? ' busy' : ''}" id="found-refresh" title="Read the latest jobs from ITPro" ${busy ? 'disabled' : ''}>${ICON.refresh}<span>${busy ? 'Refreshing…' : 'Refresh'}</span></button>
       </div>
       ${data.has_presets ? '' : html`<p class="nj-hint text-sm text-muted">Add skills to a role preset in <a href="#/profile">Profile</a> to see which jobs match you.</p>`}`;
+  }
+
+  function countInfo() {
+    const { jobs, new_count, last_fetch_at } = data;
+    const parts = [state.showHidden || !new_count ? '' : `${new_count} new`, last_fetch_at ? `updated ${stamp(last_fetch_at)}` : ''];
+    return { label: state.showHidden ? 'hidden jobs' : 'jobs found', n: jobs.length, cap: parts.filter(Boolean).join(' · ') };
   }
 
   const sameSearch = (x) => x.q.toLowerCase() === state.q.trim().replace(/\s+/g, ' ').toLowerCase() && x.work_mode === state.mode && x.posted === state.posted;
@@ -225,13 +227,13 @@ export async function render(el, { stale, query = {} }) {
   }
 
   function detailHtml() {
-    if (!detail) return html`<div class="card compact found-detail" id="found-detail-card"><p class="text-muted">${data?.jobs.length ? 'Pick a job to read it here.' : 'No job to show.'}</p></div>`;
+    if (!detail) return html`<div class="found-detail" id="found-detail-card"><p class="text-muted">${data?.jobs.length ? 'Pick a job to read it here.' : 'No job to show.'}</p></div>`;
     const j = detail;
     const link = itproLink(j.url);
     const mine = data.jobs.find((x) => x.id === j.id)?.match?.skills;
     const hasSkills = mine ? mine.names.join(', ') : '';
     return html`
-      <article class="card compact found-detail" id="found-detail-card" aria-label="${j.title}">
+      <article class="found-detail" id="found-detail-card" aria-label="${j.title}">
         <div class="nj-dhead">
           <button type="button" class="btn btn-secondary icon-btn md nj-back" data-back aria-label="Back to the list" title="Back to the list">${ICON.back}</button>
           <div class="avatar big" aria-hidden="true">${initials(j.company || j.title)}</div>
@@ -274,7 +276,13 @@ export async function render(el, { stale, query = {} }) {
     if (document.activeElement !== box) box.value = state.place;   // never rewrite the box while someone types in it
     $('[data-clear-place]').hidden = !state.place;
   }
-  function drawCount() { $('#found-count').innerHTML = countHtml(); }
+  function drawCount() {
+    $('#found-count').innerHTML = countHtml();
+    const c = countInfo();
+    $('#found-label').textContent = c.label;
+    $('#found-num').textContent = String(c.n);
+    $('#found-cap').textContent = c.cap;
+  }
   function drawStatus() { $('#found-status').textContent = status; }
   function drawMore() {
     $('#found-more-slot').innerHTML = moreHtml();
@@ -430,8 +438,17 @@ export async function render(el, { stale, query = {} }) {
   el.innerHTML = html`
     <div class="found-page">
       <h1 class="sr-only">New jobs</h1>
-      <div class="found-layout" id="found-layout" data-view="${state.view}">
-        <section class="card compact found-list" aria-label="Jobs">
+      <div class="bento bento-found" id="found-layout" data-view="${state.view}">
+        <section class="bento-tile found-count" aria-label="Jobs in this view">
+          <span class="mono fc-label" id="found-label"></span>
+          <div class="fc-mid">
+            <span class="fc-num" id="found-num"></span>
+            <p class="fc-cap" id="found-cap"></p>
+          </div>
+          <div class="nj-count" id="found-count"></div>
+          <p class="text-sm found-status" id="found-status" role="status"></p>
+        </section>
+        <section class="bento-tile found-head" aria-label="Search and filters">
           <div class="nj-controls">
             <div class="nj-searchrow">
               <div class="nj-search">
@@ -454,12 +471,14 @@ export async function render(el, { stale, query = {} }) {
               </div>
               <input type="date" id="found-date" class="found-date-input" tabindex="-1" aria-hidden="true" value="${state.since}">
             </div>
-            <div class="nj-count" id="found-count"></div>
-            <p class="text-sm found-status" id="found-status" role="status"></p>
+
+
           </div>
+          </section>
+        <section class="bento-tile found-listtile" aria-label="Jobs">
           <div class="nj-listarea" id="found-listarea"></div>
         </section>
-        <div id="found-detail"></div>
+        <div class="bento-tile found-dtile" id="found-detail"></div>
       </div>
     </div>`;
   drawStatus(); drawFilters(); drawCount(); drawMore(); drawList(); drawDetail();
