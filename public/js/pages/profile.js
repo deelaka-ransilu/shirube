@@ -215,7 +215,13 @@ export async function render(el, { stale }) {
     el.innerHTML = html`
       <div class="profile-page">
         <h1 class="sr-only">My profile</h1>
-        <div class="preset-row">
+        <div class="bento bento-profile">
+          <section class="bento-tile pf-hero" aria-label="Your profile">
+            <span class="pf-hero-name">${state.profile.name || 'Your name'}</span>
+            <span class="pf-hero-role">${p.target_role || 'No target role yet'}</span>
+          </section>
+          <section class="bento-tile pf-presetbar" aria-label="Role presets and tools">
+          <div class="preset-row">
           <span class="text-muted text-sm">Role preset</span>
           <div class="chip-group" role="group" aria-label="Role preset">
             ${state.presets.map((x) => html`<button type="button" class="chip sm" data-preset="${x.id}" aria-pressed="${x.id === p.id}">${x.name}</button>`)}
@@ -232,16 +238,17 @@ export async function render(el, { stale }) {
           </div>
         </div>
 
+        </section>
         <div class="profile-grid">
           <div class="col">
-            <div class="card pf-card">
+            <div class="bento-tile pf-card">
               <h2>About you</h2>
               <div class="pf-grid2">
                 ${BASICS.map(([key, label, ph, max, wide]) => html`<div class="${wide ? 'wide' : ''}">${field(label, `p-${key}`, state.profile[key], `data-p="${key}" maxlength="${max}"`, ph)}</div>`)}
               </div>
             </div>
 
-            <div class="card pf-card pf-list pf-fit">
+            <div class="bento-tile pf-card pf-list pf-fit">
               <div class="row pf-head">
                 <h2>Education <span class="text-muted text-sm">same for all presets</span></h2>
                 <button type="button" class="chip sm" data-act="add-edu">+ Add</button>
@@ -253,7 +260,7 @@ export async function render(el, { stale }) {
                 </div>`)) : html`<div class="text-muted">Nothing added yet.</div>`}
             </div>
 
-            <div class="card pf-card pf-list">
+            <div class="bento-tile pf-card pf-list">
               <div class="row pf-head">
                 <h2>Certifications <span class="text-muted text-sm">same for all presets</span></h2>
                 <button type="button" class="chip sm" data-act="add-cert">+ Add</button>
@@ -267,7 +274,7 @@ export async function render(el, { stale }) {
           </div>
 
           <div class="col">
-            <div class="card pf-card">
+            <div class="bento-tile pf-card">
               <div class="row pf-head">
                 <h2>This preset</h2>
                 ${state.presets.length > 1 ? html`<button type="button" class="btn btn-danger icon-btn md" data-act="delete-preset" aria-label="Delete this preset" title="Delete this preset">${ICON.trash}</button>` : ''}
@@ -280,7 +287,7 @@ export async function render(el, { stale }) {
               <textarea class="input" id="pp-summary" rows="3" data-pp="summary" maxlength="2000" placeholder="Two lines about you">${p.summary}</textarea>
             </div>
 
-            <div class="card pf-card">
+            <div class="bento-tile pf-card">
               <div class="row pf-head">
                 <h2>Skills <span class="text-muted text-sm">changes with the preset</span></h2>
                 <button type="button" class="chip sm" data-act="add-skill">+ Add skill</button>
@@ -297,7 +304,7 @@ export async function render(el, { stale }) {
               </div></div><div class="scroll-fade"></div></div>
             </div>
 
-            <div class="card pf-card pf-list pf-fit">
+            <div class="bento-tile pf-card pf-list pf-fit">
               <div class="row pf-head">
                 <h2>Languages <span class="text-muted text-sm">same for all presets</span></h2>
                 <button type="button" class="chip sm" data-act="add-lang">+ Add</button>
@@ -309,7 +316,7 @@ export async function render(el, { stale }) {
                 </div>`)) : html`<div class="text-muted">Nothing added yet.</div>`}
             </div>
 
-            <div class="card pf-card pf-list">
+            <div class="bento-tile pf-card pf-list">
               <div class="row pf-head">
                 <h2>Experience <span class="text-muted text-sm">choose what this preset shows</span></h2>
                 <button type="button" class="chip sm" data-act="add-exp">+ Add</button>
@@ -325,6 +332,7 @@ export async function render(el, { stale }) {
               })) : html`<div class="text-muted">Nothing added yet.</div>`}
             </div>
           </div>
+        </div>
         </div>
         ${dialog()}
         ${importDialog()}
