@@ -405,6 +405,14 @@ a.btn.btn-add:hover:not(:disabled) { background: #2A2D30; border-color: #2A2D30;
 a.btn-open { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px 10px 20px; background: var(--color-frame); color: #FFFFFF; border-radius: var(--radius-control); font-weight: var(--weight-medium); text-decoration: none; }
 a.btn-open:hover { background: #2A2D30; color: #FFFFFF; }
 .btn-open svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.next-match { margin: 0; font-size: 12px; }
+.next-match:empty { display: none; }
+.next-alerts { margin: 0; font-size: 12px; }
+.next-alerts:empty { display: none; }
+.next-alerts a { color: var(--color-frame); font-weight: var(--weight-medium); text-decoration: underline; text-underline-offset: 3px; }
+a.btn-see { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px 7px 16px; border: 1.5px solid var(--color-frame); border-radius: var(--radius-control); color: var(--color-frame); background: transparent; font-size: 13px; font-weight: var(--weight-medium); text-decoration: none; }
+a.btn-see:hover { background: var(--color-frame); color: #FFFFFF; }
+.btn-see svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .bento-stats { grid-column: 3; grid-row: 1; min-height: 240px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: var(--frame-gap); }
 .stat-card { display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-2); padding: 12px 18px; color: inherit; text-decoration: none; }
 a.stat-card:hover { background: var(--color-raised); }
@@ -414,7 +422,7 @@ a.stat-card:hover .stat-icon { background: var(--color-frame); color: var(--colo
 .stat-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .stat-card strong { font-size: var(--text-stat); font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: 1; }
 .stat-card.is-zero strong { color: var(--color-muted); }
-.stat-of { margin-left: auto; font-size: var(--text-xs); }
+.stat-of { margin-left: auto; font-size: var(--text-xs); white-space: nowrap; }
 .stat-bar { display: block; height: 4px; background: var(--color-raised); border-radius: var(--radius-pill); overflow: hidden; }
 .stat-bar i { display: block; height: 100%; width: var(--p); background: var(--color-accent); border-radius: inherit; }
 a.stat-card.is-offer, a.stat-card.is-offer:hover { background: var(--color-primary); color: var(--color-on-primary); }
@@ -436,7 +444,7 @@ a.stat-card.is-offer .stat-bar i { background: var(--color-on-primary); }
 .list-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding-right: var(--space-5); }
 .list-col + .list-col { padding-right: 0; padding-left: var(--space-5); border-left: 1px solid var(--color-line); }
 .list-col .rows { flex: 0 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin; }
-.tile-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+.tile-head { display: flex; justify-content: space-between; align-items: center; min-height: 34px; gap: var(--space-3); }
 .tile-head h2 { margin: 0; }
 .tile-note { margin: 2px 0 var(--space-2); }
 .bento .list-row { flex-wrap: nowrap; gap: var(--space-3); padding: 10px var(--space-2); }

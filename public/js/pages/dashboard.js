@@ -120,11 +120,13 @@ export async function render(el, { stale }) {
         <section class="bento-tile bento-next">
           <div class="next-top"><span class="mono text-muted">${up.label}</span>${nextChips.length ? html`<span class="next-chips">${nextChips.map((c) => html`<span class="tag">${c}</span>`)}</span>` : ''}</div>
           <h2 class="sentence${up.sentence.length > 56 ? ' long' : ''}">${up.href ? html`<a href="${up.href}">${sentence}</a>` : sentence}</h2>
+          <p class="mono text-muted next-match"></p>
+          <p class="mono next-alerts"></p>
           <div class="next-foot"><p class="text-muted next-line">${up.line}</p>${up.href ? html`<a class="btn-open" href="${up.href}">Open job<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>` : ''}</div>
         </section>
 
         <div class="bento-stats" role="group" aria-label="Application stages">
-          ${statRow(counts).map((s, i, all, den = s.key === 'applied' ? (Number.isFinite(counts.total) ? counts.total : s.n + counts.open) : (all.find((x) => x.key === 'applied') || s).n, p = den ? Math.min(100, Math.round(s.n / den * 100)) : 0) => html`<a class="bento-tile stat-card${!s.n ? ' is-zero' : ''}${s.key === 'offer' && s.n > 0 ? ' is-offer' : ''}" href="#/jobs?status=${s.key}"><span class="stat-head"><span class="stat-icon" aria-hidden="true">${STAT_ICONS[s.key] || ''}</span><span class="mono text-muted">${s.key}</span><span class="stat-of mono text-muted">${s.n} of ${den}</span></span><strong>${s.n}</strong><span class="stat-bar" style="--p:${p}%"><i></i></span></a>`)}
+          ${statRow(counts).map((s, i, all, den = s.key === 'applied' ? (Number.isFinite(counts.total) ? counts.total : s.n + counts.open) : (all.find((x) => x.key === 'applied') || s).n, p = den ? Math.min(100, Math.round(s.n / den * 100)) : 0) => html`<a class="bento-tile stat-card${!s.n ? ' is-zero' : ''}${s.key === 'offer' && s.n > 0 ? ' is-offer' : ''}" href="#/jobs?status=${s.key}"><span class="stat-head"><span class="stat-icon" aria-hidden="true">${STAT_ICONS[s.key] || ''}</span><span class="mono text-muted">${s.key}</span><span class="stat-of mono text-muted">${s.n}${s.key === 'applied' ? ' of ' : '/'}${den}${s.key === 'applied' ? ' jobs' : ' applied'}</span></span><strong>${s.n}</strong><span class="stat-bar" style="--p:${p}%"><i></i></span></a>`)}
         </div>
 
         <a class="bento-tile bento-count" href="#/jobs?status=open" aria-label="${counts.open} open to apply">
@@ -142,11 +144,37 @@ export async function render(el, { stale }) {
           <div class="rows">${openRows}</div>
           </div>
           <div class="list-col">
-          <div class="tile-head"><h2>Applied</h2><a class="link text-sm" href="#/jobs">See all jobs</a></div>
+          <div class="tile-head"><h2>Applied</h2><a class="btn-see" href="#/jobs">See all jobs<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a></div>
           <p class="text-muted text-sm tile-note">Newest application first</p>
           <div class="rows">${appliedRows}</div>
           </div>
         </section>
       </div>
     </div>`;
+
+  // Skill match for the suggested job: same answer the Job match page uses. Never blocks the Dashboard.
+  const matchSlot = el.querySelector('.next-match');
+  if (matchSlot && jobId) {
+    api(`/api/jobs/${jobId}/match`).then((d) => {
+      const list = d?.match?.skills || [];
+      if (!d?.job?.has_advert || !list.length) return;
+      const hit = list.filter((s) => s.matched).length;
+      matchSlot.textContent = `${hit} of ${list.length} skills match` + (d.preset?.name ? ` · ${d.preset.name}` : '');
+    }).catch(() => {});
+  }
+
+  // Alerts: follow-ups due and new Found jobs. Both numbers are read-only (Found is not refreshed). Hidden when both are 0.
+  const alertSlot = el.querySelector('.next-alerts');
+  if (alertSlot) {
+    Promise.all([
+      api('/api/found').then((d) => Number(d?.new_count) || 0).catch(() => 0),
+      api('/api/followups/count').then((d) => Number(d?.due) || 0).catch(() => 0),
+    ]).then(([fresh, due]) => {
+      if (stale()) return;
+      const bits = [];
+      if (due) bits.push(`<a href="#/followups">${due} follow-up${due === 1 ? '' : 's'} due</a>`);
+      if (fresh) bits.push(`<a href="#/found">${fresh} new on Found</a>`);
+      alertSlot.innerHTML = bits.join('<span aria-hidden="true"> \u00b7 </span>');
+    });
+  }
 }
