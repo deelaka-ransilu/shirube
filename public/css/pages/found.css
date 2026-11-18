@@ -1,0 +1,220 @@
+/* Found */
+.chip:disabled { opacity: 0.6; cursor: default; }
+.chip[aria-pressed="true"]:disabled { opacity: 1; }
+.found-status { min-height: 1.4em; margin: 0; color: var(--color-muted); }
+.found-group { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.found-group .chip-group { flex-wrap: nowrap; }
+@media (max-width: 1400px) { .found-group .chip-group { flex-wrap: wrap; } }
+.found-group .label { margin: 0; }
+.found-row { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: var(--hit-min); padding: var(--space-3) var(--space-2); text-align: left; font: inherit; color: inherit; background: transparent; border: 1.5px solid transparent; border-bottom: 1px solid var(--color-line); border-radius: 0; cursor: pointer; }
+.found-row:hover { background: var(--color-raised); }
+.found-row[aria-current="true"] { background: var(--color-raised); border: 1.5px solid var(--color-border-strong); border-radius: var(--radius-control); }
+.found-row-main { flex: 1; min-width: 0; }
+.found-row-main b { display: block; font-size: var(--text-md); font-weight: var(--weight-medium); overflow-wrap: anywhere; }
+.found-row-main small { display: block; font-size: var(--text-sm); overflow-wrap: anywhere; }
+.tag-new { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+.found-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.found-msg { margin: 0; min-height: 1.4em; }
+.found-msg:empty { display: none; }
+.found-advert { white-space: pre-wrap; overflow-wrap: anywhere; line-height: var(--leading-body); }
+
+
+/* Saved searches */
+.saved-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.saved-layout:not(:has(.saved-form)) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .saved-layout { grid-template-columns: minmax(0, 1fr); } }
+.saved-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
+.saved-card { display: flex; flex-direction: column; gap: var(--space-3); }
+.saved-card h2 { margin: 0; font-size: var(--text-lg); }
+.saved-words { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.saved-count { font-weight: var(--weight-medium); }
+.saved-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.saved-form h2 { margin: 0; font-size: var(--text-lg); }
+.saved-card .found-actions .btn { display: inline-flex; align-items: center; text-decoration: none; }
+
+
+/* Found: one screen, no page scrolling. The list and the advert scroll inside their own boxes. */
+.chip.sm { height: 28px; min-height: 28px; padding: 0 10px; font-size: var(--text-sm); display: inline-flex; align-items: center; gap: var(--space-1); text-decoration: none; white-space: nowrap; }
+.found-status { min-height: 0; }
+.found-status:empty { display: none; }
+.found-date { position: relative; display: inline-flex; }
+.found-date-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+
+#page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.addjob-page), #page:has(.fu-page) { display: flex; flex-direction: column; overflow: hidden; }
+.found-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+
+/* Small windows: stack everything and let the page scroll as before */
+@media (max-width: 1100px) {
+  #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.addjob-page), #page:has(.fu-page) { display: block; overflow: auto; }
+}
+
+/* Found layout rules (from Found look) */
+.found-actions { flex-wrap: nowrap; margin-left: auto; flex-shrink: 0; }
+.found-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.found-advert-wrap { flex: 1; min-height: 0; }
+.found-advert { padding-bottom: var(--space-5); }
+.found-list-wrap { flex: 1; min-height: 0; }
+.found-row-badges, .row-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }
+
+
+/* ---- Found list rows: three small buttons stacked on the right ---- */
+.found-item { position: relative; border-bottom: 1px solid var(--color-line); }
+.found-item:has(.found-row[aria-current="true"]) { border-bottom-color: transparent; }
+.found-item .found-row { padding-right: 48px; border-bottom-color: transparent; }
+.found-item .found-row[aria-current="true"] { border-bottom-color: var(--color-border-strong); }
+.found-row-main { display: flex; flex-direction: column; gap: 2px; }
+.found-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); margin-top: 2px; }
+.found-row-actions { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; }
+.icon-btn.sm { width: 26px; min-height: 26px; height: 26px; border-radius: var(--radius-small); }
+.icon-btn.sm .icon { width: 15px; height: 15px; }
+.found-row-actions .btn:hover:not(:disabled) { background: var(--color-raised); }
+
+
+/* ---- New jobs (step 40): one search, one filter row; list on the left, the whole advert on the right ---- */
+.found-layout { flex: 1; min-height: 0; margin-top: var(--space-3); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-4); }
+.found-list { display: flex; flex-direction: column; min-height: 0; }
+.nj-controls { position: relative; display: flex; flex-direction: column; gap: var(--space-2); flex-shrink: 0; }
+.nj-searchrow { display: flex; align-items: center; gap: var(--space-2); }
+.nj-search { flex: 1; min-width: 0; }
+.nj-morebtn { position: relative; width: var(--hit-min); height: var(--hit-min); flex-shrink: 0; }
+.nj-dot { position: absolute; top: 6px; right: 6px; width: 11px; height: 11px; background: var(--color-accent); border: 2px solid var(--color-card); border-radius: var(--radius-pill); }
+.nj-dot[hidden] { display: none; }
+
+.nj-filters { position: relative; display: flex; flex-direction: column; gap: var(--space-2); }
+.nj-frow { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); min-width: 0; }
+.nj-fgroup { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.nj-rowlabel { flex-shrink: 0; min-width: 62px; font-size: var(--text-xs); color: var(--color-muted); }
+.nj-place { flex: 1 1 190px; min-width: 0; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 6px 0 12px; background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); }
+.nj-place:focus-within { outline: 2px solid var(--color-text); outline-offset: 2px; }
+.nj-place > span { flex-shrink: 0; font-size: var(--text-xs); color: var(--color-muted); }
+.nj-place input { flex: 1; min-width: 0; height: 100%; padding: 0; background: transparent; color: var(--color-text); font: var(--text-sm) var(--font-sans); border: 0; outline: none; }
+.nj-clear { flex-shrink: 0; width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--color-raised); color: var(--color-text); border: 0; border-radius: var(--radius-pill); font-size: 15px; line-height: 1; cursor: pointer; }
+.nj-clear[hidden] { display: none; }
+
+.nj-count { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-2); min-height: 30px; }
+.nj-count-right { display: flex; align-items: center; gap: var(--space-3); flex-shrink: 0; }
+.nj-count .link-btn { min-height: 28px; }
+.nj-refresh { height: 30px; min-height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); }
+.nj-refresh .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nj-hint { flex-basis: 100%; margin: 0; }
+.nj-hint a { color: var(--color-text); }
+.nj-have { margin: 0; }
+.badge.b-skills, .badge.b-role, .badge.b-entry { background: color-mix(in srgb, var(--bt) 30%, transparent); border-color: color-mix(in srgb, var(--bt) 60%, transparent); color: var(--color-text); }
+.badge.b-skills { --bt: var(--tint-green); }
+.badge.b-role { --bt: var(--tint-lilac); }
+.badge.b-entry { --bt: var(--tint-yellow); }
+.icon-btn.is-saved { color: var(--tint-lilac); border-color: var(--color-accent); }
+.icon-btn.busy .icon, .nj-refresh.busy .icon { animation: nj-spin 0.9s linear infinite; }
+@keyframes nj-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .icon-btn.busy .icon, .nj-refresh.busy .icon { animation: none; } }
+.nj-listarea { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: var(--space-1); border-top: 1px solid var(--color-line); }
+.nj-empty { margin: auto; padding: var(--space-5) var(--space-3); text-align: center; }
+
+/* More filters: a panel over the list, so nothing below it moves */
+#found-more-slot { display: contents; }
+.nj-more { position: absolute; left: 0; right: 0; top: calc(var(--hit-min) + var(--space-1)); z-index: 6; max-height: min(70vh, 540px); overflow: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-inner); box-shadow: var(--shadow-old); scrollbar-width: thin; }
+.nj-more-block { display: flex; flex-direction: column; gap: var(--space-2); }
+.nj-more-block .label { margin: 0; }
+.found-manage { color: var(--color-text); }
+.found-save { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--color-card); border-radius: var(--radius-control); }
+.found-save .label { margin: 0; }
+.found-save p { margin: 0; }
+.nj-inline { display: flex; gap: var(--space-2); }
+.nj-inline .input { flex: 1; min-width: 0; }
+.badge.b-off { background: transparent; color: var(--color-muted); opacity: 0.6; }
+
+/* The job: head, badges, three labelled buttons, then the whole advert (it scrolls inside its own box) */
+#found-detail { min-height: 0; overflow: hidden; }
+.found-detail { height: 100%; display: flex; flex-direction: column; gap: var(--space-3); overflow: hidden; }
+.found-detail.under-dock { padding-bottom: 18px; }   /* the advert box keeps the dock space itself */
+.nj-dhead { display: flex; align-items: center; gap: var(--space-3); }
+.nj-dhead .row-main { flex: 1; min-width: 0; }
+.nj-dhead h2 { margin: 0; font-size: var(--text-lg); overflow-wrap: anywhere; }
+.nj-back { display: none; flex-shrink: 0; }
+.nj-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.nj-btn { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 40px; padding: 8px 16px; text-decoration: none; }
+.nj-btn .icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Under 1100px wide: one half at a time. Tap a job to read it, the arrow goes back to the list. */
+@media (max-width: 1100px) {
+  .found-page { display: block; }
+  .found-layout { display: block; }
+  .found-layout[data-view="list"] #found-detail { display: none; }
+  .found-layout[data-view="detail"] .found-list { display: none; }
+  .found-list { display: block; }
+  .nj-listarea { display: block; }
+  #found-detail { overflow: visible; }
+  .found-detail { height: auto; overflow: visible; }
+  .nj-back { display: inline-flex; }
+}
+
+
+/* ---- Found page (v3, step 55): orange count tile left, filters head tile, list tile and advert tile ---- */
+.bento-found { grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+.bento-found .found-count { grid-column: 1; grid-row: 1 / span 2; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); overflow: auto; background: var(--color-primary); color: var(--color-on-primary); }
+.bento-found .found-head { grid-column: 2 / 4; grid-row: 1; padding: 14px 18px; }
+.bento-found .found-listtile { grid-column: 2; grid-row: 2; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.bento-found .found-listtile .nj-listarea { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.bento-found .found-dtile { grid-column: 3; grid-row: 2; min-height: 0; overflow: hidden; }
+.found-count .fc-label { font-size: var(--text-xs); }
+.found-count .fc-mid { margin-top: auto; }
+.found-count .fc-num { display: block; font-size: 112px; font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: .9; }
+.found-count .fc-cap { margin: var(--space-2) 0 0; font-size: 12px; }
+.found-count .fc-cap:empty { display: none; }
+.found-count .nj-count { display: flex; flex-direction: column; gap: var(--space-2); }
+.found-count .nj-count-right { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.found-count .text-muted, .found-count .found-status, .found-count .nj-hint { color: inherit; opacity: .85; }
+.found-count .nj-hint { margin: 0; }
+.found-count .nj-hint a, .found-count .link-btn { color: inherit; }
+.found-count .found-status { margin: 0; }
+@media (max-width: 1100px), (max-height: 720px) {
+  .bento-found { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .bento-found > .bento-tile { grid-column: 1; grid-row: auto; }
+  .bento-found .found-count { flex-direction: row; flex-wrap: wrap; align-items: flex-end; overflow: visible; }
+  .bento-found .found-count .fc-mid { margin-top: 0; }
+  .found-count .fc-num { font-size: 56px; }
+  .bento-found .found-listtile { display: block; overflow: visible; }
+  .bento-found[data-view="list"] > .found-dtile { display: none; }
+  .bento-found[data-view="detail"] > :not(.found-dtile) { display: none; }
+}
+
+/* ---- Found page tweak (step 57): buttons on top, label hidden ---- */
+.found-count .fc-label { display: none; }
+.found-count .nj-count { order: -1; }
+.found-count .found-status { order: -1; }
+
+
+/* ---- Found page buttons (step 58): white Refresh, outlined/black Best match, icon motion ---- */
+.bento-found .found-count .nj-count-right .nj-refresh {
+  background: #fff; color: var(--color-primary); border-color: #fff; font-weight: 600;
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+.bento-found .found-count .nj-count-right .nj-refresh svg { transition: transform .45s ease; }
+.bento-found .found-count .nj-count-right .nj-refresh:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0, 0, 0, .22); }
+.bento-found .found-count .nj-count-right .nj-refresh:hover:not(:disabled) svg { transform: rotate(180deg); }
+.bento-found .found-count .nj-count-right .nj-refresh:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
+.bento-found .found-count .nj-count-right .nj-refresh.busy svg { animation: fc-spin .9s linear infinite; }
+@keyframes fc-spin { to { transform: rotate(360deg); } }
+
+.bento-found .found-count .nj-count-right .chip[data-sort] {
+  background: transparent; color: #fff; border: 1.5px solid rgba(255, 255, 255, .85);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: transform .18s ease, background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+.bento-found .found-count .nj-count-right .chip[data-sort]::before {
+  content: "\2605"; display: inline-block; font-size: 13px; line-height: 1; transition: transform .35s ease;
+}
+.bento-found .found-count .nj-count-right .chip[data-sort]:hover { transform: translateY(-2px); background: rgba(255, 255, 255, .18); }
+.bento-found .found-count .nj-count-right .chip[data-sort]:hover::before { transform: rotate(72deg) scale(1.25); }
+.bento-found .found-count .nj-count-right .chip[data-sort][aria-pressed="true"] { background: #111; color: #fff; border-color: #111; }
+.bento-found .found-count .nj-count-right .chip[data-sort][aria-pressed="true"]::before { color: var(--color-primary); }
+@media (prefers-reduced-motion: reduce) {
+  .bento-found .found-count .nj-count-right .nj-refresh,
+  .bento-found .found-count .nj-count-right .nj-refresh svg,
+  .bento-found .found-count .nj-count-right .chip[data-sort],
+  .bento-found .found-count .nj-count-right .chip[data-sort]::before { transition: none; }
+  .bento-found .found-count .nj-count-right .nj-refresh:hover:not(:disabled),
+  .bento-found .found-count .nj-count-right .chip[data-sort]:hover { transform: none; }
+  .bento-found .found-count .nj-count-right .nj-refresh.busy svg { animation-duration: 2s; }
+}

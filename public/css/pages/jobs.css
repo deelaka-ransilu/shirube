@@ -1,0 +1,127 @@
+/* Jobs list */
+.tiles { margin-bottom: var(--space-5); }
+.tile span { font-size: var(--text-base); }
+.filters { margin-bottom: var(--space-4); }
+.jobs-layout { margin-top: var(--space-5); }
+.row-main { flex: 1; min-width: 180px; }
+.row-title { color: var(--color-text); text-decoration: none; }
+.row-title:hover { text-decoration: underline; }
+.side-stack { display: grid; gap: var(--space-4); }
+.empty { text-align: center; padding: var(--space-6) 0; }
+
+
+/* ---- Jobs: one screen, the list scrolls inside its card ---- */
+.jobs-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.tiles.sm { gap: var(--space-3); margin-bottom: var(--space-3); }
+.tiles.sm .tile { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 10px 20px; }
+.tiles.sm .tile strong { font-size: 24px; }
+.jobs-page .filters { gap: var(--space-1); margin-bottom: var(--space-3); }
+.jobs-note { margin: 0 0 var(--space-3); }
+.jobs-layout { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); margin-top: 0; }
+.jobs-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.jobs-card > .empty { margin: auto; }
+.jobs-list-wrap { flex: 1; min-height: 0; }
+.jobs-list-wrap .scroller { padding-bottom: var(--space-5); }
+.jobs-block-head { display: flex; align-items: baseline; gap: var(--space-2); margin: var(--space-3) 0 var(--space-1); padding: 0 var(--space-1); font-size: var(--text-sm); font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--color-muted); }
+.jobs-block-head:first-child { margin-top: 0; }
+.jobs-block-head strong { color: var(--color-text); font-weight: 600; }
+.jobs-block-empty { padding: var(--space-2) var(--space-1) var(--space-3); }
+.jobs-card .list-row { flex-wrap: nowrap; gap: var(--space-3); padding: 10px 0; }
+.jobs-card .row-main { min-width: 0; }
+.jobs-card .row-title { overflow-wrap: anywhere; }
+.jobs-card .avatar { width: 40px; height: 40px; }
+
+@media (max-width: 1100px) {
+  .jobs-page { display: block; }
+  .jobs-layout { display: flex; }
+  .jobs-card { display: block; overflow: visible; }
+  .jobs-card .list-row { flex-wrap: wrap; }
+  .tiles.sm { margin-top: var(--space-3); }
+}
+.btn-danger.icon-btn { border-color: var(--color-border); }
+.btn-danger.icon-btn:hover:not(:disabled) { border-color: var(--color-danger); background: var(--color-raised); }
+
+
+/* Jobs list: the whole row is the link (the title link stretches over the row; the bin stays on top) */
+.row-click { position: relative; border-radius: 12px; }
+.row-click .row-title::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
+.row-click .icon-btn { position: relative; z-index: 1; }
+.row-click .row-title:focus-visible { outline: none; }
+.row-click:has(.row-title:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+
+
+/* Step 18: calmer row hover */
+.jobs-card .row-click { padding: 10px var(--space-2); }
+.row-click .row-title { text-decoration: none; }
+.row-click:hover { box-shadow: inset 0 0 0 1px var(--color-border-strong); }
+.row-click:hover .row-title { color: var(--color-link); }
+
+/* Jobs (step 42): tiles are the stage filters, a stage dropdown and a "..." menu on each row, a slim Next closing strip */
+.tile-btn { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
+.tile-btn:hover { border-color: var(--color-border-strong); }
+.tile-btn[aria-pressed="true"] { background: var(--color-raised); border-color: var(--color-text); }
+.tile-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.jobs-views { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); margin: 0 var(--space-2) var(--space-3); font-size: var(--text-sm); }
+.jobs-views b { font-weight: var(--weight-medium); }
+.jobs-views .link-btn { min-height: 28px; }
+.jobs-card .row-badges { flex-shrink: 0; }
+.status-select { position: relative; z-index: 1; flex-shrink: 0; display: inline-flex; }
+.status-select select { height: 30px; padding: 0 8px; background: var(--color-panel); color: var(--color-text); font: var(--text-sm) var(--font-sans); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); cursor: pointer; }
+.status-select select:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.status-select option { background: var(--color-card); color: var(--color-text); }
+.row-menu-wrap { position: relative; z-index: 2; flex-shrink: 0; }
+.row-menu { position: absolute; right: 0; top: calc(100% + 4px); min-width: 150px; padding: 4px; background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); box-shadow: var(--shadow-old); }
+.row-menu.up { top: auto; bottom: calc(100% + 4px); }
+.row-menu[hidden] { display: none; }
+.row-menu button { width: 100%; display: flex; align-items: center; gap: var(--space-2); padding: 8px 10px; background: transparent; color: var(--color-text); font: var(--text-sm) var(--font-sans); border: 0; border-radius: 8px; cursor: pointer; text-align: left; }
+.row-menu button:hover, .row-menu button:focus-visible { background: var(--color-raised); outline: none; }
+.row-menu .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.row-menu .menu-del { color: var(--color-danger); }
+.jobs-closing { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); padding: 10px var(--space-4); border-radius: 16px; font-size: var(--text-sm); }
+.jobs-views .link-btn { color: var(--color-text); text-decoration: underline; text-underline-offset: 3px; }
+.jobs-views .link-btn:hover { color: var(--color-muted); }
+.status-select select { min-width: 116px; }
+
+
+/* ---- Jobs page (v3 bento): dark frame, a head tile with the segmented switch, one list tile ---- */
+.bento-jobs { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+.bento-jobs .bento-tile { grid-column: 1; }
+.jobs-head { grid-row: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); padding: 12px 16px; }
+.jobs-tile { grid-row: 2; min-height: 0; }
+.jobs-seg { display: flex; flex-wrap: wrap; gap: 2px; padding: 4px; background: var(--color-raised); border-radius: var(--radius-control); }
+.jobs-seg .seg { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--color-text); font: inherit; font-size: 13px; font-weight: var(--weight-medium); cursor: pointer; }
+.jobs-seg .seg b { font-size: var(--text-xs); font-weight: var(--weight-regular); color: var(--color-muted); }
+.jobs-seg .seg:hover { background: var(--color-card); }
+.jobs-seg .seg[aria-pressed="true"] { background: var(--color-frame); color: #FFFFFF; }
+.jobs-seg .seg[aria-pressed="true"] b { color: var(--color-primary); }
+.jobs-seg .seg:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.jobs-closing-line { display: flex; align-items: baseline; gap: 10px; min-width: 0; color: inherit; text-decoration: none; font-size: 13px; }
+.jobs-closing-line:hover .jc-title { text-decoration: underline; }
+.jc-title { font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 30ch; }
+.jobs-head .jobs-note { flex: 1 0 100%; margin: 0; }
+@media (max-width: 1100px), (max-height: 720px) {
+  .bento-jobs { grid-template-rows: none; }
+  .jobs-card { overflow: visible; }
+}
+
+/* ---- Jobs page (v3, step 53): orange count tile on the left, head tile + list tile on the right ---- */
+.bento-jobs { grid-template-columns: 280px minmax(0, 1fr); }
+.bento-jobs .jobs-count { grid-column: 1; grid-row: 1 / span 2; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; background: var(--color-primary); color: var(--color-on-primary); }
+.bento-jobs .jobs-head { grid-column: 2; grid-row: 1; }
+.bento-jobs .jobs-tile { grid-column: 2; grid-row: 2; }
+.jobs-count .jc-label { font-size: var(--text-xs); }
+.jobs-count .jc-num { display: block; font-size: 128px; font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: .9; }
+.jobs-count .jc-cap { margin: var(--space-2) 0 0; font-size: 12px; }
+.jobs-count .jc-cap:empty { display: none; }
+.jobs-head .jobs-closing-line { margin-left: auto; }
+@media (max-width: 1100px), (max-height: 720px) {
+  .bento-jobs { grid-template-columns: minmax(0, 1fr); }
+  .bento-jobs .jobs-count, .bento-jobs .jobs-head, .bento-jobs .jobs-tile { grid-column: 1; grid-row: auto; }
+  .bento-jobs .jobs-count { flex-direction: row; align-items: flex-end; }
+  .jobs-count .jc-num { font-size: 56px; }
+}
+
+
+/* ---- Jobs page (step 54): skills badge on rows you can still apply to ---- */
+.row-badges .b-match.has { background: var(--color-frame); color: #FFFFFF; }
+

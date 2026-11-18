@@ -1,0 +1,71 @@
+/* Screen styles (Jobs list, Add job). Load after shell.css. */
+[hidden] { display: none !important; }
+
+a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.btn:disabled { opacity: 0.6; cursor: default; }
+textarea.input { resize: vertical; line-height: var(--leading-body); }
+.input[aria-invalid="true"] { border-width: 2.5px; border-color: var(--color-text); }
+
+/* Chips: 40px high, a check mark shows when chosen */
+.chip { min-height: 40px; height: auto; }
+.chip[aria-pressed="true"]::before { content: "✓ "; }
+.chip-group { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+
+/* A button that looks like a link */
+.link-btn { padding: 0; min-height: var(--hit-min); background: none; border: 0; color: var(--color-link); font: inherit; font-size: var(--text-sm); text-align: left; text-decoration: underline; cursor: pointer; }
+
+
+/* ---- Badges, tints, icon buttons, hidden scrollbars (Found look; reused on other screens) ---- */
+.badge { display: inline-flex; align-items: center; padding: 3px 10px; font: var(--text-xs) var(--font-mono); white-space: nowrap; background: var(--color-raised); border: 1px solid var(--color-line); border-radius: var(--radius-small); color: var(--color-text); }
+.badge.b-date,  .badge.b-loc,  .badge.b-mode,  .badge.b-type,  .badge.b-close,  .badge.b-saved,  .badge.b-interview,  .badge.b-offer { background: color-mix(in srgb, var(--bt) 30%, transparent); border-color: color-mix(in srgb, var(--bt) 60%, transparent); color: var(--color-text); }
+.badge.b-date  { --bt: var(--tint-yellow); }
+.badge.b-loc   { --bt: var(--tint-blue); }
+.badge.b-mode  { --bt: var(--tint-peach); }
+.badge.b-type  { --bt: var(--tint-lilac); }
+.badge.b-close, .badge.b-saved { --bt: var(--tint-green); }
+.badge.b-interview { --bt: var(--tint-lilac); }
+.badge.b-offer { --bt: var(--tint-yellow); }
+.badge.b-none { color: var(--color-muted); border-style: dashed; }
+
+[data-tint] .chip[aria-pressed="true"], [data-tint] .chip[aria-expanded="true"], .chip[data-tint][aria-pressed="true"] { background: var(--tt); border-color: var(--tt); color: #1a1a1a; }
+[data-tint="blue"] { --tt: var(--tint-blue); }
+[data-tint="peach"] { --tt: var(--tint-peach); }
+[data-tint="yellow"] { --tt: var(--tint-yellow); }
+[data-tint="green"] { --tt: var(--tint-green); }
+[data-tint="lilac"] { --tt: var(--tint-lilac); }
+
+.icon-btn { min-height: 40px; width: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.icon-btn .icon { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.scroll-wrap { position: relative; min-height: 0; display: flex; flex-direction: column; }
+.scroller { position: relative; flex: 1; min-height: 0; overflow: auto; scrollbar-width: none; }
+.scroller::-webkit-scrollbar { display: none; }
+.scroll-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: linear-gradient(to bottom, transparent, var(--color-card)); pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+.scroll-wrap.has-more .scroll-fade { opacity: 1; }
+.more-pill { position: absolute; left: 50%; bottom: var(--space-2); transform: translateX(-50%); z-index: 1; min-height: 28px; padding: 0 var(--space-3); font: var(--weight-medium) var(--text-sm) var(--font-sans); color: var(--color-text); background: var(--color-raised); border: 1px solid var(--color-border-strong); border-radius: var(--radius-pill); cursor: pointer; }
+.more-pill[hidden] { display: none; }
+
+
+
+
+@media (max-width: 1100px) {
+  .scroll-wrap { display: block; }
+  .scroller { overflow: visible; }
+  .scroll-fade, .more-pill { display: none; }
+}
+
+/* ---- Header: page name instead of the logo text, and an optional main action ---- */
+.top-action:empty { display: none; }
+.page-head > .btn { margin-left: auto; }
+
+
+/* Small icon buttons (md) */
+.icon-btn.md { width: 34px; min-height: 34px; height: 34px; border-radius: 10px; }
+.icon-btn.md .icon { width: 18px; height: 18px; }
+
+/* ---- Content behind the floating dock (step 38) ---- */
+#page.dock-flush { padding-bottom: var(--dock-reserve); }
+.scroll-wrap.under-dock > .scroller, .found-detail.under-dock { padding-bottom: var(--dock-reserve); }
+.scroll-wrap.under-dock .more-pill { bottom: calc(var(--dock-reserve) - var(--space-4)); }
+

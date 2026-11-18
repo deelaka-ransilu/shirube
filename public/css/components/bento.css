@@ -1,0 +1,9 @@
+/* ---- Shared v3 bento frame and tile rules ---- */
+.bento { display: grid; grid-template-columns: 280px minmax(0, 1fr) clamp(320px, 26vw, 500px); gap: var(--frame-gap); padding: var(--frame-gap); background: var(--color-frame); border-radius: var(--radius-frame); box-shadow: var(--shadow-card); flex: 1; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
+.bento-tile { min-width: 0; padding: 22px; background: var(--color-card); border-radius: var(--radius-tile); }
+@media (max-width: 1100px), (max-height: 720px) {
+  .bento { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .bento-tile { grid-column: 1 !important; grid-row: auto !important; }
+}
+a.tile { color: inherit; text-decoration: none; }
+a.tile:hover { background: var(--color-raised); }
