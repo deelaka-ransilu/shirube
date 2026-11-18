@@ -1,0 +1,79 @@
+Contact
+sam.perera@example.com
+
+www.linkedin.com/in/samperera (LinkedIn)
+samperera.dev (Portfolio)
+example.dev (Other)
+
+Top Skills
+SQL Server
+Technical Support
+
+Sam Perera
+
+TechOps & Infrastructure | Final-year BIT, UOM | Linux, Docker,
+SQL Server, Git | Ex-Technical Support Executive
+Colombo, Western Province, Sri Lanka
+
+Summary
+I keep business systems running. When something breaks in
+production, I find the cause and fix it.
+
+Linux
+
+Languages
+Sinhalese (Native or Bilingual)
+English (Professional Working)
+
+Certifications
+AWS Cloud Practitioner Essentials
+Introduction to Python (DataCamp)
+
+Experience
+Acme POS Solutions (Pvt) Ltd
+Technical Support Executive
+July 2025 - January 2026 (7 months)
+Nugegoda, Western Province, Sri Lanka
+
+L1/L2-level production support for POS and back-office systems serving retail
+and hospitality clients across Sri Lanka, within a 24x7 support team.
+
+Shell Scripts for Beginners
+(KodeKloud)
+
+- Installed and upgraded POS systems for new and existing clients, covering
+
+DevOps Foundations
+
+Windows setup, SQL Server configuration, application installation and post-
+
+Introduction to DevOps and SRE
+(LFS162)
+
+install testing.
+- Coordinated and executed a staged remote POS version rollout across 13
+outlets of a supermarket chain, validating on a pilot machine before wider
+deployment, in liaison with the client’s IT team.
+- Performed SQL Server database restores, migrations and disk capacity
+checks, and executed and adapted T-SQL scripts for data corrections in live
+client environments.
+- Checked scheduled SQL Server jobs daily and verified weekly database
+backups to Google Drive, reporting failures to management.
+- Diagnosed and resolved barcode and printer faults across database
+configuration, label templates, scanner settings and Windows device settings.
+- Provided remote support to clients via AnyDesk, and connected to client
+servers via RDP for database and system tasks.
+Page 1 of 2
+
+- Managed incoming tickets, assigned tasks across the support team, and
+escalated code-level defects to the development team, following up on their
+responses.
+
+Education
+University of Moratuwa
+Bachelor of Information Technology, Information Technology · (October
+2023 - April 2027)
+
+Page 2 of 2
+
+

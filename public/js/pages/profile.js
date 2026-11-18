@@ -7,6 +7,8 @@ import { todayISO } from '../lib/format.js';
 import { ICON } from '../lib/icons.js';
 import { bindScroll } from '../lib/scroll.js';
 import { setTopAction } from '../lib/shell.js';
+import { parseLinkedin, foundAnything } from '../lib/parse-linkedin.js';
+import { planImport, applyPlan } from '../lib/linkedin-plan.js';
 
 // Which API path and word each kind of small form uses.
 const ENTRY = {
@@ -56,6 +58,7 @@ export async function render(el, { stale }) {
     form: null,        // { kind: 'preset' | 'skill' | 'settings' | 'edu' | 'cert' | 'exp', id, draft, error }
     status: '',        // line next to the Save button
     backup: '',        // line next to the backup icons
+    imp: null,         // the LinkedIn import dialog: { text, plan, picked, error }
     busy: false,
   };
   const active = () => state.presets.find((p) => p.id === state.activeId) ?? state.presets[0];
@@ -220,6 +223,7 @@ export async function render(el, { stale }) {
           </div>
           <span class="text-muted text-sm">The one with ✓ is your main one.</span>
           <div class="pf-tools">
+            <button type="button" class="chip sm" data-act="import-open" title="Fill your profile from your LinkedIn PDF">Import from LinkedIn</button>
             ${state.backup ? html`<span class="text-sm" role="status">${state.backup}</span>` : ''}
             <button type="button" class="btn btn-secondary icon-btn md" data-act="settings" aria-label="Settings: follow-up days and time zone" title="Settings">${ICON.settings}</button>
             <button type="button" class="btn btn-secondary icon-btn md" data-act="download" aria-label="Download backup" title="Download backup">${ICON.download}</button>
@@ -323,6 +327,7 @@ export async function render(el, { stale }) {
           </div>
         </div>
         ${dialog()}
+        ${importDialog()}
       </div>`;
 
     el.querySelectorAll('.pf-scroll').forEach((w) => bindScroll(w, '.entry'));
@@ -353,14 +358,90 @@ export async function render(el, { stale }) {
     draw();
   }
 
-  async function save() {
-    collect();
-    state.status = '';
-    const body = {
+  // What the Save profile button sends: the main fields and every preset, as they are on the page now.
+  function profileBody() {
+    return {
       ...Object.fromEntries(['name', 'email', 'phone', 'location', 'country', 'portfolio', 'linkedin', 'github', 'other_link', 'follow_up_days', 'time_zone'].map((k) => [k, state.profile[k]])),
       active_preset_id: state.activeId,
       presets: state.presets.map(({ id, name, target_role, summary, skills, experience_ids }) => ({ id, name, target_role, summary, skills, experience_ids })),
     };
+  }
+
+  // ---- Import from LinkedIn: paste, preview with checkboxes, add what is ticked ----
+  function importRead() {
+    collect();
+    const text = el.querySelector('#imp-text')?.value ?? '';
+    state.imp.text = text;
+    const parsed = parseLinkedin(text);
+    if (!foundAnything(parsed)) { state.imp.error = 'I could not find a LinkedIn profile in that text. Paste the text of the whole PDF (Ctrl+A, then Ctrl+C).'; draw(); return; }
+    state.imp.plan = planImport(parsed, { profile: state.profile, preset: active(), education: state.education, certifications: state.certifications, languages: state.languages, experience: state.experience });
+    state.imp.picked = new Set(state.imp.plan.groups.flatMap((g) => g.items.map((i) => i.id)));
+    state.imp.error = '';
+    draw();
+  }
+
+  async function importApply() {
+    collect();
+    const m = state.imp;
+    state.status = '';
+    await run(async () => {
+      try {
+        const out = await applyPlan(api, m.plan, m.picked, { body: profileBody(), activeId: state.activeId });
+        if (stale()) return;
+        load(out.result);
+        state.imp = null;
+        state.status = `✓ Imported ${out.text}`;
+        window.dispatchEvent(new CustomEvent('profile-saved', { detail: { name: out.result.profile.name } }));
+      } catch (err) {
+        // Some things may already be added: show the real state and start the preview again.
+        try { load(await api('/api/profile')); } catch { /* keep what is on screen */ }
+        if (stale()) return;
+        m.plan = null;
+        m.error = `${err.message}. What was added before this is saved. Press Read it to see what is left.`;
+      }
+    });
+    if (!stale()) draw();
+  }
+
+  function importDialog() {
+    const m = state.imp;
+    if (!m) return '';
+    if (!m.plan) {
+      return html`<div class="pf-modal"><div class="pf-dialog pf-import" role="dialog" aria-modal="true" aria-label="Import from LinkedIn"><div class="inner-box">
+        <b>Import from LinkedIn</b>
+        <p class="text-muted text-sm">On LinkedIn open your profile and choose <b>Save to PDF</b>. Open that PDF, press Ctrl+A, then Ctrl+C, and paste the text here. Shirube reads it on this computer. Nothing is sent anywhere.</p>
+        <textarea class="input imp-paste" id="imp-text" rows="9" placeholder="Paste the text of your LinkedIn PDF here" data-focus>${m.text}</textarea>
+        ${m.error ? html`<div class="field-error" role="alert">◇ ${m.error}</div>` : ''}
+        <div class="row">
+          <button class="btn btn-primary" type="button" data-act="import-read">Read it</button>
+          <button class="btn btn-secondary" type="button" data-act="import-close">Cancel</button>
+        </div>
+      </div></div></div>`;
+    }
+    const { groups, kept, count } = m.plan;
+    return html`<div class="pf-modal"><div class="pf-dialog pf-import" role="dialog" aria-modal="true" aria-label="Import from LinkedIn"><div class="inner-box">
+      <b>${count ? 'Here is what I found' : 'Nothing new to add'}</b>
+      <p class="text-muted text-sm">${count ? 'Tick what to add. Nothing you typed is overwritten. Adding also saves the other changes you made on this page.' : 'Everything in that text is already in your profile.'}</p>
+      <div class="imp-list">
+        ${groups.map((g) => html`<div class="imp-group"><h3>${g.title}</h3>${g.items.map((it) => html`
+          <label class="imp-item"><input type="checkbox" data-imp="${it.id}" ${m.picked.has(it.id) ? 'checked' : ''}>
+            <span class="imp-text"><b>${it.label}</b>${it.value ? html` <span class="text-muted text-sm">· ${it.value}</span>` : ''}${it.detail ? html`<span class="imp-detail text-sm text-muted">${it.detail}</span>` : ''}</span>
+          </label>`)}</div>`)}
+        ${kept.length ? html`<div class="imp-group"><h3>Left as it is</h3>${kept.map((k) => html`<div class="imp-kept text-muted text-sm">${k}</div>`)}</div>` : ''}
+      </div>
+      ${m.error ? html`<div class="field-error" role="alert">◇ ${m.error}</div>` : ''}
+      <div class="row">
+        ${count ? html`<button class="btn btn-primary" type="button" data-act="import-apply" id="imp-apply" ${m.picked.size ? '' : 'disabled'}>Add selected (<span id="imp-count">${m.picked.size}</span>)</button>` : ''}
+        <button class="btn btn-secondary" type="button" data-act="import-back">Back</button>
+        <button class="btn btn-secondary" type="button" data-act="import-close">${count ? 'Cancel' : 'Close'}</button>
+      </div>
+    </div></div></div>`;
+  }
+
+  async function save() {
+    collect();
+    state.status = '';
+    const body = profileBody();
     await run(async () => {
       const r = await api('/api/profile', { method: 'PATCH', body });
       if (stale()) return;
@@ -458,6 +539,11 @@ export async function render(el, { stale }) {
         entryCall(() => api(`/api/${ENTRY[kind].path}/${id}`, { method: 'DELETE' }), (r) => { merge(r); state.form = null; });
         break;
       }
+      case 'import-open': collect(); state.imp = { text: '', plan: null, picked: new Set(), error: '' }; draw(); break;
+      case 'import-close': state.imp = null; draw(); break;
+      case 'import-back': state.imp.plan = null; state.imp.error = ''; draw(); break;
+      case 'import-read': importRead(); break;
+      case 'import-apply': importApply(); break;
       case 'download': download(); break;
       case 'restore': el.querySelector('#restore-file').click(); break;
       default:
@@ -465,6 +551,16 @@ export async function render(el, { stale }) {
   };
 
   el.onchange = (e) => {
+    if (e.target.dataset?.imp !== undefined && state.imp?.plan) {
+      // A tick in the import preview: no redraw, so the list keeps its scroll place.
+      const set = state.imp.picked;
+      if (e.target.checked) set.add(e.target.dataset.imp); else set.delete(e.target.dataset.imp);
+      const count = el.querySelector('#imp-count');
+      if (count) count.textContent = String(set.size);
+      const apply = el.querySelector('#imp-apply');
+      if (apply) apply.disabled = set.size === 0;
+      return;
+    }
     if (e.target.id !== 'restore-file') return;
     const file = e.target.files[0];
     e.target.value = '';
