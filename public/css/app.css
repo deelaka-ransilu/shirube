@@ -814,3 +814,23 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
   .bento-jobs { grid-template-rows: none; }
   .jobs-card { overflow: visible; }
 }
+
+/* ---- Jobs page (v3, step 53): orange count tile on the left, head tile + list tile on the right ---- */
+.bento-jobs { grid-template-columns: 280px minmax(0, 1fr); }
+.bento-jobs .jobs-count { grid-column: 1; grid-row: 1 / span 2; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; background: var(--color-primary); color: var(--color-on-primary); }
+.bento-jobs .jobs-head { grid-column: 2; grid-row: 1; }
+.bento-jobs .jobs-tile { grid-column: 2; grid-row: 2; }
+.jobs-count .jc-label { font-size: var(--text-xs); }
+.jobs-count .jc-num { display: block; font-size: 128px; font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: .9; }
+.jobs-count .jc-cap { margin: var(--space-2) 0 0; font-size: 12px; }
+.jobs-count .jc-cap:empty { display: none; }
+.jobs-head .jobs-closing-line { margin-left: auto; }
+@media (max-width: 1100px), (max-height: 720px) {
+  .bento-jobs { grid-template-columns: minmax(0, 1fr); }
+  .bento-jobs .jobs-count, .bento-jobs .jobs-head, .bento-jobs .jobs-tile { grid-column: 1; grid-row: auto; }
+  .bento-jobs .jobs-count { flex-direction: row; align-items: flex-end; }
+  .jobs-count .jc-num { font-size: 56px; }
+}
+
+/* ---- Jobs page (step 54): skills badge on rows you can still apply to ---- */
+.row-badges .b-match.has { background: var(--color-frame); color: #FFFFFF; }

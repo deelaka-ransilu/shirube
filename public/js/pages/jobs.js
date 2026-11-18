@@ -36,7 +36,7 @@ function stageCell(job) {
 function row(job, today) {
   const name = job.company || job.title;
   return html`
-    <div class="list-row row-click">
+    <div class="list-row row-click" data-row="${job.id}">
       <div class="avatar" aria-hidden="true">${initials(name)}</div>
       <div class="row-main">
         ${job.company ? html`<div class="text-muted">${job.company}</div>` : ''}
@@ -82,6 +82,8 @@ export async function render(el, ctx) {
   const today = todayISO();
   const countOf = (k) => (k ? counts[k] : counts.all);
   const viewName = status ? STATUS[status].label : 'All';
+  const viewLabel = status ? viewName.toLowerCase() : 'all jobs';
+  const viewCaption = status ? `of ${counts.all} jobs` : '';
 
   let list;
   if (counts.all === 0) {
@@ -111,11 +113,15 @@ export async function render(el, ctx) {
     <div class="jobs-page">
       <h1 class="sr-only">Jobs</h1>
       <div class="bento bento-jobs">
+        <section class="bento-tile jobs-count" aria-label="Jobs in this view">
+          <span class="jc-label mono">${viewLabel}</span>
+          <div><strong class="jc-num">${countOf(status)}</strong><p class="jc-cap mono">${viewCaption}</p></div>
+        </section>
         <section class="bento-tile jobs-head">
           <div class="jobs-seg" role="group" aria-label="Filter jobs by stage">
             ${SEGMENTS.map(([k, label]) => html`<button type="button" class="seg" data-status="${k}" aria-pressed="${k === status}"><span>${label}</span><b class="mono">${countOf(k)}</b></button>`)}
           </div>
-          ${next_closing ? html`<a class="jobs-closing-line" href="#/jobs/${next_closing.id}"><span class="mono text-muted">next closing</span><span class="jc-title">${next_closing.title}</span><span class="text-muted">${next_closing.company ? next_closing.company + ' · ' : ''}${closingWithDays(next_closing.closes_on, today)}</span></a>` : ''}
+          ${next_closing ? html`<a class="jobs-closing-line" href="#/jobs/${next_closing.id}"><span class="mono text-muted">next closing</span><span class="jc-title">${next_closing.title}</span><span class="text-muted">${next_closing.company ? next_closing.company + ' · ' : ''}${closingWithDays(next_closing.closes_on, today)}</span></a>` : html`<span class="jobs-closing-line mono text-muted">no closing date coming up</span>`}
           ${q ? html`<p class="text-muted jobs-note">Results for “${q}”. <a class="link" href="${jobsHash(status, '')}">Clear search</a></p>` : ''}
         </section>
         <section class="bento-tile jobs-card jobs-tile">${list}</section>
@@ -125,6 +131,32 @@ export async function render(el, ctx) {
   setTopAction(html`<a class="btn btn-add" href="#/jobs/new"><span class="add-plus" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Add job</a>`);
   bindScroll(el.querySelector('.jobs-list-wrap'), '.list-row');
   if (ctx.keepTop) { const box = el.querySelector('.jobs-list-wrap .scroller'); if (box) box.scrollTop = ctx.keepTop; }
+
+  // Skill match for jobs you can still apply to: the same /match answer the Dashboard and Job match page use.
+  // Drawn after the list, four at a time, never blocks it. No advert or no recognised skills: no badge.
+  const page = el.querySelector('.jobs-page');
+  const todo = jobs.filter((j) => j.status === 'open').slice(0, 40);
+  let at = 0;
+  const matchWorker = async () => {
+    while (at < todo.length) {
+      const j = todo[at++];
+      try {
+        const d = await api(`/api/jobs/${j.id}/match`);
+        if (stale() || el.querySelector('.jobs-page') !== page) return;
+        const list = d?.match?.skills || [];
+        if (!d?.job?.has_advert || !list.length) continue;
+        const badges = el.querySelector(`.list-row[data-row="${j.id}"] .row-badges`);
+        if (!badges || badges.querySelector('.b-match')) continue;
+        const hit = list.filter((s) => s.matched).length;
+        const b = document.createElement('span');
+        b.className = 'badge b-match mono' + (hit ? ' has' : '');
+        b.textContent = `${hit} of ${list.length} skills`;
+        b.title = `${hit} of ${list.length} skills match` + (d.preset?.name ? ` \u00b7 ${d.preset.name}` : '');
+        badges.prepend(b);
+      } catch { /* no match for this job: no badge */ }
+    }
+  };
+  Promise.all([matchWorker(), matchWorker(), matchWorker(), matchWorker()]);
 
   const closeMenus = () => el.querySelectorAll('.row-menu:not([hidden])').forEach((m) => {
     m.hidden = true;
