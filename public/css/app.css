@@ -863,3 +863,20 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
   .bento-found[data-view="list"] > .found-dtile { display: none; }
   .bento-found[data-view="detail"] > :not(.found-dtile) { display: none; }
 }
+
+/* ---- Follow-ups page (v3, step 56): dark frame, each column = a head tile + a list tile ---- */
+.bento-fu { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+.bento-fu .fu-col { gap: var(--frame-gap); }
+.bento-fu .fu-colhead { flex: none; display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); min-height: 0; padding: 14px 20px; }
+.bento-fu .fu-colhead span { font-size: 32px; font-weight: var(--weight-light); line-height: 1; letter-spacing: var(--tracking-numeral); }
+.bento-fu .fu-colhead.is-main { background: var(--color-primary); color: var(--color-on-primary); }
+.bento-fu .fu-listtile { flex: 1; min-height: 0; padding: 14px; overflow: hidden; }
+.bento-fu .fu-col .scroll-fade { background: linear-gradient(to bottom, transparent, var(--color-card)); }
+.bento-fu .fu-card { background: var(--color-raised); border-color: transparent; box-shadow: none; }
+.bento-fu .fu-card.row-click:hover { border-color: var(--color-border-strong); }
+.bento-fu .fu-empty { margin: var(--space-2) var(--space-1); }
+@media (max-width: 1100px), (max-height: 720px) {
+  .bento-fu { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; align-items: start; }
+  .bento-fu .fu-listtile { overflow: visible; }
+}
+@media (max-width: 800px) { .bento-fu { grid-template-columns: minmax(0, 1fr); } }

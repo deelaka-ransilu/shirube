@@ -98,8 +98,8 @@ function column(col, today) {
   const all = col.jobs.length;
   return html`
     <section class="fu-col" aria-label="${col.title}">
-      <div class="card compact fu-colhead"><b>${col.symbol} ${col.title}</b><span>${all}</span></div>
-      <div class="scroll-wrap">
+      <div class="bento-tile fu-colhead${col.key === 'waiting' ? ' is-main' : ''}"><b>${col.symbol} ${col.title}</b><span>${all}</span></div>
+      <div class="bento-tile fu-listtile scroll-wrap">
         <div class="scroller" data-col="${col.key}" tabindex="0" role="region" aria-label="${col.title}, ${all} job${all === 1 ? '' : 's'}">
           ${all ? col.jobs.map((j) => jobCard(j, col.key, today)) : html`<p class="text-muted text-sm fu-empty">${EMPTY[col.key]}</p>`}
         </div>
@@ -128,7 +128,7 @@ export async function render(el, { stale }) {
         <p class="text-muted fu-intro">Every job you applied to, and what happened at each stage.${due ? ` ${due} follow-up${due === 1 ? '' : 's'} due.` : ''}</p>
         ${total === 0
           ? html`<div class="card empty"><h2>No applications yet</h2><p class="text-muted">Open a job and mark it Applied. It shows up here and waits for your follow-up.</p></div>`
-          : html`<div class="fu-grid">${columns.map((c) => column(c, today))}</div>`}
+          : html`<div class="fu-grid bento bento-fu">${columns.map((c) => column(c, today))}</div>`}
       </div>`;
     el.querySelectorAll('.fu-col .scroller').forEach((box) => { box.scrollTop = tops[box.dataset.col] ?? 0; });
     el.querySelectorAll('.scroll-wrap').forEach((wrap) => bindScroll(wrap, '.fu-card'));
