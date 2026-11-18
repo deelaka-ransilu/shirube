@@ -673,6 +673,10 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
 .jd-addstage { height: 36px; padding: 0 14px; font-size: var(--text-sm); white-space: nowrap; }
 .jd-stages .undo { flex-shrink: 0; }
 .jd-stage-form { flex-basis: 100%; }
+.jd-cvrow { margin-top: var(--space-3); }
+.jd-cvrow .jd-cvfile { flex: 1; min-width: 180px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); overflow-wrap: anywhere; }
+.jd-cvrow .link .icon { width: 16px; height: 16px; vertical-align: -3px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.jd-cvrow .chip .icon { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .stage-pill { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 12px; text-align: left; font: var(--text-sm) var(--font-sans); color: var(--color-text); background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: 14px; corner-shape: squircle; cursor: pointer; }
 .stage-pill small { font-size: var(--text-xs); color: var(--color-muted); }
 .stage-pill:hover { background: var(--color-raised); }

@@ -14,6 +14,7 @@ export const ICON = {
   back: icon('<path d="M19 12H5M12 19l-7-7 7-7"/>'),
   undo: icon('<path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/>'),
   settings: icon('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
+  clip: icon('<path d="M20 11l-8.5 8.5a5 5 0 01-7-7L13 4a3.5 3.5 0 015 5l-8.5 8.5a2 2 0 01-3-3L14 7"/>'),
   download: icon('<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>'),
   upload: icon('<path d="M12 20V8M7 13l5-5 5 5M5 4h14"/>'),
   match: icon('<path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 4.8M3.5 12l1.2 1.2L7 10.8M3.5 18l1.2 1.2L7 16.8"/>'),

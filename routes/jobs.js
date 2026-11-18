@@ -1,6 +1,7 @@
 import { HttpError } from '../lib/errors.js';
 import { STATUSES, cleanJob } from '../lib/validate-job.js';
 import { loadJobPage, syncJob } from './stages.js';
+import { removeStored } from '../lib/cv-store.js';
 
 // Everything the list needs, but not the long advert text.
 const LIST_COLUMNS = 'id, title, company, status, source, location, work_mode, job_type, found_on, posted_on, closes_on, applied_on, created_at';
@@ -80,9 +81,12 @@ export function findDuplicate({ db, query }) {
   return { job: findDuplicateJob(db, query.title, query.company) };
 }
 
-export function deleteJob({ db, params }) {
-  const result = db.prepare('DELETE FROM jobs WHERE id = ?').run(Number(params.id));
+export function deleteJob({ db, params, deps }) {
+  const id = Number(params.id);
+  const row = db.prepare('SELECT cv_file FROM jobs WHERE id = ?').get(id);
+  const result = db.prepare('DELETE FROM jobs WHERE id = ?').run(id);
   if (!result.changes) throw new HttpError(404, 'Job not found');
+  removeStored(deps, row?.cv_file);
   return { ok: true };
 }
 

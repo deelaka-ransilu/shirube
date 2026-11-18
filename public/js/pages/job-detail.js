@@ -1,5 +1,5 @@
 import { html, raw } from '../lib/html.js';
-import { api } from '../lib/api.js';
+import { api, uploadFile } from '../lib/api.js';
 import { STATUS, hasStatus, statusText } from '../lib/status.js';
 import { formatDay, initials, todayISO } from '../lib/format.js';
 import { ICON } from '../lib/icons.js';
@@ -192,6 +192,29 @@ function cvPane(job, cv, mark) {
     <div class="cv-scroll" tabindex="0" role="region" aria-label="CV preview">${cvPaper(cv, { mark })}</div>`;
 }
 
+const MAX_CV_BYTES = 10 * 1024 * 1024;
+
+// The CV you actually applied with: your own Word or PDF file, or the Word CV Shirube made for this job.
+function appliedCv(job, cv) {
+  const canMake = Boolean(cv && (cv.person.name || cv.preset.id));
+  return html`
+    <div class="card jd-stages jd-cvrow">
+      <span class="jd-stages-label text-muted">CV you applied with</span>
+      ${job.cv_name ? html`
+        <div class="jd-cvfile">
+          <a class="link" href="/api/jobs/${job.id}/cv/file" target="_blank" rel="noopener noreferrer" title="Open this file">${ICON.clip} ${job.cv_name}</a>
+          <span class="text-muted text-sm">${job.cv_source === 'made' ? 'Made by Shirube' : 'Your own file'} · ${formatDay(job.cv_added_on)}</span>
+        </div>
+        <button type="button" class="chip sm" data-act="cv-attach">Replace file</button>
+        <button type="button" class="chip sm" data-act="cv-remove">Remove</button>`
+        : html`
+        <span class="text-muted jd-cvfile">Nothing saved yet. Attach the Word or PDF file you sent.</span>
+        <button type="button" class="chip sm" data-act="cv-attach">${ICON.clip} Attach file</button>
+        ${canMake ? html`<button type="button" class="chip sm" data-act="cv-made" title="Saves the Word CV that Shirube builds for this job">Save Shirube’s CV</button>` : ''}`}
+      <input type="file" id="cv-file" accept=".pdf,.docx,.doc,application/pdf" hidden aria-label="Choose your CV file">
+    </div>`;
+}
+
 function details(state) {
   const { job, cv, mark } = state;
   return html`
@@ -270,6 +293,8 @@ export async function render(el, { params, stale }) {
         <button type="button" class="btn btn-secondary icon-btn md undo" data-act="undo" aria-label="Undo last step" title="Undo last step" ${last === null ? 'disabled' : ''}>${ICON.undo}</button>
         ${form ? html`<div class="jd-stage-form">${stageForm(form, stages)}</div>` : ''}
       </div>
+
+      ${editing ? '' : appliedCv(job, state.cv)}
 
       ${editing
         ? editForm(state.draft ? { ...job, ...state.draft } : job, error)
@@ -412,6 +437,12 @@ export async function render(el, { params, stale }) {
           location.hash = '#/jobs';
         });
         break;
+      case 'cv-attach': el.querySelector('#cv-file')?.click(); break;
+      case 'cv-made': run(() => api(`/api/jobs/${id}/cv/made?preset=${state.cv?.preset?.id ?? ''}`, { method: 'POST' })); break;
+      case 'cv-remove':
+        if (!confirm('Remove the saved CV from this job? The file is deleted from this computer.')) return;
+        run(() => api(`/api/jobs/${id}/cv`, { method: 'DELETE' }));
+        break;
       case 'cancel-edit': state.editing = false; state.draft = null; state.error = ''; draw(); break;
       case 'cancel-stage': state.form = null; state.error = ''; draw(); break;
       case 'remove-stage':
@@ -431,6 +462,14 @@ export async function render(el, { params, stale }) {
   };
 
   el.onchange = async (e) => {
+    if (e.target.id === 'cv-file') {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      if (file.size > MAX_CV_BYTES) { state.error = 'That file is bigger than 10 MB.'; draw(); return; }
+      run(() => uploadFile(`/api/jobs/${id}/cv?name=${encodeURIComponent(file.name)}`, file));
+      return;
+    }
     if (e.target.id === 'cv-preset') {
       state.presetId = Number(e.target.value);
       await loadCv();

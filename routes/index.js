@@ -5,6 +5,7 @@ import { health } from './health.js';
 import { listJobs, createJob, findDuplicate, deleteJob, getJob, updateJob } from './jobs.js';
 import { getMatch } from './match.js';
 import { getCvDocx } from './cv.js';
+import { putCv, saveMadeCv, getCvFile, deleteCv } from './cv-file.js';
 import { addStage, updateStage, deleteStage } from './stages.js';
 import {
   getProfile, saveProfile, createPreset, deletePreset,
@@ -41,6 +42,10 @@ const list = [
   ['GET', '/api/jobs/:id', getJob],
   ['GET', '/api/jobs/:id/match', getMatch],
   ['GET', '/api/jobs/:id/cv.docx', getCvDocx],
+  ['PUT', '/api/jobs/:id/cv', putCv],
+  ['POST', '/api/jobs/:id/cv/made', saveMadeCv],
+  ['GET', '/api/jobs/:id/cv/file', getCvFile],
+  ['DELETE', '/api/jobs/:id/cv', deleteCv],
   ['PATCH', '/api/jobs/:id', updateJob],
   ['DELETE', '/api/jobs/:id', deleteJob],
   ['POST', '/api/jobs/:id/stages', addStage],

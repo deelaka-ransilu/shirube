@@ -11,6 +11,7 @@ import { HttpError } from './lib/errors.js';
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(root, 'public');
 const MAX_BODY = 25_000_000; // 25 MB (a restored backup can be big)
+const MAX_UPLOAD = 10 * 1024 * 1024 + 1024; // a CV file: 10 MB (the route checks the exact size)
 
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -27,14 +28,16 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
-// A file download (the CV as Word). Handlers return { file: { buffer, name, type } }.
-function sendFile(res, { buffer, name, type }) {
+// A file download (the CV as Word, or the CV you saved for a job). Handlers return { file: { buffer, name, type, inline? } }.
+// inline: a PDF opens in the browser tab instead of downloading.
+function sendFile(res, { buffer, name, type, inline = false }) {
   const plain = name.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '');
   res.writeHead(200, {
     'Content-Type': type,
     'Content-Length': buffer.length,
-    'Content-Disposition': `attachment; filename="${plain}"; filename*=UTF-8''${encodeURIComponent(name)}`,
+    'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${plain}"; filename*=UTF-8''${encodeURIComponent(name)}`,
     'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
   });
   res.end(buffer);
 }
@@ -57,14 +60,18 @@ function requestAllowed(req) {
 
 async function readJsonBody(req) {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'DELETE') return undefined;
+  // A file sent as it is (the CV upload) stays raw bytes; everything else is JSON.
+  const raw = (req.headers['content-type'] || '').startsWith('application/octet-stream');
+  const limit = raw ? MAX_UPLOAD : MAX_BODY;
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY) throw new HttpError(413, 'Request is too big');
+    if (size > limit) throw new HttpError(413, raw ? 'That file is bigger than 10 MB' : 'Request is too big');
     chunks.push(chunk);
   }
   if (size === 0) return undefined;
+  if (raw) return Buffer.concat(chunks);
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
@@ -95,7 +102,7 @@ async function serveStatic(pathname, res) {
   res.end(data);
 }
 
-// deps is for tests: { fetchFeed, now }. The real app passes nothing.
+// deps is for tests: { fetchFeed, now, cvDir }. The real app passes nothing.
 export function createServer(db, deps = {}) {
   const route = buildRouter(db, deps);
   return http.createServer(async (req, res) => {

@@ -384,7 +384,9 @@ export async function render(el, { stale }) {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      state.backup = `✓ Backup downloaded (${backup.tables.jobs.length} jobs).`;
+      const cvCount = backup.tables.jobs.filter((j) => j.cv_name).length;
+      // The CV files themselves live in the data/cvs folder, not in this backup file.
+      state.backup = `✓ Backup downloaded (${backup.tables.jobs.length} jobs).${cvCount ? ` The ${cvCount} saved CV file${cvCount === 1 ? ' is' : 's are'} not inside it: copy the data/cvs folder too.` : ''}`;
     });
     if (!ok) { state.backup = state.status; state.status = ''; }
     if (!stale()) draw();
