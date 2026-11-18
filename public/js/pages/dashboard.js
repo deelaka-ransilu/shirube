@@ -2,7 +2,7 @@ import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
 import { statusWord } from '../lib/status.js';
 import { formatDay, initials, todayISO } from '../lib/format.js';
-import { nextUp, statRow, whenText, sentSummary, who } from '../lib/dash.js';
+import { nextUp, statRow, whenText, sinceStart, who } from '../lib/dash.js';
 import { setTopAction } from '../lib/shell.js';
 
 const jobLink = (id) => `#/jobs/${id}`;
@@ -25,13 +25,20 @@ function jobRow(job, tag, small) {
     </div>`;
 }
 
-// 7 columns x 5 rows of small squares. Each column fills from the bottom up to that day's count.
-function dotChart(columns, label) {
-  const dots = columns.map((n, c) => Array.from({ length: DOT_ROWS }, (_, r) => {
-    const on = DOT_ROWS - 1 - r < n;
-    return html`<rect class="dot${on ? ' on' : ''}" x="${c * 22}" y="${r * 18}" width="12" height="12" rx="3"/>`;
-  }));
-  return html`<svg class="dot-chart" role="img" aria-label="${label}" viewBox="0 0 144 84" width="144" height="84">${dots}</svg>`;
+// One small square per day (or per week on a long history), filled column by column, 7 to a column.
+// More than one application in a box makes it solid orange; one makes it lighter.
+const BOX = 12;
+const GAP = 4;
+function boxChart(since) {
+  const rows = Math.min(7, since.cells.length);
+  const cols = Math.ceil(since.cells.length / 7);
+  const w = cols * (BOX + GAP) - GAP;
+  const h = rows * (BOX + GAP) - GAP;
+  const rects = since.cells.map((n, i) => {
+    const level = n === 0 ? '' : n === 1 ? ' on' : ' on strong';
+    return html`<rect class="box${level}" x="${Math.floor(i / 7) * (BOX + GAP)}" y="${(i % 7) * (BOX + GAP)}" width="${BOX}" height="${BOX}" rx="3"/>`;
+  });
+  return html`<svg class="box-chart" role="img" aria-label="${since.aria}" viewBox="0 0 ${w} ${h}" style="width:min(100%, ${w}px)">${rects}</svg>`;
 }
 
 export async function render(el, { stale }) {
@@ -61,7 +68,7 @@ export async function render(el, { stale }) {
 
   const up = nextUp(data, today);
   const sentence = html`${up.sentence}<span class="stop">.</span>`;
-  const week = sentSummary(data.sent, today);
+  const since = sinceStart(data.applied_days, today);
 
   const openRows = open.length
     ? open.map((j) => jobRow(j, html`<span class="tag">${whenText(j, today)}</span>`, j.company))
@@ -75,7 +82,12 @@ export async function render(el, { stale }) {
     <div class="dash-page">
       <h1 class="sr-only">Dashboard</h1>
       <div class="bento">
-        <div class="bento-tile bento-hatch" aria-hidden="true"></div>
+        <section class="bento-tile bento-since">
+          <span class="mono since-label">${since.label}</span>
+          <span class="since-num">${since.total}</span>
+          <p class="mono since-line">${since.line}</p>
+          ${since.empty ? '' : html`<div class="since-chart">${boxChart(since)}<p class="mono since-legend">1 box = 1 ${since.unit}</p></div>`}
+        </section>
 
         <section class="bento-tile bento-next">
           <span class="mono text-muted">${up.label}</span>
@@ -90,7 +102,7 @@ export async function render(el, { stale }) {
           <span class="mono">open to apply</span>
           <span class="count-bottom">
             <span class="hero-num${counts.open > 99 ? ' small' : ''}">${counts.open}</span>
-            <span class="count-dot" aria-hidden="true">jobs</span>
+            <span class="count-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
           </span>
         </a>
 
@@ -104,11 +116,6 @@ export async function render(el, { stale }) {
           <div class="tile-head"><h2>Applied</h2><a class="link text-sm" href="#/jobs">See all jobs</a></div>
           <p class="text-muted text-sm tile-note">Newest application first</p>
           <div class="rows">${appliedRows}</div>
-          <div class="week">
-            <h3>Last 7 days</h3>
-            <p class="mono text-muted">${week.line}</p>
-            ${dotChart(week.columns, week.aria)}
-          </div>
         </section>
       </div>
     </div>`;

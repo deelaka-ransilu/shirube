@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { nextUp, statRow, whenText, sentSummary } from '../public/js/lib/dash.js';
+import { nextUp, statRow, whenText, sinceStart } from '../public/js/lib/dash.js';
 
 const TODAY = '2026-11-18';
 
@@ -49,13 +49,39 @@ test('whenText: closing date, else the day it was found', () => {
   assert.equal(whenText({ closes_on: '', found_on: '' }, TODAY), 'No closing date');
 });
 
-test('sentSummary: none, one day, several days', () => {
-  const days = (counts) => counts.map((count, i) => ({ date: `2026-11-${12 + i}`, count }));
-  assert.equal(sentSummary(days([0, 0, 0, 0, 0, 0, 0]), TODAY).line, 'None sent in the last 7 days');
-  assert.equal(sentSummary([], TODAY).line, 'None sent in the last 7 days');
-  assert.equal(sentSummary(days([0, 0, 0, 0, 0, 2, 0]), TODAY).line, '2 sent on 17 Nov');
-  const many = sentSummary(days([1, 0, 0, 0, 0, 2, 0]), TODAY);
-  assert.equal(many.line, '3 sent in the last 7 days');
-  assert.deepEqual(many.columns, [1, 0, 0, 0, 0, 2, 0]);
-  assert.match(many.aria, /^Applications sent each day, last 7 days: 12 Nov 1, 13 Nov 0/);
+test('sinceStart: nothing applied yet says so and draws no boxes', () => {
+  const none = sinceStart([], TODAY);
+  assert.equal(none.empty, true);
+  assert.equal(none.total, 0);
+  assert.deepEqual(none.cells, []);
+  assert.equal(sinceStart([{ date: '2026-11-17', count: 0 }], TODAY).empty, true);
+});
+
+test('sinceStart: one box per day from the first application to today', () => {
+  const s = sinceStart([{ date: '2026-11-15', count: 1 }, { date: '2026-11-17', count: 2 }], TODAY);
+  assert.equal(s.empty, false);
+  assert.equal(s.unit, 'day');
+  assert.deepEqual(s.cells, [1, 0, 2, 0]); // 15, 16, 17, 18 Nov
+  assert.equal(s.total, 3);
+  assert.equal(s.label, 'applied · since 15 Nov');
+  assert.equal(s.line, '3 applications in 4 days');
+  assert.match(s.aria, /^Applications sent since 15 Nov, one box per day: 3 in total/);
+});
+
+test('sinceStart: the first day alone is one box and "1 application in 1 day"', () => {
+  const s = sinceStart([{ date: TODAY, count: 1 }], TODAY);
+  assert.deepEqual(s.cells, [1]);
+  assert.equal(s.line, '1 application in 1 day');
+});
+
+test('sinceStart: a long history switches to one box per week and keeps the newest 147', () => {
+  const s = sinceStart([{ date: '2026-01-01', count: 2 }, { date: '2026-11-18', count: 1 }], TODAY);
+  assert.equal(s.unit, 'week');
+  assert.equal(s.cells[0], 2);
+  assert.equal(s.cells[s.cells.length - 1], 1);
+  assert.equal(s.cells.length, Math.ceil(322 / 7)); // 1 Jan to 18 Nov is 322 days
+  const huge = sinceStart([{ date: '2020-01-01', count: 5 }, { date: '2026-11-18', count: 1 }], TODAY);
+  assert.equal(huge.cells.length, 147);
+  assert.equal(huge.cells[146], 1);
+  assert.equal(huge.total, 6);
 });

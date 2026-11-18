@@ -74,14 +74,34 @@ export function whenText(job, today) {
   return closingWithDays(job.closes_on, today);
 }
 
-// "Last 7 days": the line under the heading, the screen-reader text and the dot columns.
-export function sentSummary(sent = [], today) {
-  const total = sent.reduce((a, d) => a + d.count, 0);
-  const busy = sent.filter((d) => d.count > 0);
-  let line;
-  if (!sent.length || total === 0) line = 'None sent in the last 7 days';
-  else if (busy.length === 1) line = `${total} sent on ${formatDay(busy[0].date, today)}`;
-  else line = `${total} sent in the last 7 days`;
-  const aria = `Applications sent each day, last 7 days: ${sent.map((d) => `${formatDay(d.date, today)} ${d.count}`).join(', ')}`;
-  return { total, line, aria, columns: sent.map((d) => d.count) };
+// "Since you started": every day from the first application to today, as boxes.
+// days = [{date, count}] oldest first (only days that had applications). Up to 147 days (21 columns of 7)
+// each box is one day; a longer time uses one box per week (the newest 147 weeks).
+const MAX_BOXES = 147;
+const DAY_MS = 86400000;
+const dayNumber = (iso) => Math.floor(Date.parse(iso + 'T00:00:00Z') / DAY_MS);
+
+export function sinceStart(days = [], today) {
+  const total = days.reduce((a, d) => a + d.count, 0);
+  if (!days.length || total === 0) {
+    return { empty: true, total: 0, label: 'applied · not started', line: 'Your first application starts this chart.', unit: 'day', cells: [], aria: 'No applications sent yet' };
+  }
+  const first = days[0].date;
+  const end = Math.max(dayNumber(today), dayNumber(days[days.length - 1].date));
+  const span = end - dayNumber(first) + 1;
+  const unit = span > MAX_BOXES ? 'week' : 'day';
+  const size = unit === 'week' ? 7 : 1;
+  let cells = Array.from({ length: Math.ceil(span / size) }, () => 0);
+  for (const d of days) cells[Math.floor((dayNumber(d.date) - dayNumber(first)) / size)] += d.count;
+  if (cells.length > MAX_BOXES) cells = cells.slice(cells.length - MAX_BOXES);
+  const since = formatDay(first, today);
+  return {
+    empty: false,
+    total,
+    label: `applied · since ${since}`,
+    line: `${total === 1 ? '1 application' : `${total} applications`} in ${span === 1 ? '1 day' : `${span} days`}`,
+    unit,
+    cells,
+    aria: `Applications sent since ${since}, one box per ${unit}: ${total} in total`,
+  };
 }

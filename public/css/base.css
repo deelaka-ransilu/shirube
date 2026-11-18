@@ -4,20 +4,27 @@
 html, body { height: 100%; margin: 0; }
 body { background: var(--color-bg); color: var(--color-text); font: var(--weight-regular) var(--text-base)/var(--leading-body) var(--font-sans); -webkit-font-smoothing: antialiased; }
 
-/* Shell: the page fills the window; the floating navigation sits at the bottom */
+/* Shell: the page fills the window; the folder tabs sit on the left of the top bar, on top of the page */
 .app { display: flex; height: 100vh; background: var(--color-bg); }
 .shell { flex: 1; min-width: 0; display: flex; }
 .panel { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--color-bg); }
-.panel-header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-5) var(--space-6) var(--space-3); }
-.panel-body { flex: 1; min-height: 0; overflow: auto; padding: var(--space-2) var(--space-6) var(--dock-reserve); }
+.panel-header { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); padding: var(--space-5) var(--space-6) 0; }
+.panel-body { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--space-6) var(--dock-reserve); }
 
-/* Dock: five line icons, the active one is orange with a black icon */
-.dock { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; display: flex; gap: 6px; padding: var(--space-2); background: var(--color-card); border: 1px solid var(--color-line); border-radius: var(--radius-card); box-shadow: var(--shadow-dock); }
-.dock a { width: var(--dock-btn-w); height: var(--dock-btn-h); display: flex; align-items: center; justify-content: center; border-radius: var(--radius-dock-btn); color: var(--color-muted); text-decoration: none; transition: transform var(--press-time); }
-.dock a:hover:not([aria-current="page"]) { color: var(--color-text); background: var(--color-raised); }
-.dock a:active { transform: scale(0.97); }
-.dock a[aria-current="page"] { color: var(--color-on-primary); background: var(--color-primary); }
-.dock svg { width: var(--nav-icon); height: var(--nav-icon); stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Folder tabs: five labels on the top bar, joined to the page below. The active tab is frame-coloured, with curved feet so it joins the folder body below. */
+.tabs { display: flex; align-items: flex-end; gap: 4px; margin: 0; padding: 0; position: relative; z-index: 2; }
+.tabs a { position: relative; display: flex; align-items: center; gap: 8px; height: var(--tab-h); padding: 0 18px; font: var(--text-xs) var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; color: var(--color-muted); background: var(--color-card); border: 1px solid var(--color-line); border-bottom: 0; border-radius: var(--radius-tab) var(--radius-tab) 0 0; text-decoration: none; transition: transform var(--press-time), color var(--press-time), background-color var(--press-time); }
+.tabs a:hover:not([aria-current="page"]) { color: var(--color-text); background: var(--color-raised); }
+.tabs a:active { transform: scale(0.97); transform-origin: bottom; }
+.tabs a[aria-current="page"] { height: calc(var(--tab-h) + 6px); margin: 0 var(--radius-tab); color: #fff; background-color: var(--color-frame); border-color: var(--color-frame); }
+.tabs a[aria-current="page"]::before, .tabs a[aria-current="page"]::after { content: ""; position: absolute; bottom: 0; width: var(--radius-tab); height: var(--radius-tab); pointer-events: none; }
+.tabs a[aria-current="page"]::before { left: calc(-1 * var(--radius-tab)); background: radial-gradient(circle at 0 0, transparent calc(var(--radius-tab) - 0.5px), var(--color-frame) var(--radius-tab)); }
+.tabs a[aria-current="page"]::after { right: calc(-1 * var(--radius-tab)); background: radial-gradient(circle at 100% 0, transparent calc(var(--radius-tab) - 0.5px), var(--color-frame) var(--radius-tab)); }
+@media (max-width: 1180px) { .tabs { order: 2; flex-basis: 100%; } .topbar { order: 1; margin-left: auto; } .panel-header { row-gap: var(--space-3); } }
+@media (max-width: 760px) { .tabs a { padding: 0 10px; } }
+
+/* Pages that are not folders yet get a thin frame-coloured rule under the tabs, so the active tab still joins something */
+#page:not(:has(.bento))::before { content: ""; display: block; flex-shrink: 0; height: 4px; margin-bottom: var(--space-4); background: var(--color-frame); }
 
 /* Type */
 h1 { margin: 0; font-size: var(--text-display); font-weight: var(--weight-medium); letter-spacing: var(--tracking-heading); line-height: var(--leading-tight); }

@@ -1,12 +1,11 @@
-/* Shell pieces that base.css does not cover: top bar, search, bell, theme switch.
+/* Shell pieces that base.css does not cover: top bar, search, bell.
    Load after base.css. */
 
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* Top bar: page name on the left; search, bell and theme switch on the right */
+/* Top bar: folder tabs on the left (no page title: the tab names the page); add job, search and bell on the right */
 .panel-header { flex-wrap: wrap; }
-.page-title { font-size: var(--text-display); font-weight: var(--weight-medium); letter-spacing: var(--tracking-heading); line-height: var(--leading-tight); color: var(--color-text); }
-.topbar { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.topbar { display: flex; align-items: center; gap: var(--space-3); min-width: 0; margin-bottom: var(--space-3); }
 
 .search { position: relative; display: flex; align-items: center; width: 400px; flex-shrink: 1; min-width: 140px; height: var(--hit-min); background: var(--color-card); border: 1px solid var(--color-border-strong); border-radius: var(--radius-control); }
 .search:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
@@ -22,18 +21,15 @@
 .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
 .page-head p { margin: var(--space-2) 0 0; }
 
-/* Bell and theme switch: 44px quiet icon buttons */
+/* Bell: a 44px quiet icon button */
 .bell-wrap { position: relative; flex-shrink: 0; }
-.bell, .theme-toggle { position: relative; width: var(--hit-min); height: var(--hit-min); flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: transparent; color: var(--color-text); font: inherit; text-decoration: none; border: 1px solid var(--color-border-strong); border-radius: var(--radius-control); cursor: pointer; transition: transform var(--press-time); }
-.bell:hover, .theme-toggle:hover { background: var(--color-raised); }
-.bell:active, .theme-toggle:active { transform: scale(0.97); }
-.bell svg, .theme-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bell { position: relative; width: var(--hit-min); height: var(--hit-min); flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: transparent; color: var(--color-text); font: inherit; text-decoration: none; border: 1px solid var(--color-border-strong); border-radius: var(--radius-control); cursor: pointer; transition: transform var(--press-time); }
+.bell:hover { background: var(--color-raised); }
+.bell:active { transform: scale(0.97); }
+.bell svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .bell[aria-expanded="true"] { background: var(--color-raised); }
 .bell-count { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: var(--weight-semibold); background: var(--color-accent); color: var(--color-on-accent); border-radius: var(--radius-pill); }
 .bell-count[hidden] { display: none; }
-.theme-toggle .i-sun { display: none; }
-:root[data-theme="dark"] .theme-toggle .i-sun { display: block; }
-:root[data-theme="dark"] .theme-toggle .i-moon { display: none; }
 
 /* The card the bell opens: over the page, on every screen */
 .bell-pop { position: absolute; top: calc(100% + 12px); right: 0; z-index: 40; width: 340px; max-width: calc(100vw - 32px); max-height: min(70vh, 460px); overflow: auto; padding: var(--space-3) var(--space-4) var(--space-2); background: var(--color-card); border: 1px solid var(--color-line); border-radius: var(--radius-card); box-shadow: var(--shadow-pop); scrollbar-width: thin; }

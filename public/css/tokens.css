@@ -1,6 +1,5 @@
 /* Shirube design tokens, v3 "Gulf" (Ford GT livery: powder blue, orange, white, asphalt, black).
-   Only variables here. Components are in base.css. Light is the default; dark is data-theme="dark" on <html>
-   (set by js/lib/theme.js, which follows the system until the person picks one). */
+   Only variables here. Components are in base.css. Light only (dark mode was removed in step 51c). */
 :root {
   color-scheme: light;
 
@@ -17,7 +16,7 @@
   --color-text: #111315;         /* ink */
   --color-muted: #5B6065;        /* labels, small and secondary text */
 
-  --color-primary: #FF6B0A;      /* orange: the ONE main button per screen, active dock icon, hero tile */
+  --color-primary: #FF6B0A;      /* orange: the ONE main button per screen, hero tile, the dot on the active tab */
   --color-on-primary: #111315;   /* text on orange is always ink */
   --color-accent: #7CC4E8;       /* Gulf blue: highlight, "3 of 5 skills", the bell dot */
   --color-on-accent: #111315;
@@ -74,13 +73,14 @@
   --space-6: 32px;     /* side padding of the page */
 
   /* Radius */
-  --radius-frame: 26px;    /* the bento frame */
+  --radius-frame: 18px;    /* the bento frame (the folder body): tile radius + frame padding, so corners are concentric */
   --radius-card: 20px;     /* tiles and cards */
-  --radius-inner: 14px;    /* a box inside a card, the hatch tile */
+  --radius-inner: 14px;    /* a box inside a card */
+  --radius-tile: 14px;     /* a tile inside the frame */
+  --radius-tab: 14px;      /* the shoulder of a folder tab */
   --radius-control: 12px;  /* buttons, inputs, avatars, dock icons */
   --radius-chip: 9px;      /* choice chips */
   --radius-small: 8px;     /* tags */
-  --radius-dock-btn: 12px;
   --radius-pill: 999px;    /* count dots */
 
   /* Lines and sizes */
@@ -89,12 +89,10 @@
 
   /* Depth: one soft shadow, only under raised things. No hard shadows. */
   --shadow-card: 0 14px 24px -16px rgba(0, 0, 0, 0.25);
-  --shadow-dock: 0 14px 24px -12px rgba(0, 0, 0, 0.35);
   --shadow-pop: 0 14px 24px -12px rgba(0, 0, 0, 0.35);
   --shadow-old: 0 12px 32px rgba(0, 0, 0, 0.2);
 
-  /* Textures: use once or twice per screen, never behind reading text */
-  --texture-hatch: repeating-linear-gradient(135deg, #111315 0 5px, #FF6B0A 5px 6px);
+  /* Textures: never behind reading text */
   --texture-metal: conic-gradient(from 90deg, #d9dadb, #8c8d8e, #f4f4f4, #8c8d8e, #d9dadb);
 
   /* Motion */
@@ -102,34 +100,11 @@
   --dialog-time: 200ms;
 
   /* Layout (desktop, laptop window) */
-  --frame-gap: 6px;
-  --dock-btn-w: 44px;      /* floating bottom navigation: one button */
-  --dock-btn-h: 44px;
-  --dock-reserve: 112px;   /* space kept free at the end of a page or list for the dock */
-  --nav-icon: 22px;
+  --frame-gap: 4px;        /* gap between tiles, and the frame padding */
+  --tab-h: 40px;           /* folder tab height */
+  --dock-reserve: 24px;    /* space kept at the end of a page or list (the bottom dock is gone) */
   --card-pad: 24px;
   --card-pad-sm: 16px 20px;
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --color-bg: #101214;
-  --color-card: #1A1D20;
-  --color-raised: #24282C;
-  --color-line: #34393E;
-  --color-border: #34393E;
-  --color-border-strong: #4A5056;
-  --color-soft: #1F3A47;
-  --color-frame: #F3F4F5;        /* the bento frame turns light, so it still stands out from the dark page */
-  --color-text: #F3F4F5;
-  --color-muted: #A0A6AC;
-  --color-link: #7CC4E8;
-  --color-focus: #2B7BA8;
-  --color-danger-text: #FF8A80;
-  --shadow-card: 0 14px 24px -16px rgba(0, 0, 0, 0.6);
-  --shadow-dock: 0 14px 24px -12px rgba(0, 0, 0, 0.7);
-  --shadow-pop: 0 14px 24px -12px rgba(0, 0, 0, 0.7);
-  --shadow-old: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 @media (prefers-reduced-motion: reduce) {

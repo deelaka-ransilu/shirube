@@ -13,22 +13,23 @@ test.after(() => server.close());
 const post = (path, body) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
 const dash = () => fetch(base + '/api/dashboard').then((r) => r.json());
 
-test('sent: 7 days, oldest first, today last, all zero when nothing was applied', async () => {
+test('applied_days: empty when nothing was applied', async () => {
   const d = await dash();
-  const today = todayLocal();
-  assert.equal(d.sent.length, 7);
-  assert.equal(d.sent[6].date, today);
-  assert.equal(d.sent[0].date, addDays(today, -6));
-  assert.equal(d.sent.every((x) => x.count === 0), true);
+  assert.deepEqual(d.applied_days, []);
 });
 
-test('sent: counts applications per day, ignores old ones and open jobs', async () => {
+test('applied_days: one row per day from the first application, oldest first; open jobs and future days are left out', async () => {
   const today = todayLocal();
   await post('/api/jobs', { title: 'A', status: 'applied', applied_on: today });
   await post('/api/jobs', { title: 'B', status: 'applied', applied_on: today });
   await post('/api/jobs', { title: 'C', status: 'applied', applied_on: addDays(today, -3) });
-  await post('/api/jobs', { title: 'D', status: 'applied', applied_on: addDays(today, -7) }); // too old
+  await post('/api/jobs', { title: 'D', status: 'applied', applied_on: addDays(today, -40) });
   await post('/api/jobs', { title: 'E' }); // still open
   const d = await dash();
-  assert.deepEqual(d.sent.map((x) => x.count), [0, 0, 0, 1, 0, 0, 2]);
+  assert.deepEqual(d.applied_days, [
+    { date: addDays(today, -40), count: 1 },
+    { date: addDays(today, -3), count: 1 },
+    { date: today, count: 2 },
+  ]);
+  assert.equal('sent' in d, false);
 });

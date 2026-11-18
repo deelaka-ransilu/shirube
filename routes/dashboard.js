@@ -1,5 +1,5 @@
 import { STATUSES } from '../lib/validate-job.js';
-import { todayLocal, daysBetween, addDays } from '../lib/dates.js';
+import { todayLocal, daysBetween } from '../lib/dates.js';
 import { followUpInfo } from '../lib/followups.js';
 
 const LIMIT = 8;
@@ -36,20 +36,15 @@ export function getDashboard({ db }) {
      ORDER BY s.happened_on DESC, s.id DESC LIMIT ${LIMIT}`,
   ).all(today);
 
-  return { today, counts, open, applied, activity, sent: sentLastWeek(db, today), next_steps: nextSteps(db, today, counts.open) };
+  return { today, counts, open, applied, activity, applied_days: appliedDays(db, today), next_steps: nextSteps(db, today, counts.open) };
 }
 
-// Applications sent on each of the last 7 days (oldest first, today last), for the dot chart.
-function sentLastWeek(db, today) {
-  const from = addDays(today, -6);
-  const rows = db.prepare(
-    "SELECT applied_on AS day, COUNT(*) AS n FROM jobs WHERE status != 'open' AND applied_on >= ? AND applied_on <= ? GROUP BY applied_on",
-  ).all(from, today);
-  const byDay = new Map(rows.map((r) => [r.day, r.n]));
-  return Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(from, i);
-    return { date, count: byDay.get(date) ?? 0 };
-  });
+// Applications sent per day, from the first one to today (oldest first, only days that had some).
+// The Dashboard turns this into boxes. Same rule as before: open jobs are not counted, rejected ones still are.
+function appliedDays(db, today) {
+  return db.prepare(
+    "SELECT applied_on AS date, COUNT(*) AS count FROM jobs WHERE status != 'open' AND applied_on != '' AND applied_on <= ? GROUP BY applied_on ORDER BY applied_on",
+  ).all(today);
 }
 
 // What to do next, most urgent first. Only things the saved data can show.
