@@ -882,3 +882,8 @@ textarea.input.aj-desc { flex: 1; min-height: 72px; }
 @media (max-width: 800px) { .bento-fu { grid-template-columns: minmax(0, 1fr); } }
 
 .bento-fu .fu-card .avatar { background: var(--color-card); }.bento-fu .fu-card .avatar { background: var(--color-card); }
+
+/* ---- Found page tweak (step 57): buttons on top, label hidden ---- */
+.found-count .fc-label { display: none; }
+.found-count .nj-count { order: -1; }
+.found-count .found-status { order: -1; }
