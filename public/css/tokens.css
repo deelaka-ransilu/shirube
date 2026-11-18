@@ -120,6 +120,7 @@
   --color-border: #34393E;
   --color-border-strong: #4A5056;
   --color-soft: #1F3A47;
+  --color-frame: #F3F4F5;        /* the bento frame turns light, so it still stands out from the dark page */
   --color-text: #F3F4F5;
   --color-muted: #A0A6AC;
   --color-link: #7CC4E8;

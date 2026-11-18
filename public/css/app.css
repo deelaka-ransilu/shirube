@@ -111,12 +111,12 @@ select.input { appearance: auto; }
 .found-date { position: relative; display: inline-flex; }
 .found-date-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
 
-#page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.dash-page), #page:has(.addjob-page), #page:has(.fu-page) { display: flex; flex-direction: column; overflow: hidden; }
+#page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.addjob-page), #page:has(.fu-page) { display: flex; flex-direction: column; overflow: hidden; }
 .found-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 /* Small windows: stack everything and let the page scroll as before */
 @media (max-width: 1100px) {
-  #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.dash-page), #page:has(.addjob-page), #page:has(.fu-page) { display: block; overflow: auto; }
+  #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.addjob-page), #page:has(.fu-page) { display: block; overflow: auto; }
 }
 
 /* ---- Badges, tints, icon buttons, hidden scrollbars (Found look; reused on other screens) ---- */
@@ -375,41 +375,59 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
   .mt-warn { margin-left: 0; }
 }
 
-/* ---- Dashboard look (step 25): one screen, each list scrolls inside its card ---- */
-.dash-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.dash-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-4); align-items: stretch; }
-.dash-col { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; min-height: 0; }
-.dash-card { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-.dash-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
-.dash-head h2 { margin: 0; }
-.dash-note { margin: 2px 0 var(--space-2); }
-.dash-card .scroll-wrap { flex: 1; min-height: 0; }
-.dash-card .scroller { padding-bottom: var(--space-4); }
-.dash-card .list-row { flex-wrap: nowrap; gap: var(--space-3); padding: 10px var(--space-2); }
-.dash-card .avatar { width: 40px; height: 40px; }
-.dash-card .row-main { min-width: 0; }
-.dash-card .row-title { overflow-wrap: anywhere; }
-.dash-card .row-right { white-space: nowrap; }
-.dash-card .step-row .row-title b { font-weight: var(--weight-medium); }
-.dash-card > .empty { margin: auto; }
-.dash-card.dash-next { flex: 0 1 auto; }
-.dash-card .scroller:has(.dash-empty) { display: flex; }
-.dash-card .dash-empty { margin: auto; max-width: 34ch; text-align: center; }
-.tiles.sm.dash-tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-3); margin: 0 0 var(--space-4); }
+/* ---- Dashboard (v3 bento): a dark frame holding tiles, the page scrolls as a whole ---- */
+.bento { display: grid; grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr); gap: var(--frame-gap); padding: 6px; background: var(--color-frame); border: 1px solid var(--color-line); border-radius: var(--radius-frame); }
+.bento-tile { min-width: 0; padding: 22px; background: var(--color-card); border-radius: var(--radius-card); }
+.bento-hatch { grid-column: 1; grid-row: 1; min-height: 150px; padding: 0; background: var(--texture-hatch); border: 1px solid var(--color-primary); border-radius: var(--radius-inner); }
+.bento-next { grid-column: 2 / 4; grid-row: 1; display: flex; flex-direction: column; gap: var(--space-3); }
+.sentence { margin: 0; font-size: 44px; font-weight: var(--weight-medium); letter-spacing: var(--tracking-heading); line-height: 1.05; overflow-wrap: anywhere; }
+.sentence.long { font-size: 32px; }
+.sentence a { color: inherit; text-decoration: none; }
+.sentence a:hover { text-decoration: underline; text-underline-offset: 6px; }
+.stop { color: var(--color-primary); }
+.next-line { margin: 0; font-size: var(--text-base); }
+.stat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-top: auto; padding-top: var(--space-4); border-top: 1px solid var(--color-line); }
+.stat { display: flex; flex-direction: column; gap: var(--space-1); color: inherit; text-decoration: none; border-radius: var(--radius-control); }
+.stat strong { font-size: var(--text-stat); font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: 1.1; }
+.stat:hover strong { color: var(--color-link); }
+.bento-count { grid-column: 1; grid-row: 2; min-height: 420px; display: flex; flex-direction: column; justify-content: space-between; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; }
+.count-bottom { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+.hero-num { font-size: var(--text-hero); font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: 0.9; }
+.hero-num.small { font-size: 100px; }
+.count-dot { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font: var(--text-xs) var(--font-mono); color: #fff; background: #111315; border-radius: var(--radius-pill); }
+.bento-count:hover .count-dot { transform: scale(1.06); }
+.bento-list { grid-row: 2; display: flex; flex-direction: column; }
+.tile-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+.tile-head h2 { margin: 0; }
+.tile-note { margin: 2px 0 var(--space-2); }
+.bento .list-row { flex-wrap: nowrap; gap: var(--space-3); padding: 10px var(--space-2); }
+.bento .row-main { min-width: 0; }
+.bento .row-title { overflow-wrap: anywhere; }
+.bento .row-right { flex-direction: row; align-items: center; gap: 10px; white-space: nowrap; }
+.bento .row-click:hover { box-shadow: none; background: var(--color-raised); }
+.chev { font-size: 20px; line-height: 1; color: var(--color-muted); }
+.dash-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); margin: var(--space-5) auto; max-width: 34ch; text-align: center; }
+.dash-empty b { font-size: var(--text-md); font-weight: var(--weight-medium); }
+.dash-empty p { margin: 0; }
+.empty-art { width: 64px; height: 40px; margin-bottom: var(--space-2); }
+.dash-none { display: flex; flex-direction: column; align-items: center; text-align: center; padding: var(--space-6); }
+.dash-none p { max-width: 44ch; margin: 0; }
+.week { margin-top: auto; padding-top: var(--space-5); }
+.week h3 { margin: 0 0 2px; font-size: var(--text-base); font-weight: var(--weight-medium); }
+.week p { margin: 0 0 var(--space-3); }
+.dot-chart { display: block; max-width: 100%; }
+.dot { fill: var(--color-raised); }
+.dot.on { fill: var(--color-primary); }
+@media (max-width: 1100px) {
+  .bento { grid-template-columns: minmax(0, 1fr); }
+  .bento-tile { grid-column: 1 !important; grid-row: auto !important; }
+  .bento-hatch { min-height: 64px; }
+  .bento-count { min-height: 240px; }
+  .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 a.tile { color: inherit; text-decoration: none; }
 a.tile:hover { background: var(--color-raised); }
 
-@media (max-width: 1280px) {
-  .dash-card .avatar { display: none; }
-  .tiles.sm.dash-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (max-width: 1100px) {
-  .dash-page { display: block; }
-  .dash-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
-  .dash-card { display: block; overflow: visible; }
-  .dash-card .list-row { flex-wrap: wrap; }
-  .dash-card .avatar { display: flex; }
-}
 
 /* ---- Add job look (step 26): one screen, small chips, Save in the top bar ---- */
 .addjob-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }

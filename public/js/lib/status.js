@@ -8,6 +8,8 @@ export const STATUS = {
   rejected:  { symbol: '▲', label: 'Rejected' },
 };
 export const STATUS_KEYS = Object.keys(STATUS);
+// The word alone, for the v3 look (no symbols).
+export const statusWord = (key) => (Object.hasOwn(STATUS, key) ? STATUS[key].label : key);
 export const hasStatus = (key) => Object.hasOwn(STATUS, key);
 export const statusText = (key) => (hasStatus(key) ? `${STATUS[key].symbol} ${STATUS[key].label}` : key);
 // For badges: "To apply" shows the word only (its ◌ symbol looks like ○ when small). The others keep shape + word.
