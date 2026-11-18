@@ -256,3 +256,26 @@ test('apply: a refused item says which one and keeps what was added before it', 
   });
   assert.ok((await state()).d.languages.some((l) => l.name === 'Tamil'));
 });
+
+test('a link that wrapped and lost its hyphen gets it back when the break sits between the name words', () => {
+  const text = NEAT.replace('www.linkedin.com/in/sam-perera (LinkedIn)', 'www.linkedin.com/in/sam\nperera (LinkedIn)');
+  assert.ok(text.includes('in/sam\nperera'), 'the test text must really wrap the link');
+  assert.equal(parseLinkedin(text).linkedin, 'https://www.linkedin.com/in/sam-perera');
+});
+
+test('a link that wraps in the middle of a word is left alone', () => {
+  const text = NEAT.replace('www.linkedin.com/in/sam-perera (LinkedIn)', 'www.linkedin.com/in/samper\nera (LinkedIn)');
+  assert.equal(parseLinkedin(text).linkedin, 'https://www.linkedin.com/in/samperera');
+});
+
+test('a link that wrapped at its hyphen keeps it', () => {
+  const text = NEAT.replace('www.linkedin.com/in/sam-perera (LinkedIn)', 'www.linkedin.com/in/sam-\nperera (LinkedIn)');
+  assert.equal(parseLinkedin(text).linkedin, 'https://www.linkedin.com/in/sam-perera');
+});
+
+test('bullets glued to the sentence before them are put on their own lines', () => {
+  const text = NEAT.replace(/(support team\.)\s*\n?\s*-?\s*/, '$1- ');
+  const e = parseLinkedin(text).experience[0];
+  assert.ok(!/[.!?]- /.test(e.details), 'no glued bullet is left');
+  assert.ok(e.details.split('\n').length >= 2);
+});

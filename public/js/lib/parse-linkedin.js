@@ -46,6 +46,12 @@ function joinItems(lines) {
   return items;
 }
 
+// A copy can glue bullets together: "...support team.- Installed and upgraded...". Put each one back on its own line.
+function splitBullets(item) {
+  const [first, ...rest] = item.split(/(?<=[.!?:)])\s*-\s+(?=[A-Z0-9])/);
+  return [first, ...rest.map((r) => `- ${r}`)];
+}
+
 // ---- getting the text into one straight list ----
 // Copying from a PDF can give the two columns side by side (a wide gap in the middle of each line).
 // Each page is cut back into its left column, then its right column, which is the order LinkedIn writes it in.
@@ -100,10 +106,26 @@ function cutSections(lines) {
 }
 
 // ---- Contact ----
-function parseContact(all) {
+function parseContact(all, name = '') {
   const lines = all.filter(Boolean);
   const out = {};
   let buffer = '';
+  let parts = [];
+  // A link that wrapped can lose its hyphen at the break ("deelaka" / "ransilu"). When the break falls exactly
+  // between two words of the person's name, the hyphen was there: put it back.
+  const mendLink = (url) => {
+    if (parts.length < 2) return url;
+    const nameWords = words(name).map(lettersOnly).filter(Boolean);
+    if (nameWords.length < 2) return url;
+    const slug = url.replace(/^.*\/in\//i, '');
+    if (slug === url) return url;
+    const before = parts[0].replace(/\s+/g, '').replace(/^.*\/in\//i, '');
+    const after = slug.slice(before.length);
+    const a = lettersOnly(before);
+    const b = lettersOnly(after.replace(/[/?#].*$/, ''));
+    if (!slug.startsWith(before) || /^-|-$/.test(before) || after.startsWith('-')) return url;
+    return nameWords.includes(a) && nameWords.includes(b) && a !== b ? url.slice(0, url.length - slug.length) + `${before}-${after}` : url;
+  };
   const take = (text) => {
     const label = text.match(/\(([^()]+)\)\s*$/);
     const value = text.replace(/\s*\([^()]+\)\s*$/, '').replace(/\s+/g, '').trim();
@@ -113,14 +135,15 @@ function parseContact(all) {
     if (['mobile', 'home', 'work', 'phone'].includes(kind)) { out.phone ??= text.replace(/\s*\([^()]+\)\s*$/, '').trim(); return; }
     const url = withScheme(value);
     if (/github\.com/i.test(url)) out.github ??= url;
-    else if (kind === 'linkedin' || /linkedin\.com/i.test(url)) out.linkedin ??= url;
+    else if (kind === 'linkedin' || /linkedin\.com/i.test(url)) out.linkedin ??= mendLink(url);
     else if (['portfolio', 'personal website', 'blog'].includes(kind)) out.portfolio ??= url;
     else out.other_link ??= url;
   };
   for (const line of lines) {
     if (EMAIL.test(line) && !buffer) { take(line); continue; }
-    buffer += buffer ? line : line;       // a long link can wrap: keep joining until the (Label) closes it
-    if (/\([^()]+\)\s*$/.test(buffer)) { take(buffer); buffer = ''; }
+    buffer += line;       // a long link can wrap: keep joining until the (Label) closes it
+    parts.push(line);
+    if (/\([^()]+\)\s*$/.test(buffer)) { take(buffer); buffer = ''; parts = []; }
   }
   if (/^[\w.-]+\.[a-z]{2,}(?:\/\S*)?$/i.test(buffer.replace(/\s+/g, ''))) take(buffer);   // a link whose (Label) is missing
   return out;
@@ -204,7 +227,7 @@ function parseExperience(lines) {
     let body = lines.slice(b.d + 1, end);
     if (body.length && looksLikePlace(body[0])) body = body.slice(1);   // the place line, not stored
     const m = lines[b.d].match(DATE_RANGE);
-    let details = joinItems(body).join('\n');
+    let details = joinItems(body).flatMap(splitBullets).join('\n');
     if (details.length > 5000) details = details.slice(0, 5000).replace(/\n[^\n]*$/, '');
     return {
       company: clip(b.company || b.role, 200),
@@ -302,7 +325,7 @@ export function parseLinkedin(input) {
     if (headerInfo.nameIndex !== undefined) sec.lines = block.slice(0, headerInfo.nameIndex);   // what is left is the real list
     else if (headerInfo.place) sec.lines = block.slice(0, -1);
   }
-  Object.assign(out, parseContact(sections('contact')));          // again: the name and place lines are no longer in it
+  Object.assign(out, parseContact(sections('contact'), headerInfo.name ?? ''));          // again: the name and place lines are no longer in it
   out.name = headerInfo.name ?? '';
   out.headline = headerInfo.headline ?? '';
   Object.assign(out, splitPlace(headerInfo.place));
