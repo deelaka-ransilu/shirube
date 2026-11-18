@@ -77,7 +77,6 @@
   --radius-card: 20px;     /* tiles and cards */
   --radius-inner: 14px;    /* a box inside a card */
   --radius-tile: 14px;     /* a tile inside the frame */
-  --radius-tab: 14px;      /* the shoulder of a folder tab */
   --radius-control: 12px;  /* buttons, inputs, avatars, dock icons */
   --radius-chip: 9px;      /* choice chips */
   --radius-small: 8px;     /* tags */
@@ -101,7 +100,7 @@
 
   /* Layout (desktop, laptop window) */
   --frame-gap: 4px;        /* gap between tiles, and the frame padding */
-  --tab-h: 40px;           /* folder tab height */
+  --nav-h: 36px;           /* top nav pill height */
   --dock-reserve: 24px;    /* space kept at the end of a page or list (the bottom dock is gone) */
   --card-pad: 24px;
   --card-pad-sm: 16px 20px;

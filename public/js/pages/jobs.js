@@ -132,7 +132,7 @@ export async function render(el, ctx) {
       </div>
     </div>`;
 
-  setTopAction(html`<a class="btn btn-primary" href="#/jobs/new">+ Add job</a>`);
+  setTopAction(html`<a class="btn btn-add" href="#/jobs/new"><span class="add-plus" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Add job</a>`);
   bindScroll(el.querySelector('.jobs-list-wrap'), '.list-row');
   if (ctx.keepTop) { const box = el.querySelector('.jobs-list-wrap .scroller'); if (box) box.scrollTop = ctx.keepTop; }
 

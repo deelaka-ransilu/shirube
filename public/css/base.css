@@ -8,23 +8,25 @@ body { background: var(--color-bg); color: var(--color-text); font: var(--weight
 .app { display: flex; height: 100vh; background: var(--color-bg); }
 .shell { flex: 1; min-width: 0; display: flex; }
 .panel { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--color-bg); }
-.panel-header { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); padding: var(--space-5) var(--space-6) 0; }
+.panel-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); padding: var(--space-5) var(--space-6) 0; }
 .panel-body { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--space-6) var(--dock-reserve); }
 
-/* Folder tabs: five labels on the top bar, joined to the page below. The active tab is frame-coloured, with curved feet so it joins the folder body below. */
-.tabs { display: flex; align-items: flex-end; gap: 4px; margin: 0; padding: 0; position: relative; z-index: 2; }
-.tabs a { position: relative; display: flex; align-items: center; gap: 8px; height: var(--tab-h); padding: 0 18px; font: var(--text-xs) var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; color: var(--color-muted); background: var(--color-card); border: 1px solid var(--color-line); border-bottom: 0; border-radius: var(--radius-tab) var(--radius-tab) 0 0; text-decoration: none; transition: transform var(--press-time), color var(--press-time), background-color var(--press-time); }
+/* Top nav: one rounded white bar with a hairline border and five mono labels.
+   The current page is marked by one black pill (.nav-pill) that glides between tabs,
+   placed by js/lib/nav-pill.js. Icons show on every tab; the label opens on the current tab. */
+.tabs { --nav-h: 34px; display: flex; align-items: center; gap: 2px; margin: 0; padding: 4px; position: relative; z-index: 2; background: var(--color-card); border: 1px solid var(--color-line); border-radius: 12px; }
+.nav-pill { position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; z-index: 0; border-radius: 8px; background: var(--color-frame); opacity: 0; pointer-events: none; }
+.nav-pill.ready { transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), width 280ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease; }
+.tabs a { position: relative; z-index: 1; display: flex; align-items: center; height: var(--nav-h); padding: 0 12px; font: var(--text-xs) var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; color: var(--color-muted); background: transparent; border-radius: 8px; text-decoration: none; transition: color 200ms ease, background-color 200ms ease, transform var(--press-time); }
 .tabs a:hover:not([aria-current="page"]) { color: var(--color-text); background: var(--color-raised); }
-.tabs a:active { transform: scale(0.97); transform-origin: bottom; }
-.tabs a[aria-current="page"] { height: calc(var(--tab-h) + 6px); margin: 0 var(--radius-tab); color: #fff; background-color: var(--color-frame); border-color: var(--color-frame); }
-.tabs a[aria-current="page"]::before, .tabs a[aria-current="page"]::after { content: ""; position: absolute; bottom: 0; width: var(--radius-tab); height: var(--radius-tab); pointer-events: none; }
-.tabs a[aria-current="page"]::before { left: calc(-1 * var(--radius-tab)); background: radial-gradient(circle at 0 0, transparent calc(var(--radius-tab) - 0.5px), var(--color-frame) var(--radius-tab)); }
-.tabs a[aria-current="page"]::after { right: calc(-1 * var(--radius-tab)); background: radial-gradient(circle at 100% 0, transparent calc(var(--radius-tab) - 0.5px), var(--color-frame) var(--radius-tab)); }
+.tabs a:active { transform: scale(0.97); }
+.tabs a[aria-current="page"] { color: #fff; }
+.tabs a:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.nav-ico { flex-shrink: 0; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav-label { display: inline-block; overflow: hidden; max-width: 0; opacity: 0; white-space: nowrap; transition: max-width 280ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease, margin-left 280ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.tabs a[aria-current="page"] .nav-label { max-width: 10em; opacity: 1; margin-left: 8px; }
 @media (max-width: 1180px) { .tabs { order: 2; flex-basis: 100%; } .topbar { order: 1; margin-left: auto; } .panel-header { row-gap: var(--space-3); } }
 @media (max-width: 760px) { .tabs a { padding: 0 10px; } }
-
-/* Pages that are not folders yet get a thin frame-coloured rule under the tabs, so the active tab still joins something */
-#page:not(:has(.bento))::before { content: ""; display: block; flex-shrink: 0; height: 4px; margin-bottom: var(--space-4); background: var(--color-frame); }
 
 /* Type */
 h1 { margin: 0; font-size: var(--text-display); font-weight: var(--weight-medium); letter-spacing: var(--tracking-heading); line-height: var(--leading-tight); }

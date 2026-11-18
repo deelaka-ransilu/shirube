@@ -16,11 +16,12 @@
     <div class="panel">
       <header class="panel-header">
         <nav class="tabs" aria-label="Main">
-          <a href="#/found" data-nav="found">New jobs</a>
-          <a href="#/jobs" data-nav="jobs">Jobs</a>
-          <a href="#/" data-nav="dashboard">Dashboard</a>
-          <a href="#/followups" data-nav="followups">Follow-ups</a>
-          <a href="#/profile" data-nav="profile">Profile</a>
+          <span class="nav-pill" aria-hidden="true"></span>
+          <a href="#/found" data-nav="found" title="New jobs"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg><span class="nav-label">New jobs</span></a>
+          <a href="#/jobs" data-nav="jobs" title="Jobs"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M3 13h18"/></svg><span class="nav-label">Jobs</span></a>
+          <a href="#/" data-nav="dashboard" title="Dashboard"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg><span class="nav-label">Dashboard</span></a>
+          <a href="#/followups" data-nav="followups" title="Follow-ups"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span class="nav-label">Follow-ups</span></a>
+          <a href="#/profile" data-nav="profile" title="Profile"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span class="nav-label">Profile</span></a>
         </nav>
         <div class="topbar">
           <div class="top-action" id="top-action"></div>
@@ -45,5 +46,6 @@
    </div>
   </div>
   <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/lib/nav-pill.js"></script>
 </body>
 </html>
