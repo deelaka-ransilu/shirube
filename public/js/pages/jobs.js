@@ -8,8 +8,8 @@ import { closeBadge } from '../lib/badges.js';
 import { bindScroll } from '../lib/scroll.js';
 import { setTopAction } from '../lib/shell.js';
 
-const TILES = ['open', 'applied', 'interview', 'offer'];   // the four tiles are the stage filters
-const OTHER_VIEWS = ['', 'reply', 'rejected'];             // All, Reply and Rejected sit in a line under the tiles
+const SEGMENTS = [['', 'All'], ['open', 'Can apply'], ['applied', 'Applied'], ['reply', 'Reply'], ['interview', 'Interview'], ['offer', 'Offer'], ['rejected', 'Rejected']];
+
 
 function jobsHash(status, q) {
   const p = new URLSearchParams();
@@ -110,25 +110,15 @@ export async function render(el, ctx) {
   el.innerHTML = html`
     <div class="jobs-page">
       <h1 class="sr-only">Jobs</h1>
-
-      <div class="grid-tiles tiles sm" role="group" aria-label="Filter jobs by stage">
-        ${TILES.map((k) => html`<button type="button" class="tile tile-btn" data-status="${k}" aria-pressed="${k === status}"><span>${STATUS[k].label}</span><strong>${counts[k]}</strong></button>`)}
-      </div>
-
-      <div class="jobs-views" role="group" aria-label="Other views">
-        <b>Showing: ${viewName} (${countOf(status)})</b>
-        ${OTHER_VIEWS.filter((k) => k !== status).map((k) => html`<button type="button" class="link-btn" data-status="${k}">${k ? STATUS[k].label : 'All'} (${countOf(k)})</button>`)}
-      </div>
-      ${q ? html`<p class="text-muted jobs-note">Results for “${q}”. <a class="link" href="${jobsHash(status, '')}">Clear search</a></p>` : ''}
-
-      <div class="jobs-layout">
-        <div class="card compact jobs-card">${list}</div>
-        ${next_closing ? html`
-          <div class="card compact jobs-closing">
-            <span class="text-muted">Next closing</span>
-            <a class="row-title" href="#/jobs/${next_closing.id}">${next_closing.title}</a>
-            <span class="text-muted">${next_closing.company ? next_closing.company + ' · ' : ''}${closingWithDays(next_closing.closes_on, today)}</span>
-          </div>` : ''}
+      <div class="bento bento-jobs">
+        <section class="bento-tile jobs-head">
+          <div class="jobs-seg" role="group" aria-label="Filter jobs by stage">
+            ${SEGMENTS.map(([k, label]) => html`<button type="button" class="seg" data-status="${k}" aria-pressed="${k === status}"><span>${label}</span><b class="mono">${countOf(k)}</b></button>`)}
+          </div>
+          ${next_closing ? html`<a class="jobs-closing-line" href="#/jobs/${next_closing.id}"><span class="mono text-muted">next closing</span><span class="jc-title">${next_closing.title}</span><span class="text-muted">${next_closing.company ? next_closing.company + ' · ' : ''}${closingWithDays(next_closing.closes_on, today)}</span></a>` : ''}
+          ${q ? html`<p class="text-muted jobs-note">Results for “${q}”. <a class="link" href="${jobsHash(status, '')}">Clear search</a></p>` : ''}
+        </section>
+        <section class="bento-tile jobs-card jobs-tile">${list}</section>
       </div>
     </div>`;
 
@@ -152,8 +142,8 @@ export async function render(el, ctx) {
 
     const chip = e.target.closest('[data-status]');
     if (chip) {
-      // Pressing the stage that is already showing goes back to All.
-      const next = chip.dataset.status === status ? '' : chip.dataset.status;
+      // A segment always shows its own list.
+      const next = chip.dataset.status;
       location.hash = jobsHash(next, q);
       return;
     }
