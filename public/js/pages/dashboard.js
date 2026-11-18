@@ -95,6 +95,9 @@ export async function render(el, { stale }) {
 
   const up = nextUp(data, today);
   const sentence = html`${up.sentence}<span class="stop">.</span>`;
+  const jobId = Number((/#\/jobs\/(\d+)$/.exec(up.href || '') || [])[1]) || null;
+  const nextJob = jobId ? [...(data.open || []), ...(data.applied || [])].find((j) => j.id === jobId) : null;
+  const nextChips = nextJob ? [nextJob.location, nextJob.job_type, nextJob.status === 'open' ? (nextJob.closes_on ? `closes ${formatDay(nextJob.closes_on, today)}` : 'no closing date') : ''].filter(Boolean) : [];
   const since = sinceStart(data.applied_days, today);
 
   const openRows = open.length
@@ -115,9 +118,9 @@ export async function render(el, { stale }) {
         </section>
 
         <section class="bento-tile bento-next">
-          <span class="mono text-muted">${up.label}</span>
+          <div class="next-top"><span class="mono text-muted">${up.label}</span>${nextChips.length ? html`<span class="next-chips">${nextChips.map((c) => html`<span class="tag">${c}</span>`)}</span>` : ''}</div>
           <h2 class="sentence${up.sentence.length > 56 ? ' long' : ''}">${up.href ? html`<a href="${up.href}">${sentence}</a>` : sentence}</h2>
-          <p class="text-muted next-line">${up.line}</p>
+          <div class="next-foot"><p class="text-muted next-line">${up.line}</p>${up.href ? html`<a class="btn-open" href="${up.href}">Open job<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>` : ''}</div>
         </section>
 
         <div class="bento-stats" role="group" aria-label="Application stages">

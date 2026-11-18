@@ -4,7 +4,7 @@ import { followUpInfo } from '../lib/followups.js';
 
 const LIMIT = 8;
 const STEP_LIMIT = 5;
-const JOB_COLUMNS = 'id, title, company, status, closes_on, applied_on, found_on';
+const JOB_COLUMNS = 'id, title, company, status, closes_on, applied_on, found_on, job_type, location';
 
 // Everything the Dashboard shows, in one answer.
 export function getDashboard({ db }) {
