@@ -14,7 +14,7 @@ import { bindScroll } from '../lib/scroll.js';
 
 // Kept while the app stays open, so coming back to this page finds the same filters.
 const state = {
-  q: '', posted: '3d', since: '', mode: 'any', place: '', placeExact: false, sort: 'new', showHidden: false, selectedId: null,
+  q: '', posted: '', since: '', mode: 'any', place: '', placeExact: false, sort: 'new', showHidden: false, selectedId: null,
   view: 'list',                       // under 1100px wide only one half shows: 'list' or 'detail'
   saveOpen: false, saveName: '', saveError: '', linkOpen: false, linkValue: '', linkError: '',
 };
@@ -42,12 +42,14 @@ export async function render(el, { stale, query = {} }) {
   let seq = 0;
   let detailSeq = 0;
   let timer;
+  const defaultPosted = () => data?.options.default_posted ?? '';   // '' until the first answer: the server then uses its own default
 
   async function load() {
     const mine = ++seq;
     const p = new URLSearchParams({ work_mode: state.mode });
+    const posted = state.posted === 'date' ? defaultPosted() : state.posted;
     if (state.posted === 'date' && state.since) p.set('since', state.since);
-    else p.set('posted', state.posted === 'date' ? '3d' : state.posted);
+    else if (posted) p.set('posted', posted);
     if (state.q.trim()) p.set('q', state.q.trim());
     if (state.place.trim()) p.set(state.placeExact ? 'location' : 'location_has', state.place.trim());
     if (state.sort === 'match') p.set('sort', 'match');
@@ -55,6 +57,7 @@ export async function render(el, { stale, query = {} }) {
     const [d, s] = await Promise.all([api('/api/found?' + p), api('/api/saved-searches')]);
     if (mine !== seq) return false;
     data = d;
+    if (!state.posted) state.posted = d.options.default_posted;
     saved = s.searches;
     if (!d.jobs.some((j) => j.id === state.selectedId)) state.selectedId = d.jobs[0]?.id ?? null;
     return true;
@@ -82,7 +85,7 @@ export async function render(el, { stale, query = {} }) {
 
   function postedHtml() {
     const picked = state.posted === 'date' && state.since;
-    const current = picked ? 'pick' : state.posted === 'date' ? '3d' : state.posted;
+    const current = picked ? 'pick' : state.posted === 'date' ? defaultPosted() : state.posted;
     return html`<span class="nj-rowlabel">Posted</span><div class="chip-group">${chipsHtml('posted', data.options.posted, current)}<button type="button" class="chip sm" data-posted="pick" aria-pressed="${Boolean(picked)}">${picked ? `From ${formatDay(state.since, data.today)}` : 'Pick a date…'}</button></div>`;
   }
 
@@ -527,7 +530,7 @@ export async function render(el, { stale, query = {} }) {
 
   el.onchange = (e) => {
     if (e.target.id === 'found-date') {
-      if (e.target.value) { state.since = e.target.value; state.posted = 'date'; } else { state.posted = '3d'; }
+      if (e.target.value) { state.since = e.target.value; state.posted = 'date'; } else { state.posted = defaultPosted(); }
       reload('[data-posted="pick"]');
     }
   };

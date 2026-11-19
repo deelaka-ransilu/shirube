@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { openDb } from '../db.js';
 import { createServer } from '../server.js';
+import { publicFoundOptions } from '../lib/found-options.js';
 
 const clock = { now: new Date('2026-11-14T06:00:00Z') };
 const rfc = (daysAgo) => new Date(clock.now.getTime() - daysAgo * 86400000).toUTCString().replace('GMT', '+0000');
@@ -27,7 +28,7 @@ const call = async (path, method = 'GET', body) => {
 test.after(() => server.close());
 
 test('starts empty', async () => {
-  assert.deepEqual((await call('/api/saved-searches')).data, { searches: [] });
+  assert.deepEqual((await call('/api/saved-searches')).data, { searches: [], options: publicFoundOptions() });
 });
 
 test('create checks the input and fills defaults', async () => {

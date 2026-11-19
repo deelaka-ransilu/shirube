@@ -2,6 +2,7 @@
 import { HttpError } from '../lib/errors.js';
 import { todayLocal } from '../lib/dates.js';
 import { searchFound, MODE_KEYS, POSTED_KEYS } from './found.js';
+import { FOUND_OPTIONS, publicFoundOptions } from '../lib/found-options.js';
 
 const MAX_SEARCHES = 20;
 const COLUMNS = 'id, name, q, work_mode, posted, notify, position';
@@ -42,7 +43,7 @@ export function listSaved({ db, deps = {} }) {
     // null = not counted ("Never")
     new_count: s.notify === 'open' ? searchFound(db, { q: s.q, work_mode: s.work_mode, posted: s.posted }, today).filter((j) => j.is_new).length : null,
   }));
-  return { searches };
+  return { searches, options: publicFoundOptions() };   // the page draws its Work mode and Posted chips from these
 }
 
 export function createSaved({ db, body, deps = {} }) {
@@ -53,7 +54,7 @@ export function createSaved({ db, body, deps = {} }) {
   if (!(data.q || (data.work_mode && data.work_mode !== 'any'))) throw new HttpError(400, 'Add search words or pick a work mode');
   const next = db.prepare('SELECT COALESCE(MAX(position), 0) + 1 AS n FROM saved_searches').get().n;
   const r = db.prepare('INSERT INTO saved_searches (name, q, work_mode, posted, notify, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run(data.name, data.q ?? '', data.work_mode ?? 'any', data.posted ?? '3d', data.notify ?? 'open', next, (deps.now ? deps.now() : new Date()).toISOString());
+    .run(data.name, data.q ?? '', data.work_mode ?? 'any', data.posted ?? FOUND_OPTIONS.default_posted, data.notify ?? 'open', next, (deps.now ? deps.now() : new Date()).toISOString());
   return { search: load(db, r.lastInsertRowid) };
 }
 

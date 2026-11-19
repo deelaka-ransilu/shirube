@@ -3,18 +3,18 @@ import { html, raw } from '../lib/html.js';
 import { api } from '../lib/api.js';
 import { watchLeavingFound, MODE_LABEL, POSTED_LABEL, suggestName } from '../lib/found-marker.js';
 
-const WORK_MODES = [['any', 'Any'], ['onsite', 'On-site'], ['hybrid', 'Hybrid'], ['remote', 'Remote']];
-const POSTED = [['today', 'Today'], ['3d', '3 days'], ['week', 'Week'], ['any', 'Any']];
+const pairs = (list) => list.map((o) => [o.key, o.label]);   // Work mode and Posted come from the server (options)
 const NOTIFY = [['open', 'When I open New jobs'], ['never', 'Never']];
 
 export async function render(el, { stale }) {
   watchLeavingFound();
   let searches = [];
+  let options = null;       // the Work mode / Posted lists, the site names: all from the server
   let form = null;          // null = closed; { id|null, name, q, work_mode, posted, notify, error }
   let confirmId = null;     // the card whose Delete is waiting for a second press
   let status = '';
 
-  async function load() { searches = (await api('/api/saved-searches')).searches; }
+  async function load() { const r = await api('/api/saved-searches'); searches = r.searches; options = r.options; }
 
   function chips(label, attr, options, current) {
     return html`
@@ -33,7 +33,7 @@ export async function render(el, { stale }) {
       <article class="card compact saved-card" aria-label="${s.name}">
         <h2>${s.name}</h2>
         <div class="saved-words">${words.length ? words.map((w) => html`<span class="tag">${w}</span>`) : html`<span class="text-sm text-muted">No search words</span>`}</div>
-        <div class="text-sm text-muted">${MODE_LABEL[s.work_mode]} · posted ${POSTED_LABEL[s.posted]} · ITPro</div>
+        <div class="text-sm text-muted">${MODE_LABEL[s.work_mode]} · posted ${POSTED_LABEL[s.posted]} · ${options.source}</div>
         <div class="saved-count">${count}</div>
         <div class="found-actions">
           <a class="btn btn-secondary" href="#/found?saved=${s.id}">Search now</a>
@@ -58,10 +58,10 @@ export async function render(el, { stale }) {
           <label class="label" for="saved-q">Search words (every word must appear in the job)</label>
           <input class="input" id="saved-q" maxlength="200" autocomplete="off" placeholder="e.g. devops colombo" value="${f.q}">
         </div>
-        ${chips('Work mode', 'mode', WORK_MODES, f.work_mode)}
-        ${chips('Posted', 'posted', POSTED, f.posted)}
+        ${chips('Work mode', 'mode', pairs(options.work_modes), f.work_mode)}
+        ${chips('Posted', 'posted', pairs(options.posted), f.posted)}
         <div class="found-group" role="group" aria-label="Sites"><span class="label">Sites</span>
-          <div class="chip-group"><button type="button" class="chip" aria-pressed="true" disabled>ITPro</button><button type="button" class="chip" disabled>TopJobs</button></div>
+          <div class="chip-group"><button type="button" class="chip" aria-pressed="true" disabled>${options.source}</button>${options.other_sites.map((n) => html`<button type="button" class="chip" disabled>${n}</button>`)}</div>
         </div>
         ${chips('Tell me about new jobs', 'notify', NOTIFY, f.notify)}
         ${f.error ? html`<p class="field-error" role="alert">◇ ${f.error}</p>` : ''}
@@ -98,7 +98,7 @@ export async function render(el, { stale }) {
   if (stale()) return;
   draw();
 
-  const blank = () => ({ id: null, original: '', name: '', q: '', work_mode: 'any', posted: '3d', notify: 'open', error: '' });
+  const blank = () => ({ id: null, original: '', name: '', q: '', work_mode: 'any', posted: options.default_posted, notify: 'open', error: '' });
 
   async function reloadAll(focus) {
     try { await load(); } catch (err) { status = err.message; }
