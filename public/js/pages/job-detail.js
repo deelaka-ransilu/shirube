@@ -1,7 +1,7 @@
 import { html, raw } from '../lib/html.js';
 import { api, uploadFile } from '../lib/api.js';
-import { STATUS, hasStatus, statusText } from '../lib/status.js';
-import { formatDay, initials, todayISO } from '../lib/format.js';
+import { statusWord } from '../lib/status.js';
+import { formatDay, initials, todayISO, daysUntil, closingWithDays } from '../lib/format.js';
 import { ICON } from '../lib/icons.js';
 import { bindScroll } from '../lib/scroll.js';
 import { closeBadge } from '../lib/badges.js';
@@ -98,7 +98,7 @@ function field(label, name, value, { wide = false, type = 'text', max } = {}) {
 
 function editForm(job, error) {
   return html`
-    <form class="card edit-job" data-form="job" novalidate>
+    <form class="bento-tile jd-edittile edit-job" data-form="job" novalidate>
       <h2>Edit job</h2>
       <div class="fields">
         <div>
@@ -139,7 +139,7 @@ function editForm(job, error) {
 }
 
 function scrollBox(content) {
-  return html`<div class="scroll-wrap jd-scroll"><div class="scroller">${content}</div><div class="scroll-fade"></div></div>`;
+  return html`<div class="scroll-wrap jd-scroll"><div class="scroller">${content}</div><div class="scroll-fade"></div><button type="button" class="more-pill" data-more hidden aria-label="Show more of the advert"></button></div>`;
 }
 
 function detailBadges(job) {
@@ -198,7 +198,7 @@ const MAX_CV_BYTES = 10 * 1024 * 1024;
 function appliedCv(job, cv) {
   const canMake = Boolean(cv && (cv.person.name || cv.preset.id));
   return html`
-    <div class="card jd-stages jd-cvrow">
+    <div class="jd-cvrow">
       <span class="jd-stages-label text-muted">CV you applied with</span>
       ${job.cv_name ? html`
         <div class="jd-cvfile">
@@ -218,15 +218,29 @@ function appliedCv(job, cv) {
 function details(state) {
   const { job, cv, mark } = state;
   return html`
-    <div class="card">
+    <section class="bento-tile jd-desc" aria-label="Description">
       <h2>Description</h2>
       ${job.description ? scrollBox(html`<div class="pre">${job.description}</div>`) : html`<div class="text-muted">Not added yet. Use Edit job to paste the advert here.</div>`}
-    </div>
-    <div class="side-stack jd-side">
-      <div class="card jd-aside">
-        ${cvPane(job, cv, mark)}
-      </div>
-    </div>`;
+    </section>
+    <section class="bento-tile jd-cvtile jd-aside" aria-label="CV for this job">
+      ${cvPane(job, cv, mark)}
+    </section>`;
+}
+
+// "17 Nov · 2 days ago"
+function agoText(iso) {
+  const n = -daysUntil(iso);
+  return `${formatDay(iso)} · ${n <= 0 ? 'today' : n === 1 ? '1 day ago' : `${n} days ago`}`;
+}
+
+// The lines under the big status word: the last step (or when the job was found), and when it closes.
+function captionLines(job, stages) {
+  const dated = stages.filter((s) => s.happened_on).sort((a, b) => (a.happened_on < b.happened_on ? 1 : a.happened_on > b.happened_on ? -1 : b.id - a.id));
+  const lines = [];
+  if (dated.length) lines.push(`${KIND[dated[0].kind].label} ${agoText(dated[0].happened_on)}`);
+  else if (job.found_on) lines.push(`Found ${agoText(job.found_on)}`);
+  if (job.status === 'open' && job.closes_on) lines.push(closingWithDays(job.closes_on));
+  return lines;
 }
 
 export async function render(el, { params, stale }) {
@@ -257,61 +271,66 @@ export async function render(el, { params, stale }) {
 
     el.innerHTML = html`
       <div class="jd-page${editing ? ' is-editing' : ''}">
-      <div class="jd-head">
-        <a class="btn btn-secondary icon-btn md back-btn" href="#/jobs" aria-label="Back to Jobs" title="Back to Jobs">${ICON.back}</a>
-        <div class="avatar big" aria-hidden="true">${initials(job.company || job.title)}</div>
-        <div class="jd-title">
-          ${job.company ? html`<div class="text-muted">${job.company}</div>` : ''}
-          <h1>${job.title}</h1>
-          <div class="found-badges">
-            <span class="badge s-${job.status}">${hasStatus(job.status) ? STATUS[job.status].label : job.status}</span>
-            ${closeBadge(job.closes_on)}
-            ${WORK_MODE[job.work_mode] ? html`<span class="badge b-mode">${WORK_MODE[job.work_mode]}</span>` : ''}
-            ${detailBadges(job)}
-            <span class="badge">${job.source === 'manual' ? 'Added by hand' : job.source}</span>
+      <div class="bento bento-jd">
+        <section class="bento-tile jd-state" aria-label="Where this job is">
+          <div class="jd-state-actions">
+            ${job.status === 'open' ? html`<button type="button" class="btn jd-mark" data-act="mark-applied" ${editing ? 'disabled' : ''}>Mark applied</button>` : ''}
+            ${safeLink ? html`<a class="btn jd-advert" href="${job.url}" target="_blank" rel="noopener noreferrer" title="${job.url}">${ICON.open}<span>Open advert</span></a>` : ''}
           </div>
-        </div>
-        <div class="jd-actions">
-          ${safeLink ? html`<a class="btn btn-secondary jd-advert" href="${job.url}" target="_blank" rel="noopener noreferrer" title="${job.url}">${ICON.open}<span>Open advert</span></a>` : ''}
-          <button type="button" class="btn btn-secondary icon-btn md notes-btn" data-act="open-notes" aria-label="${hasNote ? 'Notes (this job has a note)' : 'Notes'}" title="${hasNote ? 'Notes (this job has a note)' : 'Notes'}" ${editing ? 'disabled' : ''}>${ICON.note}${hasNote ? html`<span class="notes-dot" aria-hidden="true"></span>` : ''}</button>
-          <button type="button" class="btn btn-secondary icon-btn md" data-act="edit-job" aria-label="Edit job" title="Edit job" ${editing ? 'disabled' : ''}>${ICON.edit}</button>
-          <div class="row-menu-wrap">
-            <button type="button" class="btn btn-secondary icon-btn md" data-act="menu" aria-haspopup="menu" aria-expanded="false" aria-label="More" title="More" ${editing ? 'disabled' : ''}>${ICON.dots}</button>
-            <div class="row-menu" role="menu" hidden>
-              <button type="button" role="menuitem" class="menu-del" data-act="delete-job">${ICON.trash} Delete job</button>
+          <div class="jd-state-main">
+            <span class="mono jd-state-label">status</span>
+            <strong class="jd-state-word">${statusWord(job.status)}</strong>
+            ${captionLines(job, stages).map((l) => html`<p class="jd-state-cap">${l}</p>`)}
+          </div>
+        </section>
+
+        <section class="bento-tile jd-headtile" aria-label="Job">
+          <div class="jd-head">
+            <a class="btn btn-secondary icon-btn md back-btn" href="#/jobs" aria-label="Back to Jobs" title="Back to Jobs">${ICON.back}</a>
+            <div class="avatar big" aria-hidden="true">${initials(job.company || job.title)}</div>
+            <div class="jd-title">
+              ${job.company ? html`<div class="text-muted">${job.company}</div>` : ''}
+              <h1>${job.title}</h1>
+              <div class="found-badges">
+                ${closeBadge(job.closes_on)}
+                ${WORK_MODE[job.work_mode] ? html`<span class="badge b-mode">${WORK_MODE[job.work_mode]}</span>` : ''}
+                ${detailBadges(job)}
+                <span class="badge">${job.source === 'manual' ? 'Added by hand' : job.source}</span>
+              </div>
+            </div>
+            <div class="jd-actions">
+              <button type="button" class="btn btn-secondary icon-btn md notes-btn" data-act="open-notes" aria-label="${hasNote ? 'Notes (this job has a note)' : 'Notes'}" title="${hasNote ? 'Notes (this job has a note)' : 'Notes'}" ${editing ? 'disabled' : ''}>${ICON.note}${hasNote ? html`<span class="notes-dot" aria-hidden="true"></span>` : ''}</button>
+              <button type="button" class="btn btn-secondary icon-btn md" data-act="edit-job" aria-label="Edit job" title="Edit job" ${editing ? 'disabled' : ''}>${ICON.edit}</button>
+              <div class="row-menu-wrap">
+                <button type="button" class="btn btn-secondary icon-btn md" data-act="menu" aria-haspopup="menu" aria-expanded="false" aria-label="More" title="More" ${editing ? 'disabled' : ''}>${ICON.dots}</button>
+                <div class="row-menu" role="menu" hidden>
+                  <button type="button" role="menuitem" class="menu-del" data-act="delete-job">${ICON.trash} Delete job</button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          ${error && !editing ? html`<p class="field-error jd-error" role="alert">◇ ${error}</p>` : ''}
+        </section>
+
+        <section class="bento-tile jd-stagetile" aria-label="Stages">
+          <div class="jd-stages">
+            <span class="jd-stages-label text-muted">Stages</span>
+            <div class="stage-row">${stageRow(stages, today)}</div>
+            <button type="button" class="btn btn-secondary jd-addstage" data-new="">+ Add stage</button>
+            <button type="button" class="btn btn-secondary icon-btn md undo" data-act="undo" aria-label="Undo last step" title="Undo last step" ${last === null ? 'disabled' : ''}>${ICON.undo}</button>
+            ${form ? html`<div class="jd-stage-form">${stageForm(form, stages)}</div>` : ''}
+          </div>
+          ${editing ? '' : appliedCv(job, state.cv)}
+        </section>
+
+        ${editing ? editForm(state.draft ? { ...job, ...state.draft } : job, error) : details(state)}
       </div>
-
-      ${error && !editing ? html`<div class="card compact" role="alert">◇ ${error}</div>` : ''}
-
-      <div class="card jd-stages">
-        <span class="jd-stages-label text-muted">Stages</span>
-        <div class="stage-row">${stageRow(stages, today)}</div>
-        <button type="button" class="btn btn-secondary jd-addstage" data-new="">+ Add stage</button>
-        <button type="button" class="btn btn-secondary icon-btn md undo" data-act="undo" aria-label="Undo last step" title="Undo last step" ${last === null ? 'disabled' : ''}>${ICON.undo}</button>
-        ${form ? html`<div class="jd-stage-form">${stageForm(form, stages)}</div>` : ''}
-      </div>
-
-      ${editing ? '' : appliedCv(job, state.cv)}
-
-      ${editing
-        ? editForm(state.draft ? { ...job, ...state.draft } : job, error)
-        : html`<div class="grid-main-side section">${details(state)}</div>`}
       ${state.notesOpen ? notesDialog(job) : ''}
       </div>`;
 
-    el.querySelectorAll('.scroll-wrap').forEach((w) => bindScroll(w, '.pre'));
+    el.querySelectorAll('.scroll-wrap').forEach((w) => bindScroll(w, null));
 
-    // The one orange button of this screen: mark the job applied (today), until it is.
-    if (job.status === 'open' && !editing) {
-      setTopAction(html`<button type="button" class="btn btn-primary" id="mark-applied">Mark applied</button>`);
-      const btn = document.getElementById('mark-applied');
-      if (btn) btn.onclick = markApplied;
-    } else {
-      setTopAction('');
-    }
+    setTopAction('');   // the Mark applied button now lives in the orange tile
     el.querySelector('[data-focus]')?.focus();
   }
 
@@ -410,6 +429,8 @@ export async function render(el, { params, stale }) {
       if (!wasOpen) { menu.hidden = false; t.setAttribute('aria-expanded', 'true'); menu.querySelector('button')?.focus(); }
       return;
     }
+    if (t.dataset.more !== undefined) { const box = t.closest('.scroll-wrap')?.querySelector('.scroller'); box?.scrollBy({ top: box.clientHeight * 0.8, behavior: 'smooth' }); return; }
+    if (t.dataset.act === 'mark-applied') { markApplied(); return; }
     if (t.dataset.act === 'open-notes') { openNotes(); return; }
     if (t.dataset.act === 'close-notes') { closeNotes(); return; }
 

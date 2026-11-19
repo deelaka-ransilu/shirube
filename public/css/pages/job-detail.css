@@ -24,7 +24,6 @@ select.input { appearance: auto; }
 .jd-title h1 { margin: 0; font-size: var(--text-lg); overflow-wrap: anywhere; }
 .jd-title .found-badges { margin-top: var(--space-2); }
 .jd-actions { display: flex; flex-direction: row; align-items: center; gap: var(--space-1); flex-shrink: 0; }
-.jd-page .section { margin-top: var(--space-3); }
 .jd-page .card h2 { margin-top: 0; }
 .jd-scroll .scroller { flex: none; max-height: 360px; padding-bottom: var(--space-5); }
 @media (max-width: 1100px) { .jd-scroll .scroller { max-height: none; } }
@@ -38,7 +37,6 @@ select.input { appearance: auto; }
 .badge.s-offer { --bt: var(--tint-yellow); }
 .badge.s-follow_up { --bt: var(--tint-peach); }
 .jd-head .icon-btn { margin-top: 0; }
-.jd-side { grid-template-rows: 1fr; }
 
 
 /* ---- Step 19: detail badges beside the stages heading, notes you can type in, round back button ---- */
@@ -106,18 +104,16 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
 
 
 /* ---- Job details (step 43): slim stage row, advert and CV side by side, each scrolling in its own box ---- */
-#page:has(.jd-page:not(.is-editing)) { display: flex; flex-direction: column; overflow: hidden; }
+#page:has(.jd-page) { display: flex; flex-direction: column; overflow: hidden; }
 .jd-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .jd-head .found-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .jd-advert { gap: 8px; height: 40px; padding: 0 14px; display: inline-flex; align-items: center; font-size: var(--text-sm); text-decoration: none; }
 .jd-advert .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.jd-stages { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: 0; padding: 10px var(--space-4); border-radius: 22px; }
 .jd-stages-label { font-size: var(--text-sm); }
 .jd-stages .stage-row { flex: 1; min-width: 300px; display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: var(--space-2); }
 .jd-addstage { height: 36px; padding: 0 14px; font-size: var(--text-sm); white-space: nowrap; }
 .jd-stages .undo { flex-shrink: 0; }
 .jd-stage-form { flex-basis: 100%; }
-.jd-cvrow { margin-top: var(--space-3); }
 .jd-cvrow .jd-cvfile { flex: 1; min-width: 180px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); overflow-wrap: anywhere; }
 .jd-cvrow .link .icon { width: 16px; height: 16px; vertical-align: -3px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .jd-cvrow .chip .icon { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -127,27 +123,62 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
 .stage-pill:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .stage-pill.pending { border-style: dashed; border-color: var(--color-border); }
 .stage-pill[data-tint] { border-color: color-mix(in srgb, var(--tt) 55%, transparent); background: color-mix(in srgb, var(--tt) 12%, var(--color-panel)); }
-.jd-page .grid-main-side { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-3); margin-top: var(--space-3); align-items: stretch; }
-.jd-page .grid-main-side > .card, .jd-page .jd-side { min-height: 0; }
-.jd-page .grid-main-side > .card { display: flex; flex-direction: column; overflow: hidden; }
-.jd-page .jd-side { display: grid; grid-template-rows: minmax(0, 1fr); }
 .jd-page .jd-scroll { flex: 1; min-height: 0; }
 .jd-page .jd-scroll .scroller { flex: 1; max-height: none; }
-.jd-page .jd-aside { min-height: 0; overflow: hidden; }
 .jd-page .cv-scroll { flex: 1; min-height: 0; max-height: none; }
 .dock-flush .jd-page .cv-scroll { padding-bottom: var(--dock-reserve); }
 .jd-page .row-menu { z-index: 20; }
 @media (max-width: 1100px) {
   #page:has(.jd-page) { display: block; overflow: auto; }
   .jd-page { display: block; }
-  .jd-page .grid-main-side { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
-  .jd-page .grid-main-side > .card { overflow: visible; }
   .jd-page .jd-scroll .scroller, .jd-page .cv-scroll { max-height: none; overflow: visible; }
   .jd-page .jd-head { flex-wrap: wrap; }
-  .jd-page .grid-main-side, .jd-page .jd-stages { margin-top: var(--space-3); }
 }
 .jd-page .link { color: var(--color-text); text-decoration: underline; text-underline-offset: 3px; }
 
 /* v3: colour only where it means something */
 .badge.b-skills { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
 
+
+
+/* ---- Job detail (v3, step 61): orange status tile, head tile, stages tile, description and CV tiles ---- */
+.bento-jd { grid-template-columns: 310px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
+.bento-jd h2 { margin-top: 0; }
+.bento-jd .jd-state { grid-column: 1; grid-row: 1 / span 3; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); overflow: auto; background: var(--color-primary); color: var(--color-on-primary); }
+.bento-jd .jd-headtile { grid-column: 2 / 4; grid-row: 1; padding: 14px 18px; }
+.bento-jd .jd-stagetile { grid-column: 2 / 4; grid-row: 2; padding: 12px 18px; display: flex; flex-direction: column; gap: var(--space-3); }
+.bento-jd .jd-desc { grid-column: 2; grid-row: 3; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.bento-jd .jd-cvtile { grid-column: 3; grid-row: 3; min-height: 0; overflow: hidden; }
+.bento-jd .jd-edittile { grid-column: 2 / 4; grid-row: 3; min-height: 0; overflow: auto; scrollbar-width: none; }
+.bento-jd .jd-edittile::-webkit-scrollbar { display: none; }
+.bento-jd .jd-head { margin-bottom: 0; }
+.jd-error { margin: var(--space-2) 0 0; }
+
+/* Orange tile: the two buttons at the top, the big status word at the bottom */
+.jd-state-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+.jd-state-actions .btn { width: 100%; height: 40px; min-height: 40px; padding: 0 12px; justify-content: center; border-radius: var(--radius-control); font-size: var(--text-sm); }
+.jd-state-actions .jd-mark { background: #fff; color: var(--color-primary); border: 1.5px solid #fff; font-weight: 600; }
+.jd-state-actions .jd-advert { background: transparent; color: #fff; border: 1.5px solid rgba(255, 255, 255, .85); }
+.jd-state-actions .btn:hover:not(:disabled) { transform: translateY(-2px); }
+.jd-state-actions .jd-advert:hover { background: rgba(255, 255, 255, .18); }
+.jd-state-actions .btn { transition: transform .18s ease, background-color .18s ease; }
+@media (prefers-reduced-motion: reduce) { .jd-state-actions .btn { transition: none; } .jd-state-actions .btn:hover:not(:disabled) { transform: none; } }
+.jd-state-main { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-2); }
+.jd-state-label { font-size: var(--text-xs); }
+.jd-state-word { display: block; font-size: 52px; font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: 1; overflow-wrap: anywhere; }
+.jd-state-cap { margin: 0; font-size: 12px; opacity: .9; }
+
+/* Stages tile: stage cards, then the CV you applied with underneath */
+.bento-jd .jd-stages { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.bento-jd .jd-cvrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-line); }
+.bento-jd .jd-cvrow .jd-cvfile { flex: 1; min-width: 180px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); overflow-wrap: anywhere; font-size: var(--text-sm); }
+.bento-jd .jd-cvrow .link .icon { width: 16px; height: 16px; vertical-align: -3px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bento-jd .jd-cvrow .chip .icon { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (max-width: 1100px), (max-height: 720px) {
+  .bento-jd .jd-state { flex-direction: row; flex-wrap: wrap; align-items: flex-end; overflow: visible; }
+  .bento-jd .jd-state-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1 1 260px; }
+  .bento-jd .jd-state-main { margin-top: 0; }
+  .jd-state-word { font-size: 40px; }
+  .bento-jd .jd-desc, .bento-jd .jd-cvtile, .bento-jd .jd-edittile { overflow: visible; }
+}
