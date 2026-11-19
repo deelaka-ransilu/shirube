@@ -8,11 +8,12 @@ import { tx } from './profile.js';
 import { isRealDate } from '../lib/validate-job.js';
 import { createJob, findDuplicateJob } from './jobs.js';
 import { loadPresets, matchJobs } from '../lib/found-match.js';
+import { FOUND_OPTIONS, publicFoundOptions } from '../lib/found-options.js';
 
-const FRESH_MINUTES = 30;   // ITPro's feed says ttl 30
+const FRESH_MINUTES = FOUND_OPTIONS.refresh_minutes;
 const KEEP_DAYS = 60;
-const POSTED = { today: 0, '3d': 3, week: 7 };   // days back from today; 'any' = no limit
-const MODES = ['onsite', 'hybrid', 'remote'];
+const POSTED = Object.fromEntries(FOUND_OPTIONS.posted.filter((p) => p.days !== null).map((p) => [p.key, p.days]));   // 'any' = no limit
+const MODES = FOUND_OPTIONS.work_modes.map((m) => m.key).filter((k) => k !== 'any');
 const LIST_COLUMNS = 'id, itpro_id, title, company, location, job_type, url, published_on, work_mode, closes_on, first_seen_at, hidden, job_id';
 
 const nowOf = (deps) => (deps.now ? deps.now() : new Date());
@@ -29,8 +30,8 @@ function categoriesOf(db) {
 // ---- list and detail ----
 
 // One search, used by the list AND by the saved searches' "N new" counts, so they can never disagree.
-export const POSTED_KEYS = ['today', '3d', 'week', 'any'];
-export const MODE_KEYS = ['any', ...MODES];
+export const POSTED_KEYS = FOUND_OPTIONS.posted.map((p) => p.key);
+export const MODE_KEYS = FOUND_OPTIONS.work_modes.map((m) => m.key);
 
 export function searchFound(db, query, today) {
   const where = [];
@@ -39,7 +40,7 @@ export function searchFound(db, query, today) {
   where.push('hidden = ?'); args.push(query.hidden === '1' ? 1 : 0);
 
   const since = query.since ?? '';
-  const posted = query.posted ?? '3d';
+  const posted = query.posted ?? FOUND_OPTIONS.default_posted;
   if (since !== '') {
     // A picked date: from that day until today.
     if (!isRealDate(since)) throw new HttpError(400, 'Pick a real date');
@@ -120,6 +121,7 @@ export function listFound({ db, query, deps = {} }) {
     last_fetch_at: profile.found_last_fetch_at,
     categories: categoriesOf(db),
     available_categories: CATEGORIES.map(([slug, label]) => ({ slug, label })),
+    options: publicFoundOptions(),
     today,
   };
 }
@@ -164,7 +166,7 @@ export function saveFound({ db, params, deps = {} }) {
         location: row.location,
         job_type: row.job_type,
         url: row.url,
-        source: 'ITPro',
+        source: FOUND_OPTIONS.source,
         description: row.description,
         work_mode: row.work_mode,
         closes_on: row.closes_on,

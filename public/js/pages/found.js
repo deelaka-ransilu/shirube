@@ -9,10 +9,7 @@ import { watchLeavingFound, suggestName } from '../lib/found-marker.js';
 import { ICON } from '../lib/icons.js';
 import { bindScroll } from '../lib/scroll.js';
 
-const WORK_MODES = [['any', 'Any'], ['onsite', 'On-site'], ['hybrid', 'Hybrid'], ['remote', 'Remote']];
-const MODE_LABEL = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
-const POSTED = [['today', 'Today'], ['3d', '3 days'], ['week', 'Week'], ['any', 'Any time']];
-const OTHER_SITES = ['TopJobs', 'LinkedIn', 'Rooster', 'Xpress Jobs'];   // not connected: shown grayed out, nothing more
+// The Posted and Work mode options, the sites and the refresh time all come from the server (data.options).
 
 // Kept while the app stays open, so coming back to this page finds the same filters.
 const state = {
@@ -73,17 +70,22 @@ export async function render(el, { stale, query = {} }) {
   // ---- drawing ----
 
   function chipsHtml(attr, options, current) {
-    return options.map(([value, text]) => html`<button type="button" class="chip sm" data-${attr}="${value}" aria-pressed="${value === current}">${text}</button>`);
+    return options.map((o) => html`<button type="button" class="chip sm" data-${attr}="${o.key}" aria-pressed="${o.key === current}">${o.label}</button>`);
+  }
+
+  // The label of a job's work mode, or '' when it is not stated.
+  function modeLabel(mode) {
+    return mode && mode !== 'any' ? data.options.work_modes.find((m) => m.key === mode)?.label ?? '' : '';
   }
 
   function postedHtml() {
     const picked = state.posted === 'date' && state.since;
     const current = picked ? 'pick' : state.posted === 'date' ? '3d' : state.posted;
-    return html`<span class="nj-rowlabel">Posted</span><div class="chip-group">${chipsHtml('posted', POSTED, current)}<button type="button" class="chip sm" data-posted="pick" aria-pressed="${Boolean(picked)}">${picked ? `From ${formatDay(state.since, data.today)}` : 'Pick a date…'}</button></div>`;
+    return html`<span class="nj-rowlabel">Posted</span><div class="chip-group">${chipsHtml('posted', data.options.posted, current)}<button type="button" class="chip sm" data-posted="pick" aria-pressed="${Boolean(picked)}">${picked ? `From ${formatDay(state.since, data.today)}` : 'Pick a date…'}</button></div>`;
   }
 
   function modeHtml() {
-    return html`<span class="nj-rowlabel">Work mode</span><div class="chip-group">${chipsHtml('mode', WORK_MODES, state.mode)}</div>`;
+    return html`<span class="nj-rowlabel">Work mode</span><div class="chip-group">${chipsHtml('mode', data.options.work_modes, state.mode)}</div>`;
   }
 
   function placesHtml() {
@@ -129,8 +131,8 @@ export async function render(el, { stale, query = {} }) {
         <section class="nj-more-block" aria-label="Sites">
           <span class="label">Sites</span>
           <div class="chip-group">
-            <button type="button" class="chip sm" aria-pressed="true" disabled title="ITPro is always read">ITPro</button>
-            ${OTHER_SITES.map((s) => html`<span class="badge b-off" title="Not connected">${s}</span>`)}
+            <button type="button" class="chip sm" aria-pressed="true" disabled title="${data.options.source} is always read">${data.options.source}</button>
+            ${data.options.other_sites.map((s) => html`<span class="badge b-off" title="Not connected">${s}</span>`)}
           </div>
         </section>
         <section class="nj-more-block" aria-label="Saved searches" data-tint="lilac">
@@ -195,9 +197,9 @@ export async function render(el, { stale, query = {} }) {
             <span class="found-row-meta">
               ${j.is_new ? html`<span class="tag tag-new">New</span>` : ''}
               ${j.location ? html`<span class="badge b-loc">${j.location}</span>` : ''}
-              ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : ''}
+              ${modeLabel(j.work_mode) ? html`<span class="badge b-mode">${modeLabel(j.work_mode)}</span>` : ''}
               ${matchBadges(j)}
-              <span class="text-sm text-muted">ITPro · ${formatDay(j.published_on, data.today)}</span>
+              <span class="text-sm text-muted">${data.options.source} · ${formatDay(j.published_on, data.today)}</span>
             </span>
           </span>
         </button>
@@ -243,11 +245,11 @@ export async function render(el, { stale, query = {} }) {
           </div>
         </div>
         <div class="found-badges">
-          <span class="badge b-site">ITPro</span>
+          <span class="badge b-site">${data.options.source}</span>
           <span class="badge b-date">Posted ${formatDay(j.published_on, data.today)}</span>
           ${j.job_type ? html`<span class="badge b-type">${j.job_type}</span>` : ''}
           ${j.location ? html`<span class="badge b-loc">${j.location}</span>` : ''}
-          ${MODE_LABEL[j.work_mode] ? html`<span class="badge b-mode">${MODE_LABEL[j.work_mode]}</span>` : html`<span class="badge b-none">Work mode not stated</span>`}
+          ${modeLabel(j.work_mode) ? html`<span class="badge b-mode">${modeLabel(j.work_mode)}</span>` : html`<span class="badge b-none">Work mode not stated</span>`}
           ${j.closes_on ? html`<span class="badge b-close">${closingText(j.closes_on, data.today)}</span>` : ''}
           ${matchBadges(data.jobs.find((x) => x.id === j.id))}
         </div>
@@ -335,7 +337,7 @@ export async function render(el, { stale, query = {} }) {
     try {
       const r = await api('/api/found/refresh', { method: 'POST' });
       if (r.error) status = r.error;
-      else if (!r.fetched) status = `Updated ${ago(r.minutes_ago)}. ITPro is asked at most every 30 minutes, so this is the saved list.`;
+      else if (!r.fetched) status = `Updated ${ago(r.minutes_ago)}. ${data.options.source} is asked at most every ${data.options.refresh_minutes} minutes, so this is the saved list.`;
       else {
         status = `Updated just now. ${r.added ? `${r.added} new job${r.added === 1 ? '' : 's'}.` : 'Nothing new.'}`;
         if (r.failed) status += ` ${r.failed} of ${r.feeds} feeds could not be read.`;
