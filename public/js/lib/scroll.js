@@ -1,6 +1,6 @@
 // A scroll box with no scrollbar: a soft fade (and, for lists, a "N more" pill) says there is more below.
 // wrap = element with class "scroll-wrap" holding a ".scroller" (and optionally a ".more-pill").
-// rowSelector = what to count as one item for the pill.
+// rowSelector = what to count as one item for the pill. Pass null for text (an advert): the pill just says "More".
 // Call it on nodes that are recreated on every redraw, so listeners go away with the old nodes.
 export function bindScroll(wrap, rowSelector = '.found-item') {
   const box = wrap?.querySelector('.scroller');
@@ -10,6 +10,11 @@ export function bindScroll(wrap, rowSelector = '.found-item') {
     const more = box.scrollHeight - box.scrollTop - box.clientHeight > 4;
     wrap.classList.toggle('has-more', more);
     if (!pill) return;
+    if (rowSelector === null) {
+      pill.hidden = !more;
+      pill.textContent = '▾ More';
+      return;
+    }
     let n = 0;
     if (more) for (const row of box.querySelectorAll(rowSelector)) if (row.offsetTop - box.scrollTop >= box.clientHeight - 8) n++;
     pill.hidden = !more || n === 0;

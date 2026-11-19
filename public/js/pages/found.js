@@ -1,7 +1,8 @@
 // New jobs (route #/found): jobs read from ITPro's feeds. Refresh fetches (the server asks ITPro at most
 // every 30 minutes). Search and the filters only look at jobs already stored, so they are instant.
 // Left half: one search box, three filters, the list. Right half: the whole advert.
-// Saved searches, categories, sites and "paste a link" live under the "More filters" button.
+// Everything is on the page: Location (with the top places as chips), Posted, Work mode and the saved searches
+// sit in the top tile; Categories and Sites sit in the orange tile, next to Refresh.
 import { html } from '../lib/html.js';
 import { api } from '../lib/api.js';
 import { formatDay, initials, todayISO, closingText } from '../lib/format.js';
@@ -15,7 +16,7 @@ import { bindScroll } from '../lib/scroll.js';
 const state = {
   q: '', posted: '3d', since: '', mode: 'any', place: '', placeExact: false, sort: 'new', showHidden: false, selectedId: null,
   view: 'list',                       // under 1100px wide only one half shows: 'list' or 'detail'
-  moreOpen: false, saveOpen: false, saveName: '', saveError: '', linkOpen: false, linkValue: '', linkError: '',
+  saveOpen: false, saveName: '', saveError: '', linkOpen: false, linkValue: '', linkError: '',
 };
 
 const itproLink = (url) => (/^https:\/\/itpro\.lk\//.test(url) ? url : '');
@@ -23,7 +24,8 @@ const itproLink = (url) => (/^https:\/\/itpro\.lk\//.test(url) ? url : '');
 function stamp(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return `${formatDay(todayISO(d))}, ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const h = d.getHours();
+  return `${formatDay(todayISO(d))}, ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
 const ago = (min) => (min < 1 ? 'just now' : `${min} min ago`);
@@ -88,6 +90,12 @@ export async function render(el, { stale, query = {} }) {
     return html`<span class="nj-rowlabel">Work mode</span><div class="chip-group">${chipsHtml('mode', data.options.work_modes, state.mode)}</div>`;
   }
 
+  // The three places with most jobs, one tap each. Tap again to clear.
+  function quickHtml() {
+    const cur = state.place.trim().toLowerCase();
+    return data.locations.slice(0, 3).map((l) => html`<button type="button" class="chip sm" data-place="${l.name}" aria-pressed="${l.name.toLowerCase() === cur}" title="${l.count} job${l.count === 1 ? '' : 's'}">${l.name} · ${l.count}</button>`);
+  }
+
   function placesHtml() {
     return data.locations.map((l) => html`<option value="${l.name}" label="${l.count} job${l.count === 1 ? '' : 's'}"></option>`);
   }
@@ -100,9 +108,9 @@ export async function render(el, { stale, query = {} }) {
     return html`
       
       <div class="nj-count-right">
-        ${hiddenLink}
         ${data.has_presets ? html`<button type="button" class="chip sm" data-sort aria-pressed="${state.sort === 'match'}" title="Jobs that match your role presets first. Nothing is hidden.">Best match first</button>` : ''}
         <button type="button" class="btn btn-secondary nj-refresh${busy ? ' busy' : ''}" id="found-refresh" title="Read the latest jobs from ITPro" ${busy ? 'disabled' : ''}>${ICON.refresh}<span>${busy ? 'Refreshing…' : 'Refresh'}</span></button>
+        ${hiddenLink}
       </div>
       ${data.has_presets ? '' : html`<p class="nj-hint text-sm text-muted">Add skills to a role preset in <a href="#/profile">Profile</a> to see which jobs match you.</p>`}`;
   }
@@ -115,62 +123,62 @@ export async function render(el, { stale, query = {} }) {
 
   const sameSearch = (x) => x.q.toLowerCase() === state.q.trim().replace(/\s+/g, ' ').toLowerCase() && x.work_mode === state.mode && x.posted === state.posted;
 
-  function moreHtml() {
-    if (!state.moreOpen) return '';
+  // Orange tile: what Refresh reads.
+  function sideHtml() {
     const cats = data.categories;
+    return html`
+      <section class="fc-block" aria-label="Categories to follow">
+        <span class="fc-blabel">Categories to follow</span>
+        <div class="chip-group">
+          <button type="button" class="chip sm" data-cat-all aria-pressed="${cats.length === data.available_categories.length}">All</button>
+          ${data.available_categories.map((c) => html`<button type="button" class="chip sm" data-cat="${c.slug}" aria-pressed="${cats.includes(c.slug)}">${c.label}</button>`)}
+        </div>
+        <span class="fc-bnote">Read on the next refresh</span>
+      </section>
+      <section class="fc-block" aria-label="Sites">
+        <span class="fc-blabel">Sites</span>
+        <div class="chip-group">
+          <button type="button" class="chip sm" aria-pressed="true" disabled title="${data.options.source} is always read">${data.options.source}</button>
+          ${data.options.other_sites.map((n) => html`<span class="badge b-off" title="Not connected">${n}</span>`)}
+        </div>
+      </section>`;
+  }
+
+  // Top tile, last row: saved searches, save this one, manage, paste a link.
+  function savedHtml() {
     const match = saved.find(sameSearch);
     return html`
-      <div class="nj-more" role="region" aria-label="More filters">
-        <section class="nj-more-block" aria-label="Categories to follow" data-tint="green">
-          <span class="label">Categories to follow (read on the next refresh)</span>
-          <div class="chip-group">
-            <button type="button" class="chip sm" data-cat-all aria-pressed="${cats.length === data.available_categories.length}">All</button>
-            ${data.available_categories.map((c) => html`<button type="button" class="chip sm" data-cat="${c.slug}" aria-pressed="${cats.includes(c.slug)}">${c.label}</button>`)}
-          </div>
-        </section>
-        <section class="nj-more-block" aria-label="Sites">
-          <span class="label">Sites</span>
-          <div class="chip-group">
-            <button type="button" class="chip sm" aria-pressed="true" disabled title="${data.options.source} is always read">${data.options.source}</button>
-            ${data.options.other_sites.map((s) => html`<span class="badge b-off" title="Not connected">${s}</span>`)}
-          </div>
-        </section>
-        <section class="nj-more-block" aria-label="Saved searches" data-tint="lilac">
-          <span class="label">Saved searches</span>
-          <div class="chip-group">
-            ${saved.map((x) => html`<button type="button" class="chip sm" data-saved="${x.id}" aria-pressed="${x === match}">${x.name}${x.new_count ? ` · ● ${x.new_count} new` : ''}</button>`)}
-            ${saved.length ? '' : html`<span class="text-sm text-muted">None yet.</span>`}
-          </div>
-          <div class="chip-group">
-            <button type="button" class="chip sm" id="found-star" ${match ? 'disabled' : ''}>${match ? '★ This search is saved' : '☆ Save this search'}</button>
-            <a class="chip sm found-manage" href="#/saved">Manage saved searches</a>
-          </div>
-          ${state.saveOpen ? html`
-            <form class="found-save" id="found-save-form" novalidate>
-              <label class="label" for="found-save-name">Name for this search</label>
-              <div class="nj-inline">
-                <input class="input" id="found-save-name" name="name" maxlength="60" autocomplete="off" value="${state.saveName}">
-                <button class="btn btn-secondary" type="submit">Save search</button>
-              </div>
-              <p class="text-sm text-muted">It keeps the words, work mode and posted filter (not the location). You can change it in Manage.</p>
-              ${state.saveError ? html`<p class="field-error" role="alert">◇ ${state.saveError}</p>` : ''}
-            </form>` : ''}
-        </section>
-        <section class="nj-more-block" aria-label="Paste a job link">
-          <div class="chip-group">
-            <button type="button" class="chip sm" data-paste aria-expanded="${state.linkOpen}">+ Paste a job link</button>
-          </div>
-          ${state.linkOpen ? html`
-            <form class="found-save" id="found-link-form" novalidate>
-              <label class="label" for="found-link">Job link</label>
-              <div class="nj-inline">
-                <input class="input" id="found-link" name="link" type="url" autocomplete="off" placeholder="https://..." value="${state.linkValue}">
-                <button class="btn btn-secondary" type="submit">Open in Add job</button>
-              </div>
-              ${state.linkError ? html`<p class="field-error" role="alert">◇ ${state.linkError}</p>` : ''}
-            </form>` : ''}
-        </section>
+      <span class="nj-rowlabel">Saved</span>
+      <div class="chip-group">
+        ${saved.map((x) => html`<button type="button" class="chip sm" data-saved="${x.id}" aria-pressed="${x === match}">${x.name}${x.new_count ? ` · ● ${x.new_count} new` : ''}</button>`)}
+        ${saved.length ? '' : html`<span class="text-sm text-muted nj-none">None yet</span>`}
+        <button type="button" class="chip sm" id="found-star" ${match ? 'disabled' : ''}>${match ? '★ This search is saved' : '☆ Save this search'}</button>
+        <a class="chip sm found-manage" href="#/saved">Manage</a>
+        <button type="button" class="chip sm" data-paste aria-expanded="${state.linkOpen}">+ Paste a job link</button>
       </div>`;
+  }
+
+  function formsHtml() {
+    return html`
+      ${state.saveOpen ? html`
+        <form class="found-save" id="found-save-form" novalidate>
+          <label class="label" for="found-save-name">Name for this search</label>
+          <div class="nj-inline">
+            <input class="input" id="found-save-name" name="name" maxlength="60" autocomplete="off" value="${state.saveName}">
+            <button class="btn btn-secondary" type="submit">Save search</button>
+          </div>
+          <p class="text-sm text-muted">It keeps the words, work mode and posted filter (not the location). You can change it in Manage.</p>
+          ${state.saveError ? html`<p class="field-error" role="alert">◇ ${state.saveError}</p>` : ''}
+        </form>` : ''}
+      ${state.linkOpen ? html`
+        <form class="found-save" id="found-link-form" novalidate>
+          <label class="label" for="found-link">Job link</label>
+          <div class="nj-inline">
+            <input class="input" id="found-link" name="link" type="url" autocomplete="off" placeholder="https://..." value="${state.linkValue}">
+            <button class="btn btn-secondary" type="submit">Open in Add job</button>
+          </div>
+          ${state.linkError ? html`<p class="field-error" role="alert">◇ ${state.linkError}</p>` : ''}
+        </form>` : ''}`;
   }
 
   // Honest signals, worked out from the role presets. A missing badge means no evidence, never "bad job".
@@ -263,8 +271,9 @@ export async function render(el, { stale, query = {} }) {
         </div>
         <p class="text-sm found-msg" role="status">${detailMsg}</p>
         <div class="scroll-wrap found-advert-wrap">
-          <div class="found-advert scroller" tabindex="0" role="region" aria-label="About the job">${j.description || 'The advert has no text. Open the advert on ITPro.'}</div>
+          <div class="found-advert scroller" tabindex="0" role="region" aria-label="About the job">${j.description || `The advert has no text. Open the advert on ${data.options.source}.`}</div>
           <div class="scroll-fade" aria-hidden="true"></div>
+          <button type="button" class="more-pill" data-more hidden aria-label="Show more of the advert"></button>
         </div>
       </article>`;
   }
@@ -274,6 +283,7 @@ export async function render(el, { stale, query = {} }) {
     $('#found-posted-row').innerHTML = postedHtml();
     $('#found-mode-row').innerHTML = modeHtml();
     $('#found-places').innerHTML = placesHtml();
+    $('#found-quick').innerHTML = quickHtml();
     const box = $('#found-place');
     if (document.activeElement !== box) box.value = state.place;   // never rewrite the box while someone types in it
     $('[data-clear-place]').hidden = !state.place;
@@ -286,15 +296,12 @@ export async function render(el, { stale, query = {} }) {
     $('#found-cap').textContent = c.cap;
   }
   function drawStatus() { $('#found-status').textContent = status; }
-  function drawMore() {
-    $('#found-more-slot').innerHTML = moreHtml();
-    const btn = $('#found-more');
-    const news = saved.reduce((sum, x) => sum + (x.new_count || 0), 0);
-    btn.setAttribute('aria-expanded', String(state.moreOpen));
-    btn.setAttribute('aria-label', news ? `More filters. ${news} new job${news === 1 ? '' : 's'} in saved searches` : 'More filters');
-    btn.querySelector('.nj-dot').hidden = !news;
+  function drawSide() { $('#found-side').innerHTML = sideHtml(); }
+  function drawSaved() {
+    $('#found-saved').innerHTML = savedHtml();
+    $('#found-forms').innerHTML = formsHtml();
   }
-  function drawDetail() { $('#found-detail').innerHTML = detailHtml(); bindScroll($('.found-advert-wrap')); }
+  function drawDetail() { $('#found-detail').innerHTML = detailHtml(); bindScroll($('.found-advert-wrap'), null); }
   function drawList(keepTop = null) {
     $('#found-listarea').innerHTML = listHtml();
     const box = $('#found-list');
@@ -313,7 +320,7 @@ export async function render(el, { stale, query = {} }) {
     }
     if (stale()) return;
     if (!data) return;
-    drawStatus(); drawFilters(); drawCount(); drawMore(); drawList(top); drawDetail();
+    drawStatus(); drawFilters(); drawCount(); drawSide(); drawSaved(); drawList(top); drawDetail();
     if (focus) $(focus)?.focus();
   }
 
@@ -388,7 +395,7 @@ export async function render(el, { stale, query = {} }) {
     const cats = data.categories;
     const next = cats.includes(slug) ? cats.filter((c) => c !== slug) : [...cats, slug];
     data.categories = next;
-    drawMore();
+    drawSide();
     try {
       data.categories = (await api('/api/found/settings', { method: 'PATCH', body: { categories: next } })).categories;
     } catch (err) {
@@ -396,14 +403,14 @@ export async function render(el, { stale, query = {} }) {
       status = err.message;
       drawStatus();
     }
-    if (!stale()) { drawMore(); $(`[data-cat="${slug}"]`)?.focus(); }
+    if (!stale()) { drawSide(); $(`[data-cat="${slug}"]`)?.focus(); }
   }
 
   async function toggleAllCategories() {
     const all = data.available_categories.map((c) => c.slug);
     const cats = data.categories;
     data.categories = all;
-    drawMore();
+    drawSide();
     try {
       data.categories = (await api('/api/found/settings', { method: 'PATCH', body: { categories: all } })).categories;
     } catch (err) {
@@ -411,14 +418,7 @@ export async function render(el, { stale, query = {} }) {
       status = err.message;
       drawStatus();
     }
-    if (!stale()) { drawMore(); $('[data-cat-all]')?.focus(); }
-  }
-
-  function closeMore(focusButton = false) {
-    if (!state.moreOpen) return;
-    state.moreOpen = false; state.saveOpen = false; state.linkOpen = false;
-    drawMore();
-    if (focusButton) $('#found-more')?.focus();
+    if (!stale()) { drawSide(); $('[data-cat-all]')?.focus(); }
   }
 
   // ---- first load, then the page ----
@@ -448,6 +448,7 @@ export async function render(el, { stale, query = {} }) {
             <p class="fc-cap" id="found-cap"></p>
           </div>
           <div class="nj-count" id="found-count"></div>
+          <div class="fc-side" id="found-side"></div>
           <p class="text-sm found-status" id="found-status" role="status"></p>
         </section>
         <section class="bento-tile found-head" aria-label="Search and filters">
@@ -457,37 +458,33 @@ export async function render(el, { stale, query = {} }) {
                 <label class="sr-only" for="found-q">Search new jobs</label>
                 <input class="input" id="found-q" type="search" autocomplete="off" placeholder="Search by title, skill or company" value="${state.q}">
               </div>
-              <button type="button" class="btn btn-secondary icon-btn nj-morebtn" id="found-more" aria-expanded="false" aria-controls="found-more-slot" aria-label="More filters" title="More filters">${ICON.settings}<span class="nj-dot" aria-hidden="true" hidden></span></button>
+              <label class="nj-place">
+                <input id="found-place" type="text" list="found-places" autocomplete="off" placeholder="Location: type or pick a place" aria-label="Location" value="${state.place}">
+                <button type="button" class="nj-clear" data-clear-place aria-label="Clear location" title="Clear location" ${state.place ? '' : 'hidden'}>×</button>
+                <datalist id="found-places"></datalist>
+              </label>
+              <div class="chip-group nj-quick" id="found-quick"></div>
             </div>
-            <div id="found-more-slot"></div>
             <div class="nj-filters" id="found-filters">
-              <div class="nj-frow" id="found-posted-row"></div>
               <div class="nj-frow">
+                <div class="nj-fgroup" id="found-posted-row"></div>
                 <div class="nj-fgroup" id="found-mode-row"></div>
-                <label class="nj-place">
-                  <span>Location</span>
-                  <input id="found-place" type="text" list="found-places" autocomplete="off" placeholder="Type or pick a place" aria-label="Location" value="${state.place}">
-                  <button type="button" class="nj-clear" data-clear-place aria-label="Clear location" title="Clear location" ${state.place ? '' : 'hidden'}>×</button>
-                  <datalist id="found-places"></datalist>
-                </label>
               </div>
+              <div class="nj-frow nj-savedrow" id="found-saved"></div>
+              <div class="nj-forms" id="found-forms"></div>
               <input type="date" id="found-date" class="found-date-input" tabindex="-1" aria-hidden="true" value="${state.since}">
             </div>
-
-
           </div>
-          </section>
+        </section>
         <section class="bento-tile found-listtile" aria-label="Jobs">
           <div class="nj-listarea" id="found-listarea"></div>
         </section>
         <div class="bento-tile found-dtile" id="found-detail"></div>
       </div>
     </div>`;
-  drawStatus(); drawFilters(); drawCount(); drawMore(); drawList(); drawDetail();
+  drawStatus(); drawFilters(); drawCount(); drawSide(); drawSaved(); drawList(); drawDetail();
 
   el.onclick = (e) => {
-    const inMore = e.target.closest('.nj-more, #found-more');
-    if (state.moreOpen && !inMore) closeMore();
     const t = e.target.closest('button, .found-row');
     if (!t || t.disabled) return;
     if (t.dataset.more !== undefined) { const box = t.closest('.scroll-wrap')?.querySelector('.scroller'); box?.scrollBy({ top: box.clientHeight * 0.8, behavior: 'smooth' }); }
@@ -500,31 +497,33 @@ export async function render(el, { stale, query = {} }) {
     }
     else if (t.dataset.mode !== undefined) { state.mode = t.dataset.mode; reload(`[data-mode="${t.dataset.mode}"]`); }
     else if (t.dataset.sort !== undefined) { state.sort = state.sort === 'match' ? 'new' : 'match'; reload('[data-sort]'); }
+    else if (t.dataset.place !== undefined) {
+      const same = state.place.trim().toLowerCase() === t.dataset.place.toLowerCase();
+      state.place = same ? '' : t.dataset.place; state.placeExact = !same;
+      reload(same ? '#found-place' : '#found-quick .chip[aria-pressed="true"]');
+    }
     else if (t.dataset.clearPlace !== undefined) { state.place = ''; state.placeExact = false; reload('#found-place'); }
     else if (t.dataset.catAll !== undefined) toggleAllCategories();
-    else if (t.id === 'found-more') { state.moreOpen = !state.moreOpen; if (!state.moreOpen) { state.saveOpen = false; state.linkOpen = false; } drawMore(); }
     else if (t.id === 'found-star') {
       state.saveOpen = true; state.saveError = ''; state.saveName = suggestName(state.q, state.mode);
-      drawMore(); $('#found-save-name')?.focus(); $('#found-save-name')?.select();
+      drawSaved(); $('#found-save-name')?.focus(); $('#found-save-name')?.select();
     }
     else if (t.dataset.saved !== undefined) {
       const x = saved.find((v) => v.id === Number(t.dataset.saved));
       if (!x) return;
       state.q = x.q; state.mode = x.work_mode; state.posted = x.posted; state.place = ''; state.selectedId = null; state.showHidden = false;
-      state.moreOpen = false; state.saveOpen = false; state.linkOpen = false;
+      state.saveOpen = false; state.linkOpen = false;
       $('#found-q').value = x.q;
-      reload('#found-more');
+      reload(`[data-saved="${x.id}"]`);
     }
     else if (t.dataset.back !== undefined) { setView('list'); $('.found-row[aria-current="true"]')?.focus(); }
     else if (t.dataset.id !== undefined && t.classList.contains('found-row')) selectRow(Number(t.dataset.id));
     else if (t.dataset.cat !== undefined) toggleCategory(t.dataset.cat);
-    else if (t.dataset.paste !== undefined) { state.linkOpen = !state.linkOpen; state.linkError = ''; drawMore(); if (state.linkOpen) $('#found-link')?.focus(); else $('[data-paste]')?.focus(); }
+    else if (t.dataset.paste !== undefined) { state.linkOpen = !state.linkOpen; state.linkError = ''; drawSaved(); if (state.linkOpen) $('#found-link')?.focus(); else $('[data-paste]')?.focus(); }
     else if (t.dataset.save !== undefined) { t.disabled = true; save(Number(t.dataset.save), Boolean(t.closest('.found-row-actions'))); }
     else if (t.dataset.hide !== undefined) { t.disabled = true; hide(Number(t.dataset.hide), Number(t.dataset.to)); }
     else if (t.dataset.toggleHidden !== undefined) { state.showHidden = !state.showHidden; state.selectedId = null; reload(); }
   };
-
-  el.onkeydown = (e) => { if (e.key === 'Escape' && state.moreOpen) { e.preventDefault(); closeMore(true); } };
 
   el.onchange = (e) => {
     if (e.target.id === 'found-date') {
@@ -557,18 +556,18 @@ export async function render(el, { stale, query = {} }) {
       e.preventDefault();
       if (state.posted === 'date') {
         state.saveError = 'Saved searches use Today, Last 3 days, Last week or Any time. Pick one of those to save.';
-        drawMore();
+        drawSaved();
         return;
       }
       try {
         await api('/api/saved-searches', { method: 'POST', body: { name: state.saveName, q: state.q, work_mode: state.mode, posted: state.posted } });
         state.saveOpen = false; state.saveError = '';
-        status = 'Saved. Find it under More filters.';
+        status = 'Saved. It is in Saved searches.';
         await reload();
         if (!stale()) $('#found-star')?.focus();
       } catch (err) {
         state.saveError = err.message;
-        drawMore();
+        drawSaved();
         $('#found-save-name')?.focus();
       }
       return;
@@ -580,11 +579,11 @@ export async function render(el, { stale, query = {} }) {
     try { ok = ['http:', 'https:'].includes(new URL(link).protocol); } catch { /* not a link */ }
     if (!ok) {
       state.linkError = 'The link must start with http:// or https://';
-      drawMore();
+      drawSaved();
       $('#found-link')?.focus();
       return;
     }
-    state.linkOpen = false; state.linkValue = ''; state.linkError = ''; state.moreOpen = false;
+    state.linkOpen = false; state.linkValue = ''; state.linkError = '';
     location.hash = '#/jobs/new?url=' + encodeURIComponent(link);
   };
 }

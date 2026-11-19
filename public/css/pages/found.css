@@ -71,20 +71,16 @@
 .found-layout { flex: 1; min-height: 0; margin-top: var(--space-3); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-4); }
 .found-list { display: flex; flex-direction: column; min-height: 0; }
 .nj-controls { position: relative; display: flex; flex-direction: column; gap: var(--space-2); flex-shrink: 0; }
-.nj-searchrow { display: flex; align-items: center; gap: var(--space-2); }
-.nj-search { flex: 1; min-width: 0; }
-.nj-morebtn { position: relative; width: var(--hit-min); height: var(--hit-min); flex-shrink: 0; }
-.nj-dot { position: absolute; top: 6px; right: 6px; width: 11px; height: 11px; background: var(--color-accent); border: 2px solid var(--color-card); border-radius: var(--radius-pill); }
-.nj-dot[hidden] { display: none; }
+.nj-searchrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.nj-search { flex: 0 1 380px; min-width: 200px; }
 
 .nj-filters { position: relative; display: flex; flex-direction: column; gap: var(--space-2); }
 .nj-frow { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); min-width: 0; }
 .nj-fgroup { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .nj-rowlabel { flex-shrink: 0; min-width: 62px; font-size: var(--text-xs); color: var(--color-muted); }
-.nj-place { flex: 1 1 190px; min-width: 0; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 6px 0 12px; background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); }
-.nj-place:focus-within { outline: 2px solid var(--color-text); outline-offset: 2px; }
-.nj-place > span { flex-shrink: 0; font-size: var(--text-xs); color: var(--color-muted); }
-.nj-place input { flex: 1; min-width: 0; height: 100%; padding: 0; background: transparent; color: var(--color-text); font: var(--text-sm) var(--font-sans); border: 0; outline: none; }
+.nj-place { flex: 0 1 300px; min-width: 200px; display: flex; align-items: center; gap: 6px; min-height: var(--hit-min); padding: 0 8px 0 12px; background: var(--color-card); border: 1px solid var(--color-border-strong); border-radius: var(--radius-control); }
+.nj-place:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.nj-place input { flex: 1; min-width: 0; height: 100%; padding: 0; background: transparent; color: var(--color-text); font: var(--text-base) var(--font-sans); border: 0; outline: none; }
 .nj-clear { flex-shrink: 0; width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--color-raised); color: var(--color-text); border: 0; border-radius: var(--radius-pill); font-size: 15px; line-height: 1; cursor: pointer; }
 .nj-clear[hidden] { display: none; }
 
@@ -107,11 +103,6 @@
 .nj-listarea { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: var(--space-1); border-top: 1px solid var(--color-line); }
 .nj-empty { margin: auto; padding: var(--space-5) var(--space-3); text-align: center; }
 
-/* More filters: a panel over the list, so nothing below it moves */
-#found-more-slot { display: contents; }
-.nj-more { position: absolute; left: 0; right: 0; top: calc(var(--hit-min) + var(--space-1)); z-index: 6; max-height: min(70vh, 540px); overflow: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); background: var(--color-panel); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-inner); box-shadow: var(--shadow-old); scrollbar-width: thin; }
-.nj-more-block { display: flex; flex-direction: column; gap: var(--space-2); }
-.nj-more-block .label { margin: 0; }
 .found-manage { color: var(--color-text); }
 .found-save { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--color-card); border-radius: var(--radius-control); }
 .found-save .label { margin: 0; }
@@ -147,7 +138,7 @@
 
 
 /* ---- Found page (v3, step 55): orange count tile left, filters head tile, list tile and advert tile ---- */
-.bento-found { grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+.bento-found { grid-template-columns: 310px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
 .bento-found .found-count { grid-column: 1; grid-row: 1 / span 2; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); overflow: auto; background: var(--color-primary); color: var(--color-on-primary); }
 .bento-found .found-head { grid-column: 2 / 4; grid-row: 1; padding: 14px 18px; }
 .bento-found .found-listtile { grid-column: 2; grid-row: 2; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
@@ -209,3 +200,42 @@
   .bento-found .found-count .nj-count-right .chip[data-sort]:hover { transform: none; }
   .bento-found .found-count .nj-count-right .nj-refresh.busy svg { animation-duration: 2s; }
 }
+
+
+/* ---- Found page (step 60): everything on the page, no filter dropdown ---- */
+.nj-quick { gap: var(--space-2); }
+.nj-quick:empty { display: none; }
+.nj-savedrow { align-items: center; }
+.nj-none { align-self: center; }
+.nj-forms { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.nj-forms:empty { display: none; }
+.nj-forms .found-save { flex: 1 1 360px; max-width: 520px; background: var(--color-raised); }
+
+/* Orange tile: Best match first + Refresh in two equal rounded boxes, same corners as the inputs */
+.bento-found .found-count .nj-count-right { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2); align-items: stretch; }
+.bento-found .found-count .nj-count-right .link-btn { grid-column: 1 / -1; justify-self: start; }
+.bento-found .found-count .nj-count-right .nj-refresh,
+.bento-found .found-count .nj-count-right .chip[data-sort] {
+  width: 100%; height: 34px; min-height: 34px; padding: 0 8px; justify-content: center;
+  font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border-radius: var(--radius-control);
+}
+.bento-found .found-count .nj-count-right .nj-refresh { gap: 6px; }
+.bento-found .found-count .nj-count-right .chip[data-sort][aria-pressed="true"] { background: rgba(255, 255, 255, .3); color: #fff; border-color: #fff; font-weight: 600; }
+.bento-found .found-count .nj-count-right .chip[data-sort][aria-pressed="true"]::before { color: #fff; }
+
+/* Orange tile order: buttons, what to read, status, then the number. The status line has its own space, so nothing jumps. */
+.bento-found .found-count .nj-count { order: -3; }
+.bento-found .found-count .fc-side { order: -2; display: flex; flex-direction: column; gap: var(--space-4); }
+.bento-found .found-count .found-status { order: -1; }
+.bento-found .found-count .found-status:empty { display: block; }
+.bento-found .found-count .found-status { min-height: 4.2em; font-size: 12px; }
+.fc-block { display: flex; flex-direction: column; gap: var(--space-2); }
+.fc-blabel { font-size: 12px; font-weight: 600; }
+.fc-bnote { font-size: 11px; opacity: .8; }
+.fc-side .chip-group { gap: 6px; }
+.fc-side .chip { background: transparent; color: #fff; border: 1.5px solid rgba(255, 255, 255, .7); border-radius: var(--radius-control); height: 26px; min-height: 26px; font-size: 12px; padding: 0 8px; }
+.fc-side .chip:hover:not(:disabled) { background: rgba(255, 255, 255, .18); }
+.fc-side .chip[aria-pressed="true"] { background: #fff; color: #1a1a1a; border-color: #fff; }
+.fc-side .chip:disabled { opacity: 1; }
+.fc-side .badge.b-off { color: #fff; background: transparent; border-color: rgba(255, 255, 255, .45); opacity: .75; font-size: 11px; }
