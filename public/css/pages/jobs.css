@@ -1,8 +1,5 @@
 /* Jobs list */
-.tiles { margin-bottom: var(--space-5); }
-.tile span { font-size: var(--text-base); }
 .filters { margin-bottom: var(--space-4); }
-.jobs-layout { margin-top: var(--space-5); }
 .row-main { flex: 1; min-width: 180px; }
 .row-title { color: var(--color-text); text-decoration: none; }
 .row-title:hover { text-decoration: underline; }
@@ -12,12 +9,8 @@
 
 /* ---- Jobs: one screen, the list scrolls inside its card ---- */
 .jobs-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.tiles.sm { gap: var(--space-3); margin-bottom: var(--space-3); }
-.tiles.sm .tile { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 10px 20px; }
-.tiles.sm .tile strong { font-size: 24px; }
 .jobs-page .filters { gap: var(--space-1); margin-bottom: var(--space-3); }
 .jobs-note { margin: 0 0 var(--space-3); }
-.jobs-layout { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); margin-top: 0; }
 .jobs-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .jobs-card > .empty { margin: auto; }
 .jobs-list-wrap { flex: 1; min-height: 0; }
@@ -33,10 +26,8 @@
 
 @media (max-width: 1100px) {
   .jobs-page { display: block; }
-  .jobs-layout { display: flex; }
   .jobs-card { display: block; overflow: visible; }
   .jobs-card .list-row { flex-wrap: wrap; }
-  .tiles.sm { margin-top: var(--space-3); }
 }
 .btn-danger.icon-btn { border-color: var(--color-border); }
 .btn-danger.icon-btn:hover:not(:disabled) { border-color: var(--color-danger); background: var(--color-raised); }
@@ -57,16 +48,9 @@
 .row-click:hover .row-title { color: var(--color-link); }
 
 /* Jobs (step 42): tiles are the stage filters, a stage dropdown and a "..." menu on each row, a slim Next closing strip */
-.tile-btn { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
-.tile-btn:hover { border-color: var(--color-border-strong); }
-.tile-btn[aria-pressed="true"] { background: var(--color-raised); border-color: var(--color-text); }
-.tile-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.jobs-views { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); margin: 0 var(--space-2) var(--space-3); font-size: var(--text-sm); }
-.jobs-views b { font-weight: var(--weight-medium); }
-.jobs-views .link-btn { min-height: 28px; }
 .jobs-card .row-badges { flex-shrink: 0; }
 .status-select { position: relative; z-index: 1; flex-shrink: 0; display: inline-flex; }
-.status-select select { height: 30px; padding: 0 8px; background: var(--color-panel); color: var(--color-text); font: var(--text-sm) var(--font-sans); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); cursor: pointer; }
+.status-select select { min-width: 116px; height: 30px; padding: 0 8px; background: var(--color-panel); color: var(--color-text); font: var(--text-sm) var(--font-sans); border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-control); cursor: pointer; }
 .status-select select:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .status-select option { background: var(--color-card); color: var(--color-text); }
 .row-menu-wrap { position: relative; z-index: 2; flex-shrink: 0; }
@@ -77,14 +61,10 @@
 .row-menu button:hover, .row-menu button:focus-visible { background: var(--color-raised); outline: none; }
 .row-menu .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .row-menu .menu-del { color: var(--color-danger); }
-.jobs-closing { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); padding: 10px var(--space-4); border-radius: 16px; font-size: var(--text-sm); }
-.jobs-views .link-btn { color: var(--color-text); text-decoration: underline; text-underline-offset: 3px; }
-.jobs-views .link-btn:hover { color: var(--color-muted); }
-.status-select select { min-width: 116px; }
 
 
 /* ---- Jobs page (v3 bento): dark frame, a head tile with the segmented switch, one list tile ---- */
-.bento-jobs { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+.bento-jobs { grid-template-columns: 280px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
 .bento-jobs .bento-tile { grid-column: 1; }
 .jobs-head { grid-row: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); padding: 12px 16px; }
 .jobs-tile { grid-row: 2; min-height: 0; }
@@ -99,13 +79,8 @@
 .jobs-closing-line:hover .jc-title { text-decoration: underline; }
 .jc-title { font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 30ch; }
 .jobs-head .jobs-note { flex: 1 0 100%; margin: 0; }
-@media (max-width: 1100px), (max-height: 720px) {
-  .bento-jobs { grid-template-rows: none; }
-  .jobs-card { overflow: visible; }
-}
 
 /* ---- Jobs page (v3, step 53): orange count tile on the left, head tile + list tile on the right ---- */
-.bento-jobs { grid-template-columns: 280px minmax(0, 1fr); }
 .bento-jobs .jobs-count { grid-column: 1; grid-row: 1 / span 2; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; background: var(--color-primary); color: var(--color-on-primary); }
 .bento-jobs .jobs-head { grid-column: 2; grid-row: 1; }
 .bento-jobs .jobs-tile { grid-column: 2; grid-row: 2; }
@@ -115,7 +90,8 @@
 .jobs-count .jc-cap:empty { display: none; }
 .jobs-head .jobs-closing-line { margin-left: auto; }
 @media (max-width: 1100px), (max-height: 720px) {
-  .bento-jobs { grid-template-columns: minmax(0, 1fr); }
+  .bento-jobs { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .jobs-card { overflow: visible; }
   .bento-jobs .jobs-count, .bento-jobs .jobs-head, .bento-jobs .jobs-tile { grid-column: 1; grid-row: auto; }
   .bento-jobs .jobs-count { flex-direction: row; align-items: flex-end; }
   .jobs-count .jc-num { font-size: 56px; }

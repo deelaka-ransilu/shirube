@@ -1,7 +1,7 @@
 /* Found */
 .chip:disabled { opacity: 0.6; cursor: default; }
 .chip[aria-pressed="true"]:disabled { opacity: 1; }
-.found-status { min-height: 1.4em; margin: 0; color: var(--color-muted); }
+.found-status { min-height: 0; margin: 0; color: var(--color-muted); }
 .found-group { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .found-group .chip-group { flex-wrap: nowrap; }
 @media (max-width: 1400px) { .found-group .chip-group { flex-wrap: wrap; } }
@@ -9,14 +9,14 @@
 .found-row { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: var(--hit-min); padding: var(--space-3) var(--space-2); text-align: left; font: inherit; color: inherit; background: transparent; border: 1.5px solid transparent; border-bottom: 1px solid var(--color-line); border-radius: 0; cursor: pointer; }
 .found-row:hover { background: var(--color-raised); }
 .found-row[aria-current="true"] { background: var(--color-raised); border: 1.5px solid var(--color-border-strong); border-radius: var(--radius-control); }
-.found-row-main { flex: 1; min-width: 0; }
+.found-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .found-row-main b { display: block; font-size: var(--text-md); font-weight: var(--weight-medium); overflow-wrap: anywhere; }
 .found-row-main small { display: block; font-size: var(--text-sm); overflow-wrap: anywhere; }
 .tag-new { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
-.found-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.found-actions { display: flex; flex-wrap: nowrap; gap: var(--space-2); margin-left: auto; flex-shrink: 0; }
 .found-msg { margin: 0; min-height: 1.4em; }
 .found-msg:empty { display: none; }
-.found-advert { white-space: pre-wrap; overflow-wrap: anywhere; line-height: var(--leading-body); }
+.found-advert { white-space: pre-wrap; overflow-wrap: anywhere; line-height: var(--leading-body); padding-bottom: var(--space-5); }
 
 
 /* Saved searches */
@@ -35,7 +35,6 @@
 
 /* Found: one screen, no page scrolling. The list and the advert scroll inside their own boxes. */
 .chip.sm { height: 28px; min-height: 28px; padding: 0 10px; font-size: var(--text-sm); display: inline-flex; align-items: center; gap: var(--space-1); text-decoration: none; white-space: nowrap; }
-.found-status { min-height: 0; }
 .found-status:empty { display: none; }
 .found-date { position: relative; display: inline-flex; }
 .found-date-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
@@ -50,12 +49,10 @@
 }
 
 /* Found layout rules (from Found look) */
-.found-actions { flex-wrap: nowrap; margin-left: auto; flex-shrink: 0; }
 .found-badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .found-advert-wrap { flex: 1; min-height: 0; }
-.found-advert { padding-bottom: var(--space-5); }
 .found-list-wrap { flex: 1; min-height: 0; }
-.found-row-badges, .row-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }
+.row-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }
 
 
 /* ---- Found list rows: three small buttons stacked on the right ---- */
@@ -63,7 +60,6 @@
 .found-item:has(.found-row[aria-current="true"]) { border-bottom-color: transparent; }
 .found-item .found-row { padding-right: 48px; border-bottom-color: transparent; }
 .found-item .found-row[aria-current="true"] { border-bottom-color: var(--color-border-strong); }
-.found-row-main { display: flex; flex-direction: column; gap: 2px; }
 .found-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); margin-top: 2px; }
 .found-row-actions { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; }
 .icon-btn.sm { width: 26px; min-height: 26px; height: 26px; border-radius: var(--radius-small); }
@@ -157,17 +153,17 @@
 .bento-found .found-listtile { grid-column: 2; grid-row: 2; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .bento-found .found-listtile .nj-listarea { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .bento-found .found-dtile { grid-column: 3; grid-row: 2; min-height: 0; overflow: hidden; }
-.found-count .fc-label { font-size: var(--text-xs); }
+.found-count .fc-label { font-size: var(--text-xs); display: none; }
 .found-count .fc-mid { margin-top: auto; }
 .found-count .fc-num { display: block; font-size: 112px; font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: .9; }
 .found-count .fc-cap { margin: var(--space-2) 0 0; font-size: 12px; }
 .found-count .fc-cap:empty { display: none; }
-.found-count .nj-count { display: flex; flex-direction: column; gap: var(--space-2); }
+.found-count .nj-count { display: flex; flex-direction: column; gap: var(--space-2); order: -1; }
 .found-count .nj-count-right { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .found-count .text-muted, .found-count .found-status, .found-count .nj-hint { color: inherit; opacity: .85; }
 .found-count .nj-hint { margin: 0; }
 .found-count .nj-hint a, .found-count .link-btn { color: inherit; }
-.found-count .found-status { margin: 0; }
+.found-count .found-status { margin: 0; order: -1; }
 @media (max-width: 1100px), (max-height: 720px) {
   .bento-found { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
   .bento-found > .bento-tile { grid-column: 1; grid-row: auto; }
@@ -178,11 +174,6 @@
   .bento-found[data-view="list"] > .found-dtile { display: none; }
   .bento-found[data-view="detail"] > :not(.found-dtile) { display: none; }
 }
-
-/* ---- Found page tweak (step 57): buttons on top, label hidden ---- */
-.found-count .fc-label { display: none; }
-.found-count .nj-count { order: -1; }
-.found-count .found-status { order: -1; }
 
 
 /* ---- Found page buttons (step 58): white Refresh, outlined/black Best match, icon motion ---- */

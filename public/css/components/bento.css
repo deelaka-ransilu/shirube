@@ -5,5 +5,3 @@
   .bento { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
   .bento-tile { grid-column: 1 !important; grid-row: auto !important; }
 }
-a.tile { color: inherit; text-decoration: none; }
-a.tile:hover { background: var(--color-raised); }

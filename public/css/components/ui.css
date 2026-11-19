@@ -18,12 +18,12 @@ textarea.input { resize: vertical; line-height: var(--leading-body); }
 
 /* ---- Badges, tints, icon buttons, hidden scrollbars (Found look; reused on other screens) ---- */
 .badge { display: inline-flex; align-items: center; padding: 3px 10px; font: var(--text-xs) var(--font-mono); white-space: nowrap; background: var(--color-raised); border: 1px solid var(--color-line); border-radius: var(--radius-small); color: var(--color-text); }
-.badge.b-date,  .badge.b-loc,  .badge.b-mode,  .badge.b-type,  .badge.b-close,  .badge.b-saved,  .badge.b-interview,  .badge.b-offer { background: color-mix(in srgb, var(--bt) 30%, transparent); border-color: color-mix(in srgb, var(--bt) 60%, transparent); color: var(--color-text); }
+.badge.b-date,  .badge.b-loc,  .badge.b-mode,  .badge.b-type,  .badge.b-close,  .badge.b-interview,  .badge.b-offer { background: color-mix(in srgb, var(--bt) 30%, transparent); border-color: color-mix(in srgb, var(--bt) 60%, transparent); color: var(--color-text); }
 .badge.b-date  { --bt: var(--tint-yellow); }
 .badge.b-loc   { --bt: var(--tint-blue); }
 .badge.b-mode  { --bt: var(--tint-peach); }
 .badge.b-type  { --bt: var(--tint-lilac); }
-.badge.b-close, .badge.b-saved { --bt: var(--tint-green); }
+.badge.b-close { --bt: var(--tint-green); }
 .badge.b-interview { --bt: var(--tint-lilac); }
 .badge.b-offer { --bt: var(--tint-yellow); }
 .badge.b-none { color: var(--color-muted); border-style: dashed; }
@@ -57,6 +57,11 @@ textarea.input { resize: vertical; line-height: var(--leading-body); }
 
 /* ---- Header: page name instead of the logo text, and an optional main action ---- */
 .top-action:empty { display: none; }
+.top-action { display: flex; align-items: center; gap: var(--space-3); }
+a.btn.btn-add { gap: 8px; padding: 10px 20px 10px 14px; background: var(--color-frame); border-color: var(--color-frame); color: #FFFFFF; border-radius: var(--radius-control); }
+a.btn.btn-add:hover:not(:disabled) { background: #2A2D30; border-color: #2A2D30; color: #FFFFFF; }
+.add-plus { width: 20px; height: 20px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--color-primary); }
+.add-plus svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
 .page-head > .btn { margin-left: auto; }
 
 

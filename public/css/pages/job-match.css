@@ -1,5 +1,4 @@
 /* ---- Job match: result bar, two CV columns that scroll inside their cards ---- */
-.jd-match { flex-shrink: 0; }
 .match-page { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .match-page .jd-head { margin-bottom: 0; }
 .mt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-5); padding: var(--space-3) var(--space-5); border-radius: 45px; }

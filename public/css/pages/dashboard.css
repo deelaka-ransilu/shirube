@@ -1,8 +1,5 @@
 /* Dashboard (kept for the shared row helpers; the one-screen look is in the "Dashboard look" block at the end) */
 .row-right { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); text-align: right; }
-.avatar.sym { font-size: var(--text-md); }
-.step-row { align-items: flex-start; }
-.step-row .row-main b { font-weight: var(--weight-medium); }
 
 
 /* ---- Dashboard (v3 bento): the folder body: a frame holding tiles, stretched down to the bottom of the window ---- */
@@ -11,8 +8,6 @@
 .since-label { color: #A0A6AC; }
 .bento-since .since-icon { width: 24px; height: 24px; background: var(--color-primary); color: var(--color-on-primary); }
 .bento-since .since-icon svg { width: 14px; height: 14px; }
-.since-num { margin-top: var(--space-2); font-size: var(--text-numeral); font-weight: var(--weight-light); letter-spacing: var(--tracking-numeral); line-height: 1; }
-.since-line { margin: 0; color: #A0A6AC; }
 .since-chart { margin-top: auto; padding-top: var(--space-3); }
 .since-legend { margin: var(--space-2) 0 0; color: #A0A6AC; }
 .bento-next { grid-column: 2; grid-row: 1; min-height: 240px; display: flex; flex-direction: column; gap: var(--space-3); }
