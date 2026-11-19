@@ -74,3 +74,10 @@ a.btn.btn-add:hover:not(:disabled) { background: #2A2D30; border-color: #2A2D30;
 .scroll-wrap.under-dock > .scroller, .found-detail.under-dock { padding-bottom: var(--dock-reserve); }
 .scroll-wrap.under-dock .more-pill { bottom: calc(var(--dock-reserve) - var(--space-4)); }
 
+
+/* ---- Confirm box (lib/confirm.js): replaces the browser's own confirm window ---- */
+.cf-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: var(--space-4); background: rgba(17, 19, 21, 0.62); }
+.cf-box { width: min(420px, 100%); padding: 22px; background: var(--color-card); color: var(--color-text); border-radius: var(--radius-tile); box-shadow: var(--shadow-pop); }
+.cf-box h2 { margin: 0 0 var(--space-2); }
+.cf-msg { margin: 0 0 var(--space-4); color: var(--color-muted); white-space: pre-line; overflow-wrap: anywhere; }
+.cf-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }

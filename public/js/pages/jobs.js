@@ -7,6 +7,7 @@ import { ICON } from '../lib/icons.js';
 import { closeBadge } from '../lib/badges.js';
 import { bindScroll } from '../lib/scroll.js';
 import { setTopAction } from '../lib/shell.js';
+import { confirmDialog } from '../lib/confirm.js';
 
 const SEGMENTS = [['', 'All'], ['open', 'Can apply'], ['applied', 'Applied'], ['reply', 'Reply'], ['interview', 'Interview'], ['offer', 'Offer'], ['rejected', 'Rejected']];
 
@@ -204,7 +205,7 @@ export async function render(el, ctx) {
     const del = e.target.closest('[data-delete]');
     if (del) {
       closeMenus();
-      if (!confirm(`Delete “${del.dataset.title}”? This cannot be undone.`)) return;
+      if (!(await confirmDialog({ title: 'Delete this job?', message: `“${del.dataset.title}” will be deleted. This cannot be undone.`, ok: 'Delete', danger: true }))) return;
       del.disabled = true;
       try {
         await api(`/api/jobs/${del.dataset.delete}`, { method: 'DELETE' });

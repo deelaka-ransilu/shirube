@@ -8,6 +8,7 @@ import { closeBadge } from '../lib/badges.js';
 import { cvPaper, matchLine } from '../lib/cv-paper.js';
 import { printCv } from '../lib/print-cv.js';
 import { setTopAction } from '../lib/shell.js';
+import { confirmDialog } from '../lib/confirm.js';
 
 const KIND = {
   applied:   { label: 'Applied' },
@@ -416,7 +417,7 @@ export async function render(el, { params, stale }) {
     if (open) { const btn = open.parentElement.querySelector('[data-act="menu"]'); closeMenu(); btn?.focus(); }
   };
 
-  el.onclick = (e) => {
+  el.onclick = async (e) => {
     if (e.target.classList?.contains('pf-modal') && state.notesOpen) { closeNotes(); return; }
     if (!e.target.closest('.row-menu-wrap')) closeMenu();
     const t = e.target.closest('button');
@@ -452,7 +453,8 @@ export async function render(el, { params, stale }) {
       case 'edit-job': state.editing = true; state.draft = null; state.form = null; state.error = ''; draw(); break;
       case 'delete-job':
         closeMenu();
-        if (!confirm(`Delete “${state.job.title}”? This cannot be undone.`)) return;
+        if (!(await confirmDialog({ title: 'Delete this job?', message: `“${state.job.title}” will be deleted. This cannot be undone.`, ok: 'Delete', danger: true }))) return;
+        if (stale()) return;
         run(async () => {
           await api(`/api/jobs/${id}`, { method: 'DELETE' });
           location.hash = '#/jobs';
@@ -461,19 +463,24 @@ export async function render(el, { params, stale }) {
       case 'cv-attach': el.querySelector('#cv-file')?.click(); break;
       case 'cv-made': run(() => api(`/api/jobs/${id}/cv/made?preset=${state.cv?.preset?.id ?? ''}`, { method: 'POST' })); break;
       case 'cv-remove':
-        if (!confirm('Remove the saved CV from this job? The file is deleted from this computer.')) return;
+        if (!(await confirmDialog({ title: 'Remove the saved CV?', message: 'The file is deleted from this computer.', ok: 'Remove', danger: true }))) return;
+        if (stale()) return;
         run(() => api(`/api/jobs/${id}/cv`, { method: 'DELETE' }));
         break;
       case 'cancel-edit': state.editing = false; state.draft = null; state.error = ''; draw(); break;
       case 'cancel-stage': state.form = null; state.error = ''; draw(); break;
       case 'remove-stage':
-        if (!confirm('Remove this stage?')) return;
+        const stageId = t.dataset.id;
+        const gone = state.stages.find((s) => String(s.id) === stageId);
+        if (!(await confirmDialog({ title: 'Remove this stage?', message: gone ? `${KIND[gone.kind].label} will be removed from this job.` : '', ok: 'Remove', danger: true }))) return;
+        if (stale()) return;
         state.form = null;
-        run(() => api(`/api/stages/${t.dataset.id}`, { method: 'DELETE' }));
+        run(() => api(`/api/stages/${stageId}`, { method: 'DELETE' }));
         break;
       case 'undo': {
         const last = state.stages.reduce((a, b) => (b.id > a.id ? b : a));
-        if (!confirm(`Remove the last step you added (${KIND[last.kind].label})?`)) return;
+        if (!(await confirmDialog({ title: 'Undo the last step?', message: `${KIND[last.kind].label} will be removed from this job.`, ok: 'Remove', danger: true }))) return;
+        if (stale()) return;
         state.form = null;
         run(() => api(`/api/stages/${last.id}`, { method: 'DELETE' }));
         break;
