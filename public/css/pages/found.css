@@ -45,7 +45,7 @@
 
 /* Small windows: stack everything and let the page scroll as before */
 @media (max-width: 1100px) {
-  #page:has(.found-page), #page:has(.jobs-page), #page:has(.profile-page), #page:has(.match-page), #page:has(.addjob-page), #page:has(.fu-page) { display: block; overflow: auto; }
+  #page:has(.match-page), #page:has(.addjob-page) { display: block; overflow: auto; }   /* pages not in the bento style yet still scroll as a page */
 }
 
 /* Found layout rules (from Found look) */
@@ -125,7 +125,6 @@
 
 /* Under 1100px wide: one half at a time. Tap a job to read it, the arrow goes back to the list. */
 @media (max-width: 1100px) {
-  .found-page { display: block; }
   .found-layout { display: block; }
   .found-layout[data-view="list"] #found-detail { display: none; }
   .found-layout[data-view="detail"] .found-list { display: none; }
@@ -156,7 +155,9 @@
 .found-count .nj-hint a, .found-count .link-btn { color: inherit; }
 .found-count .found-status { margin: 0; order: -1; }
 @media (max-width: 1100px), (max-height: 720px) {
-  .bento-found { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .bento-found { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }   /* the list tile takes the spare height */
+  .bento-found[data-view="detail"] { grid-template-rows: 1fr; }
+  .bento-found .found-listtile, .bento-found .found-dtile { min-height: auto; }
   .bento-found > .bento-tile { grid-column: 1; grid-row: auto; }
   .bento-found .found-count { flex-direction: row; flex-wrap: wrap; align-items: flex-end; overflow: visible; }
   .bento-found .found-count .fc-mid { margin-top: 0; }

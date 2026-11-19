@@ -129,8 +129,6 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
 .dock-flush .jd-page .cv-scroll { padding-bottom: var(--dock-reserve); }
 .jd-page .row-menu { z-index: 20; }
 @media (max-width: 1100px) {
-  #page:has(.jd-page) { display: block; overflow: auto; }
-  .jd-page { display: block; }
   .jd-page .jd-scroll .scroller, .jd-page .cv-scroll { max-height: none; overflow: visible; }
   .jd-page .jd-head { flex-wrap: wrap; }
 }
@@ -176,6 +174,7 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
 .bento-jd .jd-cvrow .chip .icon { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 @media (max-width: 1100px), (max-height: 720px) {
+  .bento-jd { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }   /* the 310px / 1fr / 1fr columns used to win over the shared stacking rule, which squeezed every tile into the 310px column */
   .bento-jd .jd-state { flex-direction: row; flex-wrap: wrap; align-items: flex-end; overflow: visible; }
   .bento-jd .jd-state-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1 1 260px; }
   .bento-jd .jd-state-main { margin-top: 0; }
@@ -194,3 +193,26 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
 .jd-cvtile select.input.cv-select { background: transparent; color: #F3F4F5; border-color: rgba(255, 255, 255, .4); }
 .jd-cvtile select.input.cv-select option { background: #fff; color: #111315; }
 .jd-cvtile .cv-scroll:focus-visible { outline-color: #fff; }
+
+/* Phones: the title takes its own full-width line under the back button, logo and action buttons */
+@media (max-width: 700px) {
+  .bento-jd .jd-head { flex-wrap: wrap; }
+  .bento-jd .jd-title { order: 3; flex: 1 1 100%; }
+  .bento-jd .jd-actions { margin-left: auto; }
+}
+
+/* Tablet and portrait screens (tall enough): Description and "CV for this job" sit side by side under the stages,
+   filling the rest of the window height, and each scrolls inside its own tile. Phones and short windows keep the stack. */
+@media (min-width: 700px) and (max-width: 1100px) and (min-height: 721px) {
+  #page .bento-jd { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto minmax(0, 1fr); }
+  #page .bento-jd > .jd-state, #page .bento-jd > .jd-headtile, #page .bento-jd > .jd-stagetile { grid-column: 1 / -1 !important; }
+  #page .bento-jd > .jd-desc { grid-column: 1 !important; grid-row: 4 !important; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  #page .bento-jd > .jd-cvtile { grid-column: 2 !important; grid-row: 4 !important; min-height: 0; overflow: hidden; }
+  #page .bento-jd > .jd-edittile { grid-column: 1 / -1 !important; grid-row: 4 !important; min-height: 0; overflow: auto; }
+  .bento-jd .jd-desc .scroll-wrap { display: flex; flex: 1; min-height: 0; }
+  .bento-jd .jd-desc .scroller { overflow: auto; max-height: none; }
+  .bento-jd .jd-desc .scroll-fade { display: block; }
+  .bento-jd .jd-desc .more-pill { display: block; }
+  .bento-jd .jd-desc .more-pill[hidden] { display: none; }
+  .bento-jd .jd-cvtile .cv-scroll { flex: 1; min-height: 0; overflow-y: auto; max-height: none; }
+}

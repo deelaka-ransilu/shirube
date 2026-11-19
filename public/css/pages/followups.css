@@ -32,8 +32,6 @@
 
 /* Narrower windows: two columns, the page scrolls instead of each column */
 @media (max-width: 1280px) {
-  #page:has(.fu-page) { display: block; overflow: auto; }
-  .fu-page { display: block; }
   .fu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; align-items: start; }
   .fu-col .scroll-wrap { display: block; }
   .fu-col .scroller { overflow: visible; padding-bottom: 0; }

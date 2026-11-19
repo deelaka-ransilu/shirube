@@ -25,8 +25,8 @@
 .jobs-card .avatar { width: 40px; height: 40px; }
 
 @media (max-width: 1100px) {
-  .jobs-page { display: block; }
   .jobs-card { display: block; overflow: visible; }
+  .bento-jobs .jobs-tile { min-height: auto; }
   .jobs-card .list-row { flex-wrap: wrap; }
 }
 .btn-danger.icon-btn { border-color: var(--color-border); }
@@ -90,7 +90,7 @@
 .jobs-count .jc-cap:empty { display: none; }
 .jobs-head .jobs-closing-line { margin-left: auto; }
 @media (max-width: 1100px), (max-height: 720px) {
-  .bento-jobs { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .bento-jobs { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }   /* the list tile takes the spare height */
   .jobs-card { overflow: visible; }
   .bento-jobs .jobs-count, .bento-jobs .jobs-head, .bento-jobs .jobs-tile { grid-column: 1; grid-row: auto; }
   .bento-jobs .jobs-count { flex-direction: row; align-items: flex-end; }
@@ -101,3 +101,7 @@
 /* ---- Jobs page (step 54): skills badge on rows you can still apply to ---- */
 .row-badges .b-match.has { background: var(--color-frame); color: #FFFFFF; }
 
+/* Phones: the badges wrap onto more lines instead of running out of the tile */
+@media (max-width: 700px) {
+  .jobs-card .row-badges { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+}

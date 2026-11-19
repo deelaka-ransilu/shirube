@@ -4,4 +4,10 @@
 @media (max-width: 1100px), (max-height: 720px) {
   .bento { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
   .bento-tile { grid-column: 1 !important; grid-row: auto !important; }
+  /* Narrow or short windows: the tiles stack, but the dark frame still fills the window height (same margins as the desktop).
+     The frame scrolls inside itself, so the page never grows past the screen. */
+  #page:has(.bento) { display: flex; flex-direction: column; overflow: hidden; }
+  #page .bento { overflow: auto; align-content: start; grid-auto-rows: auto; scrollbar-width: none; }
+  #page .bento::-webkit-scrollbar { display: none; }
+  #page .bento > * { min-height: auto; }   /* stacked tiles keep their content height; without this the first tiles get squashed when the list is long */
 }

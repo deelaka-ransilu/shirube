@@ -88,14 +88,13 @@ a.stat-card.is-offer .stat-bar i { background: var(--color-on-primary); }
 .dash-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 @media (max-width: 1100px), (max-height: 720px) {
-  #page:has(.dash-page) { display: block; overflow: auto; }
-  .dash-page { display: block; }
   .bento-since { min-height: 0; }
   .bento-next { min-height: 0; }
   .list-col .rows { overflow: visible; }
   .bento-stats { grid-column: 1; grid-row: auto; min-height: 0; grid-template-rows: none; }   /* it is a div, not a .bento-tile, so the shared stacking rule missed it and left it in an invisible third column */
   .bento-stats .bento-tile { grid-column: auto !important; }
-  .bento-lists { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .bento-lists { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; min-height: auto; overflow: visible; }
+  .dash-page .bento { grid-template-rows: auto auto auto auto 1fr; }   /* phones: the lists tile takes the spare height */
   .list-col { padding-right: 0; }
   .list-col + .list-col { padding-left: 0; border-left: 0; margin-top: var(--space-4); }
 }
@@ -105,7 +104,7 @@ a.stat-card.is-offer .stat-bar i { background: var(--color-on-primary); }
 
 /* Tablet, or a wide but short window: two columns instead of one long stack (phones, under 700px, keep the single column) */
 @media (min-width: 700px) and (max-width: 1100px), (min-width: 700px) and (max-height: 720px) {
-  .dash-page .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-page .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto 1fr; }
   .dash-page .bento > .bento-since { grid-column: 1 !important; grid-row: 1 !important; }
   .dash-page .bento > .bento-stats { grid-column: 2; grid-row: 1; }
   .dash-page .bento > .bento-next { grid-column: 1 !important; grid-row: 2 !important; }

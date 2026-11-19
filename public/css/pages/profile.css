@@ -51,7 +51,6 @@
 .imp-kept { padding: 2px 0; }
 .pf-dialog .inner-box { background: var(--color-card); }
 @media (max-width: 1100px) {
-  .profile-page { display: block; }
   .preset-row { margin-bottom: var(--space-3); }
   .profile-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
   .pf-list { display: block; overflow: visible; }
@@ -73,6 +72,6 @@
 .bento-profile .pf-card { padding: 14px 18px; }
 @media (max-width: 1100px) {
   .bento-profile { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
-  .bento-profile > .pf-hero, .bento-profile > .pf-presetbar, .bento-profile .col { grid-column: 1; grid-row: auto; }
+  .bento-profile > .pf-hero, .bento-profile > .pf-presetbar, .bento-profile .col, .bento-profile .col:first-child, .bento-profile .col:last-child { grid-column: 1; grid-row: auto; }   /* the :first-child / :last-child rules pinned the two columns to grid columns 2 and 3, which made two extra squeezed columns */
   .bento-profile > .pf-hero { min-height: 140px; overflow: visible; }
 }
