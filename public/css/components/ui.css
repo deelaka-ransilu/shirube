@@ -58,7 +58,7 @@ textarea.input { resize: vertical; line-height: var(--leading-body); }
 /* ---- Header: page name instead of the logo text, and an optional main action ---- */
 .top-action:empty { display: none; }
 .top-action { display: flex; align-items: center; gap: var(--space-3); }
-a.btn.btn-add { gap: 8px; padding: 10px 20px 10px 14px; background: var(--color-frame); border-color: var(--color-frame); color: #FFFFFF; border-radius: var(--radius-control); }
+a.btn.btn-add { flex: none; white-space: nowrap; gap: 8px; padding: 10px 20px 10px 14px; background: var(--color-frame); border-color: var(--color-frame); color: #FFFFFF; border-radius: var(--radius-control); }
 a.btn.btn-add:hover:not(:disabled) { background: #2A2D30; border-color: #2A2D30; color: #FFFFFF; }
 .add-plus { width: 20px; height: 20px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--color-primary); }
 .add-plus svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }

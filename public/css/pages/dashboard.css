@@ -93,9 +93,46 @@ a.stat-card.is-offer .stat-bar i { background: var(--color-on-primary); }
   .bento-since { min-height: 0; }
   .bento-next { min-height: 0; }
   .list-col .rows { overflow: visible; }
-  .bento-stats { min-height: 0; grid-template-rows: none; }
+  .bento-stats { grid-column: 1; grid-row: auto; min-height: 0; grid-template-rows: none; }   /* it is a div, not a .bento-tile, so the shared stacking rule missed it and left it in an invisible third column */
   .bento-stats .bento-tile { grid-column: auto !important; }
   .bento-lists { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
   .list-col { padding-right: 0; }
   .list-col + .list-col { padding-left: 0; border-left: 0; margin-top: var(--space-4); }
+}
+
+/* ---- Dashboard responsive: tablet gets two columns, phones one column ---- */
+.since-chart .box-chart { max-width: 520px; }
+
+/* Tablet, or a wide but short window: two columns instead of one long stack (phones, under 700px, keep the single column) */
+@media (min-width: 700px) and (max-width: 1100px), (min-width: 700px) and (max-height: 720px) {
+  .dash-page .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-page .bento > .bento-since { grid-column: 1 !important; grid-row: 1 !important; }
+  .dash-page .bento > .bento-stats { grid-column: 2; grid-row: 1; }
+  .dash-page .bento > .bento-next { grid-column: 1 !important; grid-row: 2 !important; }
+  .dash-page .bento > .bento-count { grid-column: 2 !important; grid-row: 2 !important; }
+  .dash-page .bento > .bento-lists { grid-column: 1 / -1 !important; grid-row: 3 !important; }
+  .stat-head { flex-wrap: wrap; row-gap: 2px; }   /* the small stat cards: the "1 of 9 jobs" note wraps instead of being cut off */
+  .stat-card { padding: 12px 14px; }
+}
+
+/* The two lists sit side by side only when there is room for them */
+@media (min-width: 900px) and (max-width: 1100px), (min-width: 900px) and (max-height: 720px) {
+  .bento-lists { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .list-col { padding-right: var(--space-5); }
+  .list-col + .list-col { padding-left: var(--space-5); border-left: 1px solid var(--color-line); margin-top: 0; }
+}
+
+/* Phones */
+@media (max-width: 560px) {
+  .dash-page .bento > .bento-tile { padding: 16px; }   /* direct tiles only: the stat cards keep their own padding */
+  .sentence { font-size: 34px; }
+  .sentence.long { font-size: 26px; }
+  .hero-num { font-size: 110px; }
+  .next-chips { justify-content: flex-start; }
+  .stat-head { flex-wrap: wrap; }
+  .stat-card { padding: 12px 14px; }
+  .bento .list-row { flex-wrap: wrap; gap: var(--space-2); }   /* the date badge drops under the title instead of squeezing it */
+  .bento .row-main { flex: 1 1 150px; }
+  .bento .row-right { margin-left: auto; }
+  .chev { display: none; }
 }
