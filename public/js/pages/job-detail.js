@@ -10,13 +10,13 @@ import { printCv } from '../lib/print-cv.js';
 import { setTopAction } from '../lib/shell.js';
 
 const KIND = {
-  applied:   { label: 'Applied',   symbol: '●' },
-  follow_up: { label: 'Follow-up', symbol: '□' },
-  reply:     { label: 'Reply',     symbol: '○' },
-  interview: { label: 'Interview', symbol: '■' },
-  offer:     { label: 'Offer',     symbol: '◆' },
-  rejected:  { label: 'Rejected',  symbol: '▲' },
-  other:     { label: 'Other',     symbol: '•' },
+  applied:   { label: 'Applied' },
+  follow_up: { label: 'Follow-up' },
+  reply:     { label: 'Reply' },
+  interview: { label: 'Interview' },
+  offer:     { label: 'Offer' },
+  rejected:  { label: 'Rejected' },
+  other:     { label: 'Other' },
 };
 const SLOTS = ['applied', 'reply', 'interview', 'offer'];   // the slim row; follow-ups, Rejected and Other are added after it
 const WORK_MODE = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
@@ -32,7 +32,7 @@ function stagePill(s, today) {
   const due = s.kind === 'follow_up' && s.happened_on > today;
   return html`
     <button type="button" class="stage-pill" ${tintAttr(s.kind)} data-stage="${s.id}" title="${s.note || 'Change the date or add a note'}">
-      <span class="sp-name"><span aria-hidden="true">${KIND[s.kind].symbol}</span> ${KIND[s.kind].label}</span>
+      <span class="sp-name">${KIND[s.kind].label}</span>
       <small>${s.happened_on ? formatDay(s.happened_on) : 'No date'}${due ? ' · Due' : ''}</small>
     </button>`;
 }
@@ -40,7 +40,7 @@ function stagePill(s, today) {
 function pendingPill(kind) {
   return html`
     <button type="button" class="stage-pill pending" data-new="${kind}" title="Mark ${KIND[kind].label} for today">
-      <span class="sp-name"><span aria-hidden="true">${KIND[kind].symbol}</span> ${KIND[kind].label}</span>
+      <span class="sp-name">${KIND[kind].label}</span>
       <small>Not yet</small>
     </button>`;
 }

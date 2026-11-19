@@ -182,3 +182,15 @@ textarea.input.jd-notes-box { flex: 1; min-height: 140px; resize: none; }
   .jd-state-word { font-size: 40px; }
   .bento-jd .jd-desc, .bento-jd .jd-cvtile, .bento-jd .jd-edittile { overflow: visible; }
 }
+
+/* "CV for this job" tile: dark, so the white CV paper stands out against it (only this tile; the rest of the page is unchanged) */
+.bento-jd .jd-cvtile { --jd-dim: #A9AFB5; background: #1C1F22; color: #F3F4F5; }
+.bento-jd .jd-cvtile h2 { color: #fff; }
+.bento-jd .jd-cvtile .text-muted { color: var(--jd-dim); }
+.jd-page .jd-cvtile .link { color: #fff; }
+.jd-cvtile .chip { color: #F3F4F5; border-color: rgba(255, 255, 255, .4); }
+.jd-cvtile .chip:hover { background: rgba(255, 255, 255, .14); }
+.jd-cvtile .chip[aria-pressed="true"] { background: #fff; border-color: #fff; color: #111315; }
+.jd-cvtile select.input.cv-select { background: transparent; color: #F3F4F5; border-color: rgba(255, 255, 255, .4); }
+.jd-cvtile select.input.cv-select option { background: #fff; color: #111315; }
+.jd-cvtile .cv-scroll:focus-visible { outline-color: #fff; }
